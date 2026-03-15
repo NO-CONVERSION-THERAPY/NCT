@@ -83,31 +83,32 @@ app.get('/map', (req,res) => {
 })
 
 
-// 新增：地圖數據介面
 app.get('/api/map-data', async (req, res) => {
     try {
-        // 建議將 Apps Script 的網址放在 Vercel 的環境變數中
-        const googleAppsScriptUrl = process.env.GOOGLE_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbzyWrz4jIum9JmfMWMt1dr8H5EJjiFeNyB0aOIJq8aXFWj30IspHZk-ZrN8O6bhkwQj/exec';
-        
-        const response = await axios.get(googleAppsScriptUrl);
-        
-        // 優化：過濾掉沒有經緯度的無效數據，並只回傳前端需要的欄位
-        const cleanData = response.data.filter(item => item.lat && item.lng).map(item => ({
-            name: item['學校名稱'],
-            addr: item['學校地址'],
-            prov: item['省份'],
-            city: item['區、縣'],
-            lat: parseFloat(item.lat),
-            lng: parseFloat(item.lng),
-            scandal: item['學校的醜聞'] || item['其他'] || '無詳細資訊'
-        }));
+        const response = await axios.get(process.env.GOOGLE_SCRIPT_URL);
+        const rawData = response.data;
 
-        // 設定瀏覽器快取 5 分鐘，減輕後端負擔
-        res.set('Cache-Control', 'public, max-age=300');
+        // 這裡做一個更強健的轉換
+        const cleanData = rawData.filter(item => item.lat && item.lng).map(item => {
+            return {
+                // 使用 ['Key'] 的方式來確保能抓到含空格或特殊符號的欄位
+                name: item['學校名稱'] || "未填寫名稱",
+                addr: item['學校地址'] || "無地址",
+                prov: item['省份'] || "",
+                city: item['區、縣'] || "",
+                lat: parseFloat(item.lat),
+                lng: parseFloat(item.lng),
+                // 這裡對應你 JSON 裡的 "學校的醜聞"
+                scandal: item['學校的醜聞'] || item['其他'] || "無詳細資訊",
+                contact: item['學校的聯繫方式'] || ""
+            };
+        });
+
+        res.set('Cache-Control', 'public, max-age=60'); // 縮短快取時間方便測試
         res.json(cleanData);
     } catch (error) {
-        console.error('Fetch Map Data Error:', error.message);
-        res.status(500).json({ error: '無法獲取地圖數據' });
+        console.error("Vercel API Error:", error.message);
+        res.status(500).json({ error: error.message });
     }
 });
 
