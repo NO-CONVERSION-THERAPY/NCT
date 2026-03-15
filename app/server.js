@@ -106,16 +106,15 @@ app.get('/api/map-data', async (req, res) => {
         }
 
         const cleanData = rawData.filter(item => item && (item.lat || item.緯度)).map(item => {
-            // 列印一筆資料到終端機，方便你在 Vercel Logs 查看原始結構
-            console.log("Processing item:", item); 
 
             return {
                 name: item['學校名稱'] || "未填寫名稱",
                 addr: item['學校地址'] || "無地址",
-                // 確保這裡的 key 與你 GAS 輸出的 JSON 完全一致
-                // 如果 GAS 輸出的是 lat/lng，就用 item.lat
+                province: item['省份'] || "省份",
                 lat: parseFloat(item.lat || item['緯度']), 
                 lng: parseFloat(item.lng || item['經度']),
+                experience: item['請問您在那裏都經歷了什麼？'],
+                HMaster: item['校長名字'],
                 scandal: item['學校的醜聞'] || "無詳細資訊",
                 contact: item['學校的聯繫方式'] || ""
             };

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>地圖展示</title>
+    <title>机构综合地图</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         #map { height: 80vh; width: 100%; border-radius: 8px; }
@@ -9,7 +9,7 @@
     </style>
 </head>
 <body>
-    <h1>實體地圖分佈</h1>
+    <h1>机构综合地图</h1>
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -35,7 +35,9 @@
                     const popupContent = `
                         <div class="custom-popup">
                             <b>${item.name}</b><br>
+                            <small>${item.HMaster}</small>
                             <small>${item.prov} ${item.city}</small><hr>
+                            <p>${item.experience}</p>
                             <p>${item.scandal}</p>
                             <address>${item.addr}</address>
                         </div>
