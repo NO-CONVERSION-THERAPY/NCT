@@ -18,7 +18,9 @@ const map = L.map('map').setView([37.5, 109], 4); // 預設視角
 const CNprov = '/cn.json'
 
 // 選用簡潔的底圖風格
-L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    minZoom: 4
+}).addTo(map);
 
 
 const apiUrl = 'https://no-torsion.vercel.app/api/map-data'

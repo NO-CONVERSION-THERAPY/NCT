@@ -19,21 +19,23 @@ flex-direction: column;
 
             // 3. 循環處理
             rawData.forEach(item => {
-                const card = document.createElement('div');
+                const card = document.createElement('details');
                 card.className = 'div';
                 card.style.width = '100%'
 
                 let scandalHtml = item.scandal ? `<div class="scandal">⚠️ ${item.scandal}</div>` : '';
 
                 card.innerHTML = `
-                    <h2>${item.name}</h2>
-                    <p><strong>負責人：</strong>${item.HMaster}</p>
-                    <p><strong>省份：</strong>${item.province}</p>
-                    <p><strong>鄉、鎮：</strong>${item.prov}</p>
-                    <p><strong>地址：</strong>${item.addr}</p>
-                    <hr>
-                    ${scandalHtml}
-                    <div class="contact"><strong>聯繫方式：</strong>\n${item.contact}</div>
+                    <summary><h2>${item.name}</h2></summary>
+                    <div class="div">
+                        <p><strong>負責人：</strong>${item.HMaster}</p>
+                        <p><strong>省份：</strong>${item.province}</p>
+                        <p><strong>鄉、鎮：</strong>${item.prov}</p>
+                        <p><strong>地址：</strong>${item.addr}</p>
+                        <hr>
+                        ${scandalHtml}
+                        <div class="contact"><strong>聯繫方式：</strong>\n${item.contact}</div>
+                    </div>
                 `;
 
                 container.appendChild(card);

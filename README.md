@@ -1,4 +1,6 @@
-# NO TORSION
+# NO CONVERSION THERAPY
+
+## N·C·T
 
 [![Status](https://img.shields.io/badge/Status-Active-brightgreen)]()
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-blue.svg)]()
@@ -9,7 +11,7 @@
 
 ## 聯署簽名 (Public Signatures)
 
-我們誠邀所有支持「取代扭轉治療」的夥伴在此留下你的聲音。你可以選擇使用網路ID、筆名甚至真名。
+我們誠邀所有支持「取代扭轉治療」的夥伴在此留下你的聲音。你可以選擇使用網路ID、筆名甚至真名（真名還是算了）。
 
 ### 如何參與簽名？
 1. 點擊本倉庫右上角的 `Fork`。
@@ -34,7 +36,7 @@
 ## 表單收集
 
 如果你曾是受害者或知情者，請通過我們的網站匿名提交詳細信息。我們會根據您的表單匯總出一個地圖：
- **[填寫表單](https://notorsion.hosinoneko.me)**
+ **[填寫表單](https://NCT.hosinoneko.me)**
 
 原表單LINK:[Google From](https://forms.gle/eHwkmNCZtmZhLjzh7)
 
@@ -60,7 +62,7 @@ npm install
 
 環境變數：
 ```bash
-TITLE="NO TORSION"
+TITLE="NO CONVERSION THERAPY"
 ```
 
 *一般就填 NO TORSION就可以了，除非...你幹嘛（*
@@ -110,7 +112,7 @@ api會回傳一個get類型的JSON，以下是案例：
 
 ### API案例：機構地圖
 
-本網站其實已經是一個案例了：https://notorsion.hosinoneko.me/map
+本網站其實已經是一個案例了：https://NCT.hosinoneko.me/map
 
 當然我也鼓勵大家去自己製作：
 
@@ -183,7 +185,7 @@ api會回傳一個get類型的JSON，以下是案例：
     async function loadData() {
         try {
             // 2. 獲取數據
-            const response = await axios.get('https://notorsion.hosinoneko.me/api/map-data');//API
+            const response = await axios.get('https://no-torsion.vercel.app/api/map-data');//API
             
             const rawData = response.data;
 
