@@ -1,0 +1,49 @@
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+<h3>所有數據</h3>
+<div id="data-container" style="
+display: flex;
+flex-direction: column;
+    align-items: center;"></div>
+
+<script>
+    // 必須放在一個 async 函數中才能使用 await
+    async function loadData() {
+        try {
+            // 2. 獲取數據
+            const response = await axios.get('https://notorsion.hosinoneko.me/api/map-data');
+            
+            const rawData = response.data;
+
+            const container = document.getElementById('data-container');
+
+            // 3. 循環處理
+            rawData.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'div';
+                card.style.width = '100%'
+
+                let scandalHtml = item.scandal ? `<div class="scandal">⚠️ ${item.scandal}</div>` : '';
+
+                card.innerHTML = `
+                    <h2>${item.name}</h2>
+                    <p><strong>負責人：</strong>${item.HMaster}</p>
+                    <p><strong>省份：</strong>${item.province}</p>
+                    <p><strong>鄉、鎮：</strong>${item.prov}</p>
+                    <p><strong>地址：</strong>${item.addr}</p>
+                    <hr>
+                    ${scandalHtml}
+                    <div class="contact"><strong>聯繫方式：</strong>\n${item.contact}</div>
+                `;
+
+                container.appendChild(card);
+            });
+        } catch (error) {
+            console.error('獲取數據失敗:', error);
+            document.getElementById('data-container').innerHTML = '<p>數據加載失敗</p>';
+        }
+    }
+
+    // 執行函數
+    loadData();
+</script>

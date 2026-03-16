@@ -131,19 +131,6 @@ api會回傳一個get類型的JSON，以下是案例：
     <h1>机构综合地图</h1>
     <div id="map"></div>
     <p><a href="/">返回首页</a></p>
-    <details close>
-        <summary style="color: blue;">想要调用API？</summary>
-        我们明确表示：我们永远不会泄露受访者的任何敏感性资料。<br>
-        在调用api之前，我们要明白：HosinoNeko站长只允许自己正在使用的资料，这些资料全部会在map上显示。<br>
-        <hr>
-        我们如何实现的？<br>
-        首先你的表单会透过vercel上传到google forms，在那里会生成一个excel表格，站长在其表格的AppScript部署了应用程式，会将地址一栏转化为经纬度并保存在表格中。然后会生成一个JSON在google为其创建的api中，值得注意的是这个api因为包含着所有资讯，所以我会对其保密。本站会将其中需要的讯息传送到本站，并再次生成一个api。而这个api是允许你们存取的。<br>
-        <hr>
-        我们的看法：<br>
-        我们可太希望你们可以使用我的api并接入到你们的网站上了！因为如果中国国安局封禁了我的网站，你们还可以透过api继续在国内网路中传播。换言之这是一种去中心化。<br>
-        知道了这些，你就可以使用我们的api了！快去放在你们的网站上吧！<br>
-        <a href="https://no-torsion.vercel.app/api/map-data">https://no-torsion.vercel.app/api/map-data</a>
-    </details>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         const map = L.map('map').setView([36.06, 120.38], 6); // 預設視角
@@ -183,6 +170,56 @@ api會回傳一個get類型的JSON，以下是案例：
     </script>
 </body>
 </html>
+```
+
+你也可以將資訊全部列出來：
+
+```HTML
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<div id="data-container">
+    <h3>所有數據</h3>
+</div>
+<script>
+    async function loadData() {
+        try {
+            // 2. 獲取數據
+            const response = await axios.get('https://notorsion.hosinoneko.me/api/map-data');//API
+            
+            const rawData = response.data;
+
+            const container = document.getElementById('data-container');
+
+            // 3. 循環
+            rawData.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card';
+
+                let scandalHtml = item.scandal ? `<div class="scandal">⚠️ ${item.scandal}</div>` : '';
+
+                card.innerHTML = `
+                    <div class="div" style="width: 100%">
+                        <h2>${item.name}</h2>
+                        <p><strong>負責人：</strong>${item.HMaster}</p>
+                        <p><strong>省份：</strong>${item.province}</p>
+                        <p><strong>鄉、鎮：</strong>${item.prov}</p>
+                        <p><strong>地址：</strong>${item.addr}</p>
+                        <hr>
+                        ${scandalHtml}
+                        <div class="contact"><strong>聯繫方式：</strong>\n${item.contact}</div>
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+        } catch (error) {
+            console.error('獲取數據失敗:', error);
+            document.getElementById('data-container').innerHTML = '<p>數據加載失敗</p>';
+        }
+    }
+
+    // 執行函數
+    loadData();
+</script>
 ```
 
 就這樣沒啦！你完全不需要搞什麽複雜的伺服器編寫，只需要你寫一個html頁面，上傳到github pages就可以了！

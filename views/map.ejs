@@ -2,13 +2,22 @@
 <html>
 <head>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body > * {
+            width: 70%;
+        }
+    </style>
 </head>
 <body>
     <h1>机构综合地图</h1>
+    <h3>統計數據</h3>
     <%- include('partials/map_allnum') %>
+    <h3>地圖</h3>
+    <small>注：本地圖或許會有些許偏差</small>
     <div id="map" class="div"></div>
     <p><a href="/">返回首页</a></p>
     <%- include('partials/map_apimd') %>
+    <%- include('partials/map_list') %>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="/js/map_api.js"></script>
 </body>
