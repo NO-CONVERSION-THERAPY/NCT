@@ -10,18 +10,16 @@ schoolInput.addEventListener('input', function() {
         resultsList.style.display = 'none';
         return;
     }
-
     // 延迟 300ms 发送请求
     debounceTimer = setTimeout(() => {
-        fetch(`https://no-torsion.vercel.app/api/map-data`) // 假设这里返回了所有数据
+        fetch(window.API_URL) // 假设这里返回了所有数据
             .then(res => res.json())
             .then(data => {
                 const keyword = schoolInput.value.trim().toLowerCase();
                 
                 // 【核心逻辑】：只保留包含关键字的结果
                 const filteredData = data.filter(item => 
-                    item.name.toLowerCase().includes(keyword) || 
-                    (item.addr && item.addr.toLowerCase().includes(keyword))
+                    item.name.toLowerCase().includes(keyword) || (item.addr && item.addr.toLowerCase().includes(keyword))
                 );
 
                 renderSchools(filteredData);

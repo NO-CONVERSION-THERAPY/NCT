@@ -86,7 +86,9 @@
 
         <div class="form-group">
             <label>學校地址</label>
-            <input type="text" name="school_address" placeholder="若已知，請詳細填寫">
+            <input type="text" name="school_address" placeholder="若已知，請詳細填寫" id="addr">
+            <button onclick="openMap()" type="button">點擊可直接在地圖上選點</button>
+            <div id="map" style="display: none; width: 100%; height: 20em;"></div>
         </div>
 
         <h3>您的經歷</h3>
@@ -133,7 +135,7 @@
     </form>
 </div>
 
-<script src="/js/form_api.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
     // 性別「其他」顯示邏輯
     function toggleOtherSex() {
@@ -158,6 +160,23 @@
         }
         return true;
     };
+</script>
+<script src="/js/form_mapChoose.js"></script>
+<script>
+    function openMap(){
+        let mapStatus = document.getElementById('map');
+        if(mapStatus.style.display === 'block') {
+            mapStatus.style.display = 'none';
+            mapStatus.required=true
+        }
+        else {
+            mapStatus.style.display = 'block';
+            setTimeout(function() {
+                map.invalidateSize();
+            }, 1);
+        }
+        
+    }
 </script>
 
 </body>

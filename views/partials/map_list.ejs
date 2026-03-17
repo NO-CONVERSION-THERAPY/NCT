@@ -17,7 +17,7 @@ flex-direction: column;
     async function loadData() {
         try {
             // 2. 獲取數據
-            const response = await axios.get('/api/map-data');
+            const response = await axios.get(window.API_URL);
             
             const rawData = response.data;
 
@@ -55,4 +55,3 @@ flex-direction: column;
     // 執行函數
     loadData();
 </script>
-<script src="/js/form_api.js"></script>

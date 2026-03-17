@@ -18,12 +18,12 @@ const map = L.map('map').setView([37.5, 109], 4); // 預設視角
 const CNprov = '/cn.json'
 
 // 選用簡潔的底圖風格
-L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     minZoom: 4
 }).addTo(map);
 
 
-const apiUrl = '/api/map-data'
+const apiUrl = window.API_URL
 
 
 let provList = Array.from({ length: 40 }, () => Array(2).fill());

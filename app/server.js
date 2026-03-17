@@ -7,7 +7,11 @@ require('dotenv').config();
 const app = express();
 app.use(cors());
 
+const debugMod = process.env.DEBUG_MOD || 'false';
 const title = process.env.TITLE;
+
+let apiUrl = '/api/map-data';
+if (debugMod == 'true') apiUrl = 'https://no-torsion.vercel.app/api/map-data'
 
 // 設置 EJS
 app.set('views', path.join(__dirname, '../views'));
@@ -21,7 +25,8 @@ app.use(express.json());
 // 首頁：渲染表單
 app.get('/', (req, res) => {
   res.render('index', {
-    t:req.t
+    t:req.t,
+    apiUrl
   });
 });
 
@@ -29,14 +34,16 @@ app.get('/', (req, res) => {
 app.get('/form', (req, res) => {
   res.render('form', {
     t:req.t,
-    title:`填寫表單|${title}`
+    title:`填寫表單|${title}`,
+    apiUrl
   });
 });
 
 app.get('/map', (req,res) => {
     res.render('map', {
         t:req.t,
-        title:`地圖|${title}`
+        title:`地圖|${title}`,
+        apiUrl
     })
 })
 
@@ -52,7 +59,14 @@ app.get('/aboutus', (req,res) => {
     res.render('about',{
         t:req.t,
         title:`關於我們|${title}`,
-        friends: friendsData.friends
+        friends: friendsData.friends,
+        apiUrl
+    })
+})
+app.get('/debug', (req,res) =>{
+    res.render('debug', {
+        t:req.t,
+        apiUrl
     })
 })
 
@@ -180,9 +194,8 @@ app.get('/api/map-data', async (req, res) => {
 module.exports = app;
 
 // 本地開發監聽（Vercel 部署時會自動忽略這部分，但在本地測試很有用）
-if (process.env.NODE_ENV !== 'production') {
-    const app_port = 3000;
-    app.listen(app_port, () => {
-        console.log(`Server is running at http://localhost:${app_port}`);
-    });
-}
+const app_port = 3000;
+app.listen(app_port, () => {
+    if (debugMod == true) console.warn(`警告！你現在在調試模式`,debugMod)
+    console.log(`Server is running at http://localhost:${app_port}`);
+});
