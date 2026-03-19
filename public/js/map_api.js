@@ -32,6 +32,7 @@ fetch(apiUrl)
         const data = jsonResponse.data;
         const statistics = jsonResponse.statistics;
         const avg_age = jsonResponse.avg_age;
+        console.log(jsonResponse.statistics.last_synced)
 
         const provinceMap = {};
 

@@ -177,7 +177,7 @@ app.get('/api/map-data', async (req, res) => {
         const finalResponse = {
             statistics: {
                 ...statistics, // 保留 GAS 傳來的統計
-                clean_count: cleanData.length, // 額外紀錄清洗後剩幾筆
+                avg_age:response.data.avg_age,
                 last_synced: new Date().toISOString()
             },
             data: cleanData
