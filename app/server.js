@@ -177,11 +177,9 @@ app.get('/api/map-data', async (req, res) => {
 
         // --- 組合最終結果 ---
         const finalResponse = {
-            statistics: {
-                avg_age:response.data.avg_age,
-                ...statistics, // 保留 GAS 傳來的統計
-                last_synced: response.data.LastSynced
-            },
+            avg_age:response.data.avg_age,
+            last_synced: response.data.LastSynced,
+            statistics: statistics,
             data: cleanData
         };
 
