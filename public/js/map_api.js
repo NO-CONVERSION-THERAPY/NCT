@@ -10,6 +10,55 @@ function getColor(d) {
 }
 
 
+function normalizeSearchText(value) {
+    return String(value || '').trim().toLowerCase().replace(/\s+/g, '');
+}
+
+function getSearchTokens(searchText) {
+    return String(searchText || '')
+        .trim()
+        .toLowerCase()
+        .split(/\s+/)
+        .map((token) => normalizeSearchText(token))
+        .filter(Boolean);
+}
+
+function matchesInputType(item, expectedInputType) {
+    if (!expectedInputType) return true;
+    if (expectedInputType === '批量数据') return !item.inputType;
+    return item.inputType === expectedInputType;
+}
+
+function matchesSearch(item, searchText) {
+    const searchTokens = getSearchTokens(searchText);
+    if (searchTokens.length === 0) return true;
+
+    const searchableFields = [
+        item.name,
+        item.experience,
+        item.HMaster,
+        item.province,
+        item.prov,
+        item.addr,
+        item.scandal,
+        item.contact,
+        item.else,
+        item.inputType
+    ];
+
+    const searchableText = searchableFields.map((field) => normalizeSearchText(field)).join(' ');
+    return searchTokens.every((token) => searchableText.includes(token));
+}
+
+function escapeHtml(value) {
+    return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 //const categories = []; // 存放省份名
 //const selfData = [];   // 存放本人填写数
 //const agentData = [];  // 存放代理人填写数
@@ -84,7 +133,7 @@ fetch(apiUrl)
         const lastSyncedTime = jsonResponse.last_synced;
         function timeUpdate() {
             const elapsed = Math.floor((Date.now() - lastSyncedTime) / 1000);
-            let updButton = (elapsed > 300000) ? '，<button onclick="window.location.reload();">刷新</button>' : ''
+            let updButton = (elapsed > 300000) ? '，<a href="">刷新</a>' : ''
             document.getElementById('lastSynced').innerHTML = `<b>${elapsed}</b> 秒前${updButton}`;
         }
         setInterval(timeUpdate, 1000);
@@ -114,19 +163,15 @@ fetch(apiUrl)
         
         const queryString = window.location.search;
         const urlParams = new URLSearchParams(queryString);
-        const inputType = urlParams.get('inputType')//找筛选条件
+        const inputType = urlParams.get('inputType');// 找筛选条件
+        const inputSearch = (urlParams.get('search') || '').trim();
+        const filteredData = data.filter((item) => matchesInputType(item, inputType) && matchesSearch(item, inputSearch));
 
-        data.forEach(item => {
-            
-            if(item.inputType != inputType && inputType) {
-                if(inputType == "批量数据" && item.inputType) return;
-                else if(inputType !="批量数据") return
-            }
-
+        filteredData.forEach(item => {
             const marker = L.marker([item.lat, item.lng]).addTo(map);
 
             // 1. 鼠標指到圖標：顯示標題 (Tooltip)
-            marker.bindTooltip(`<strong>${item.name}</strong>`, { 
+            marker.bindTooltip(`<strong>${escapeHtml(item.name)}</strong>`, {
                 sticky: true, 
                 direction: 'top' 
             });
@@ -134,10 +179,10 @@ fetch(apiUrl)
             // 2. 點擊：顯示所有詳細資訊 (Popup)
             const popupContent = `
                 <div class="custom-popup">
-                    <b>${item.name}</b><br>
-                    <small>${item.prov}</small>
-                    <p>${item.HMaster}</p><hr>
-                    <address>${item.addr}</address>
+                    <b>${escapeHtml(item.name)}</b><br>
+                    <small>${escapeHtml(item.prov)}</small>
+                    <p>${escapeHtml(item.HMaster)}</p><hr>
+                    <address>${escapeHtml(item.addr)}</address>
                     <a href="#${item.name}">查看详细信息</a>
                 </div>
             `;

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title><%= title %></title>
+        <link rel="stylesheet" href="/css/main.css">
+        <style>
+            body {
+                padding: 2rem 1rem 4rem;
+            }
+            .preview-container {
+                max-width: 960px;
+                margin: 0 auto;
+            }
+            .preview-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 1.5rem;
+                background: #fff;
+            }
+            .preview-table th,
+            .preview-table td {
+                border: 1px solid #ddd;
+                padding: 0.75rem;
+                text-align: left;
+                vertical-align: top;
+            }
+            .preview-table th {
+                background: #f5f5f5;
+            }
+            pre {
+                white-space: pre-wrap;
+                word-break: break-all;
+                background: #111;
+                color: #f5f5f5;
+                padding: 1rem;
+                border-radius: 8px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="preview-container">
+            <h1>表單乾跑預覽</h1>
+            <p>這次提交沒有發送到 Google Form。下面是本次本地組裝出的最終欄位和值。</p>
+            <p><strong>目標網址：</strong> <code><%= googleFormUrl %></code></p>
+            <table class="preview-table">
+                <thead>
+                    <tr>
+                        <th>Google Form Entry</th>
+                        <th>欄位</th>
+                        <th>值</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% fields.forEach((field) => { %>
+                        <tr>
+                            <td><code><%= field.entryId %></code></td>
+                            <td><%= field.label %></td>
+                            <td><%= field.value %></td>
+                        </tr>
+                    <% }); %>
+                </tbody>
+            </table>
+
+            <h2>URL Encoded Payload</h2>
+            <pre><%= encodedPayload %></pre>
+
+            <p><a href="/form">返回表單</a></p>
+        </div>
+    </body>
+</html>
