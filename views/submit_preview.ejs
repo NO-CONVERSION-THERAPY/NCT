@@ -1,10 +1,14 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="<%= lang %>">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title><%= title %></title>
         <link rel="stylesheet" href="/css/main.css">
+        <script>
+            window.APP_LANG = "<%= lang %>";
+            window.I18N = <%- JSON.stringify(clientMessages) %>;
+        </script>
         <style>
             body {
                 padding: 2rem 1rem 4rem;
@@ -40,16 +44,17 @@
         </style>
     </head>
     <body>
+        <%- include('partials/language_switcher') %>
         <div class="preview-container">
-            <h1>表單乾跑預覽</h1>
-            <p>這次提交沒有發送到 Google Form。下面是本次本地組裝出的最終欄位和值。</p>
-            <p><strong>目標網址：</strong> <code><%= googleFormUrl %></code></p>
+            <h1><%= t('submitPreview.title') %></h1>
+            <p><%= t('submitPreview.intro') %></p>
+            <p><strong><%= t('submitPreview.targetUrl') %></strong> <code><%= googleFormUrl %></code></p>
             <table class="preview-table">
                 <thead>
                     <tr>
-                        <th>Google Form Entry</th>
-                        <th>欄位</th>
-                        <th>值</th>
+                        <th><%= t('submitPreview.columns.entry') %></th>
+                        <th><%= t('submitPreview.columns.field') %></th>
+                        <th><%= t('submitPreview.columns.value') %></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -63,10 +68,11 @@
                 </tbody>
             </table>
 
-            <h2>URL Encoded Payload</h2>
+            <h2><%= t('submitPreview.payload') %></h2>
             <pre><%= encodedPayload %></pre>
 
-            <p><a href="/form">返回表單</a></p>
+            <p><a href="/form"><%= t('submitPreview.backForm') %></a></p>
         </div>
+        <%- include('partials/foot') %>
     </body>
 </html>

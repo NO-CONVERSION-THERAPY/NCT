@@ -2,14 +2,15 @@
 
 
 <div class="form-group" style="display: flex; flex-direction: column; align-items: center;">
-    <input type="text" name="search" id="mapSearchInput" placeholder="检索学校名、负责人、省份、地址、丑闻、联系方式等">
-    <button id="mapSearchButton" type="button">检索</button>
+    <input type="text" name="search" id="mapSearchInput" placeholder="<%= t('map.list.searchPlaceholder') %>">
+    <button id="mapSearchButton" type="button"><%= t('map.list.searchButton') %></button>
 </div>
 
 
 <div id="data-container" style="display: flex; flex-direction: column;align-items: center;"></div>
 
 <script>
+    const i18n = window.I18N;
     const urlParams = new URLSearchParams(window.location.search);
     const inputType = urlParams.get('inputType');
     const inputSearch = (urlParams.get('search') || '').trim();
@@ -20,6 +21,30 @@
 
     function normalizeSearchText(value) {
         return String(value || '').trim().toLowerCase().replace(/\s+/g, '');
+    }
+
+    function getInputTypeDisplay(value) {
+        if (!value) {
+            return i18n.data.inputTypes.bulk;
+        }
+
+        if (value === '受害者本人') {
+            return i18n.data.inputTypes.self;
+        }
+
+        if (value === '受害者的代理人') {
+            return i18n.data.inputTypes.agent;
+        }
+
+        if (value === '批量数据') {
+            return i18n.data.inputTypes.bulk;
+        }
+
+        return value;
+    }
+
+    function getProvinceDisplay(value) {
+        return i18n.data.provinceNames[value] || value || '';
     }
 
     function getSearchTokens(searchText) {
@@ -46,12 +71,14 @@
             item.experience,
             item.HMaster,
             item.province,
+            getProvinceDisplay(item.province),
             item.prov,
             item.addr,
             item.scandal,
             item.contact,
             item.else,
-            item.inputType
+            item.inputType,
+            getInputTypeDisplay(item.inputType)
         ];
 
         const searchableText = searchableFields.map((field) => normalizeSearchText(field)).join(' ');
@@ -102,7 +129,7 @@
             dataContainer.innerHTML = '';
 
             if (filteredData.length === 0) {
-                dataContainer.innerHTML = '<p>沒有符合檢索條件的結果</p>';
+                dataContainer.innerHTML = `<p>${escapeHtml(i18n.map.list.noResults)}</p>`;
                 return;
             }
 
@@ -112,24 +139,25 @@
                 card.id = `${item.name}`;
                 card.style.width = '100%';
 
-                const scandalHtml = item.scandal ? `<div><strong>学校丑闻：</strong> ${escapeHtml(item.scandal)}</div>` : '';
-                const experienceHtml = item.experience ? `<div><strong>受害者经历：</strong> ${escapeHtml(item.experience)}</div>` : '';
-                const elseHtml = item.else ? `<div><strong>其他：</strong> ${escapeHtml(item.else)}</div>` : '';
+                const scandalHtml = item.scandal ? `<div><strong>${escapeHtml(i18n.map.list.fields.scandal)}</strong> ${escapeHtml(item.scandal)}</div>` : '';
+                const experienceHtml = item.experience ? `<div><strong>${escapeHtml(i18n.map.list.fields.experience)}</strong> ${escapeHtml(item.experience)}</div>` : '';
+                const elseHtml = item.else ? `<div><strong>${escapeHtml(i18n.map.list.fields.other)}</strong> ${escapeHtml(item.else)}</div>` : '';
                 const inputHtml = item.inputType ? item.inputType : '批量数据';
                 const inputHref = buildFilterLink(inputHtml);
+                const inputDisplay = getInputTypeDisplay(inputHtml);
 
                 card.innerHTML = `
-                    <summary><h2>${escapeHtml(item.name)}</h2><br><small style="margin-left: auto;"><a href="${inputHref}">${escapeHtml(inputHtml)}</a></small></summary>
+                    <summary><h2>${escapeHtml(item.name)}</h2><br><small style="margin-left: auto;"><a href="${inputHref}">${escapeHtml(inputDisplay)}</a></small></summary>
                     <div class="div">
-                        <p><strong>負責人：</strong>${escapeHtml(item.HMaster)}</p>
-                        <p><strong>省份：</strong>${escapeHtml(item.province)}</p>
-                        <p><strong>鄉、鎮：</strong>${escapeHtml(item.prov)}</p>
-                        <p><strong>地址：</strong>${escapeHtml(item.addr)}</p>
+                        <p><strong>${escapeHtml(i18n.map.list.fields.headmaster)}</strong>${escapeHtml(item.HMaster)}</p>
+                        <p><strong>${escapeHtml(i18n.map.list.fields.province)}</strong>${escapeHtml(getProvinceDisplay(item.province))}</p>
+                        <p><strong>${escapeHtml(i18n.map.list.fields.region)}</strong>${escapeHtml(item.prov)}</p>
+                        <p><strong>${escapeHtml(i18n.map.list.fields.address)}</strong>${escapeHtml(item.addr)}</p>
                         <hr>
                         ${experienceHtml}
                         ${scandalHtml}
                         ${elseHtml}
-                        <div class="contact"><strong>聯繫方式：</strong>\n${escapeHtml(item.contact)}</div>
+                        <div class="contact"><strong>${escapeHtml(i18n.map.list.fields.contact)}</strong>\n${escapeHtml(item.contact)}</div>
                     </div>
                 `;
 
@@ -137,7 +165,7 @@
             });
         } catch (error) {
             console.error('獲取數據失敗:', error);
-            document.getElementById('data-container').innerHTML = '<p>數據加載失敗</p>';
+            document.getElementById('data-container').innerHTML = `<p>${escapeHtml(i18n.map.list.loadFailed)}</p>`;
         }
     }
 

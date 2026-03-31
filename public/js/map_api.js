@@ -9,9 +9,16 @@ function getColor(d) {
                       '#FFEDA0';
 }
 
+const i18n = window.I18N;
 
 function normalizeSearchText(value) {
     return String(value || '').trim().toLowerCase().replace(/\s+/g, '');
+}
+
+function formatMessage(template, values) {
+    return Object.entries(values).reduce((result, [key, value]) => {
+        return result.replaceAll(`{${key}}`, value);
+    }, template);
 }
 
 function getSearchTokens(searchText) {
@@ -38,16 +45,38 @@ function matchesSearch(item, searchText) {
         item.experience,
         item.HMaster,
         item.province,
+        getProvinceDisplay(item.province),
         item.prov,
         item.addr,
         item.scandal,
         item.contact,
         item.else,
-        item.inputType
+        item.inputType,
+        getInputTypeDisplay(item.inputType)
     ];
 
     const searchableText = searchableFields.map((field) => normalizeSearchText(field)).join(' ');
     return searchTokens.every((token) => searchableText.includes(token));
+}
+
+function getInputTypeDisplay(value) {
+    if (!value || value === '批量数据') {
+        return i18n.data.inputTypes.bulk;
+    }
+
+    if (value === '受害者本人') {
+        return i18n.data.inputTypes.self;
+    }
+
+    if (value === '受害者的代理人') {
+        return i18n.data.inputTypes.agent;
+    }
+
+    return value;
+}
+
+function getProvinceDisplay(value) {
+    return i18n.data.provinceNames[value] || value || '';
 }
 
 function escapeHtml(value) {
@@ -114,7 +143,7 @@ fetch(apiUrl)
         new Chart(document.getElementById('prov'), {
             type: 'pie',
             data: {
-                labels: statistics.map(item => item.province),
+                labels: statistics.map(item => getProvinceDisplay(item.province)),
                 datasets:[{
                     data: statistics.map(item => item.count),
                     backgroundColor: [
@@ -133,12 +162,15 @@ fetch(apiUrl)
         const lastSyncedTime = jsonResponse.last_synced;
         function timeUpdate() {
             const elapsed = Math.floor((Date.now() - lastSyncedTime) / 1000);
-            let updButton = (elapsed > 300000) ? '，<a href="">刷新</a>' : ''
-            document.getElementById('lastSynced').innerHTML = `<b>${elapsed}</b> 秒前${updButton}`;
+            const refreshLink = elapsed > 300000 ? `, <a href="">${escapeHtml(i18n.map.stats.refresh)}</a>` : '';
+            document.getElementById('lastSynced').innerHTML = `<b>${escapeHtml(formatMessage(i18n.map.stats.secondsAgo, { seconds: elapsed }))}</b>${refreshLink}`;
         }
         setInterval(timeUpdate, 1000);
+        timeUpdate();
         
-        document.getElementById('avgAge').innerHTML = `${jsonResponse.avg_age.toFixed(2)}岁`;
+        document.getElementById('avgAge').textContent = formatMessage(i18n.map.stats.ageValue, {
+            age: jsonResponse.avg_age.toFixed(2)
+        });
     
 
         let count_num0 = 0;
@@ -152,7 +184,11 @@ fetch(apiUrl)
         new Chart(document.getElementById('updatedForm'), {
         type: 'pie',
             data: {
-                labels: ['受害者本人', '受害者的代理人', '批量数据'],
+                labels: [
+                    i18n.map.tags.self,
+                    i18n.map.tags.agent,
+                    i18n.map.tags.bulk
+                ],
                 datasets: [{
                     data: [count_num0, count_num1, count_num2],
                     backgroundColor: ['#ff6384','#36a2eb','#ffce56']
@@ -183,7 +219,7 @@ fetch(apiUrl)
                     <small>${escapeHtml(item.prov)}</small>
                     <p>${escapeHtml(item.HMaster)}</p><hr>
                     <address>${escapeHtml(item.addr)}</address>
-                    <a href="#${item.name}">查看详细信息</a>
+                    <a href="#${item.name}">${escapeHtml(i18n.map.list.viewDetails)}</a>
                 </div>
             `;
             marker.bindPopup(popupContent);

@@ -1,10 +1,11 @@
 <%- include('partials/head') %>
 <html>
 <body>
-    <h1>關於我們</h1>
+    <%- include('partials/language_switcher') %>
+    <h1><%= t('about.title') %></h1>
     <p><%- include('partials/about_text') %></p>
     <p><%- include('partials/about_frend') %></p>
-    <p><a href="/">返回首页</a></p>
+    <p><a href="/"><%= t('navigation.home') %></a></p>
 
     <%- include('partials/foot') %>
 </body>

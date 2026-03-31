@@ -6,13 +6,13 @@ function createApiRoutes({ googleScriptUrl }) {
   const router = express.Router();
 
   // 对外公开的地图数据接口。
-  router.get('/api/map-data', async (_req, res) => {
+  router.get('/api/map-data', async (req, res) => {
     try {
       const mapData = await getMapData(googleScriptUrl);
       return res.json(mapData);
     } catch (error) {
       console.error('API Error:', error.message);
-      return res.status(500).json({ error: '無法取得地圖數據' });
+      return res.status(500).json({ error: req.t('server.mapDataUnavailable') });
     }
   });
 

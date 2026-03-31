@@ -1,6 +1,7 @@
 (() => {
     let currentMarker = null;
     let formMap = null;
+    const i18n = window.I18N;
     const openMapButton = document.getElementById('openMapButton');
 
     function ensureFormMap() {
@@ -34,7 +35,11 @@
             }
 
             currentMarker = L.marker([lat, lng]).addTo(formMap)
-                .bindPopup(`選取點: ${lat}, ${lng}`)
+                .bindPopup(
+                    i18n.form.hints.selectedPoint
+                        .replace('{lat}', lat)
+                        .replace('{lng}', lng)
+                )
                 .openPopup();
         });
 
