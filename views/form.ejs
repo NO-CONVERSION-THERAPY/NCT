@@ -10,17 +10,17 @@
         
         <div class="form-group">
             <label class="required">請問您是作爲什麽身份來填寫本表單？</label>
-            <select name="identity" required>
+            <select name="identity" id="identitySelect" required>
                 <option value="受害者本人">受害者本人</option>
                 <option value="受害者的代理人">受害者的代理人</option>
             </select>
             <label class="required">年齡</label>
-            <input type="number" name="age" min="1" max="100" placeholder="請輸入年齡" required>
+            <input type="number" name="age" id="ageInput" min="<%= formRules.age.min %>" max="<%= formRules.age.max %>" step="1" placeholder="請輸入年齡" required>
         </div>
 
         <div class="form-group">
             <label class="required">性別</label>
-            <select name="sex" id="sexSelect" required onchange="toggleOtherSex()">
+            <select name="sex" id="sexSelect" required>
                 <option value="" disabled selected>請選擇</option>
                 <option value="男">男</option>
                 <option value="女">女</option>
@@ -28,66 +28,40 @@
                 <option value="FtM">FtM</option>
                 <option value="__other_option__">其他</option>
             </select>
-            <input type="text" id="otherSexInput" name="sex_other" class="other-input" placeholder="請註明您的性別">
+            <input type="text" id="otherSexInput" name="sex_other" class="other-input" placeholder="請註明您的性別" maxlength="<%= formRules.sexOther.maxLength %>" hidden>
         </div>
 
         <div class="form-group">
             <label class="required">省份</label>
-            <select name="province" required>
-                <option value="" disabled selected>選擇省份</option>
-                <option value="山東">山東</option>
-                <option value="河南">河南</option>
-                <option value="河北">河北</option>
-                <option value="山西">山西</option>
-                <option value="遼寧">遼寧</option>
-                <option value="吉林">吉林</option>
-                <option value="黑龍江">黑龍江</option>
-                <option value="江蘇">江蘇</option>
-                <option value="浙江">浙江</option>
-                <option value="安徽">安徽</option>
-                <option value="福建">福建</option>
-                <option value="江西">江西</option>
-                <option value="湖北">湖北</option>
-                <option value="湖南">湖南</option>
-                <option value="廣東">廣東</option>
-                <option value="海南">海南</option>
-                <option value="四川">四川</option>
-                <option value="貴州">貴州</option>
-                <option value="雲南">雲南</option>
-                <option value="陝西">陝西</option>
-                <option value="甘肅">甘肅</option>
-                <option value="青海">青海</option>
-                <option value="內蒙古">內蒙古</option>
-                <option value="廣西">廣西</option>
-                <option value="西藏">西藏</option>
-                <option value="寧夏">寧夏</option>
-                <option value="新疆">新疆</option>
-                <option value="北京">北京</option>
-                <option value="天津">天津</option>
-                <option value="上海">上海</option>
-                <option value="重慶">重慶</option>
-                <option value="香港">香港</option>
-                <option value="澳門">澳門</option>
-                <option value="臺灣（ROC）">臺灣</option>
-                <option value="海外">海外</option>
+            <select name="provinceCode" id="provinceSelect" required>
+                <option value="" selected>選擇省份</option>
             </select>
         </div>
 
         <div class="form-group">
-            <label class="required">區、縣</label>
-            <input type="text" name="city" placeholder="例如：濰坊市" required>
+            <label class="required">城市 / 區縣</label>
+            <select name="cityCode" id="citySelect" required disabled>
+                <option value="" selected>請先選擇省份</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>縣區（可選）</label>
+            <select name="countyCode" id="countySelect" disabled>
+                <option value="" selected>可選：請先選擇城市 / 區縣</option>
+            </select>
         </div>
 
         <div class="form-group">
             <label class="required">學校名稱</label>
-            <input type="text" name="school_name" id="school_input" placeholder="請填寫完整名稱" required>
+            <input type="text" name="school_name" id="school_input" placeholder="請填寫完整名稱" maxlength="<%= formRules.schoolName.maxLength %>" required>
             <div id="results_list"></div>
         </div>
 
         <div class="form-group">
             <label>學校地址</label>
-            <input type="text" name="school_address" placeholder="若已知，請詳細填寫" id="addr">
-            <button onclick="openMap()" type="button">點擊可直接在地圖上選點</button>
+            <input type="text" name="school_address" placeholder="若已知，請詳細填寫" id="addr" maxlength="<%= formRules.schoolAddress.maxLength %>">
+            <button id="openMapButton" type="button">點擊可直接在地圖上選點</button>
             <div id="map" style="display: none; width: 100%; height: 20em;"></div>
         </div>
 
@@ -106,29 +80,29 @@
 
         <div class="form-group">
             <label>經歷描述</label>
-            <textarea name="experience" rows="4" placeholder="請描述您在該校的日常生活、管理方式等..."></textarea>
+            <textarea name="experience" id="experienceInput" rows="4" placeholder="請描述您在該校的日常生活、管理方式等..." maxlength="<%= formRules.experience.maxLength %>"></textarea>
         </div>
 
         <h3>曝光資訊</h3>
 
         <div class="form-group">
             <label>負責人/校長姓名</label>
-            <input type="text" name="headmaster_name" placeholder="姓名">
+            <input type="text" name="headmaster_name" placeholder="姓名" maxlength="<%= formRules.headmasterName.maxLength %>">
         </div>
 
         <div class="form-group">
             <label class="required">學校聯繫方式</label>
-            <input type="text" rows="3" name="contact_information" placeholder="電話、郵箱或地址" required>
+            <input type="text" rows="3" id="contactInformationInput" name="contact_information" placeholder="電話、郵箱或地址" maxlength="<%= formRules.contactInformation.maxLength %>" required>
         </div>
 
         <div class="form-group">
             <label>已知醜聞</label>
-            <textarea name="scandal" rows="3" placeholder="如體罰、非法拘禁、虛假宣傳等內容..."></textarea>
+            <textarea name="scandal" rows="3" placeholder="如體罰、非法拘禁、虛假宣傳等內容..." maxlength="<%= formRules.scandal.maxLength %>"></textarea>
         </div>
 
         <div class="form-group">
             <label>其他補充</label>
-            <input type="text" rows="3" name="other" placeholder="任何您想補充的信息">
+            <input type="text" rows="3" name="other" placeholder="任何您想補充的信息" maxlength="<%= formRules.other.maxLength %>">
         </div>
 
         <button type="submit">確認並提交信息</button>
@@ -137,47 +111,112 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+    window.AREA_SELECTOR_DATA = <%- JSON.stringify(areaOptions) %>;
+    window.FORM_RULES = <%- JSON.stringify(formRules) %>;
+</script>
+<script src="/js/form_areaSelect.js"></script>
+<script>
     // 性別「其他」顯示邏輯
+    const formRules = window.FORM_RULES;
+    const mainForm = document.getElementById('mainForm');
+    const identitySelect = document.getElementById('identitySelect');
+    const ageInput = document.getElementById('ageInput');
+    const sexSelect = document.getElementById('sexSelect');
+    const otherSexInput = document.getElementById('otherSexInput');
+    const provinceSelect = document.getElementById('provinceSelect');
+    const citySelect = document.getElementById('citySelect');
+    const countySelect = document.getElementById('countySelect');
+    const schoolNameInput = document.getElementById('school_input');
+    const dateStartInput = document.getElementById('date_start');
+    const dateEndInput = document.getElementById('date_end');
+    const contactInformationInput = document.getElementById('contactInformationInput');
+
+    function clearValidity(input) {
+        input.setCustomValidity('');
+    }
+
+    function bindRequiredMessage(input, message) {
+        input.addEventListener('invalid', () => {
+            if (input.validity.valueMissing) {
+                input.setCustomValidity(message);
+            } else {
+                input.setCustomValidity('');
+            }
+        });
+        input.addEventListener('input', () => clearValidity(input));
+        input.addEventListener('change', () => clearValidity(input));
+    }
+
     function toggleOtherSex() {
-        const select = document.getElementById('sexSelect');
-        const otherInput = document.getElementById('otherSexInput');
-        if (select.value === '__other_option__') {
-            otherInput.style.display = 'block';
-            otherInput.required = true;
-        } else {
-            otherInput.style.display = 'none';
-            otherInput.required = false;
+        const showOtherInput = sexSelect.value === '__other_option__';
+        otherSexInput.hidden = !showOtherInput;
+        otherSexInput.required = showOtherInput;
+        clearValidity(otherSexInput);
+
+        if (!showOtherInput) {
+            otherSexInput.value = '';
         }
     }
 
-    // 簡單的日期邏輯校驗
-    document.getElementById('mainForm').onsubmit = function(e) {
-        const start = document.getElementById('date_start').value;
-        const end = document.getElementById('date_end').value;
-        if (end && start && new Date(end) < new Date(start)) {
-            alert('離開日期不能早於入學日期');
-            return false;
+    function validateCrossFields() {
+        clearValidity(otherSexInput);
+        clearValidity(dateEndInput);
+
+        if (sexSelect.value === '__other_option__' && !otherSexInput.value.trim()) {
+            otherSexInput.setCustomValidity('請註明您的性別');
         }
-        return true;
-    };
+
+        const start = dateStartInput.value;
+        const end = dateEndInput.value;
+        if (end && start && new Date(end) < new Date(start)) {
+            dateEndInput.setCustomValidity('離開日期不能早於入學日期');
+        }
+    }
+
+    bindRequiredMessage(identitySelect, '請選擇填寫身份');
+    bindRequiredMessage(sexSelect, '請選擇性別');
+    bindRequiredMessage(provinceSelect, '請選擇省份');
+    bindRequiredMessage(citySelect, '請選擇城市 / 區縣');
+    bindRequiredMessage(schoolNameInput, '請填寫學校名稱');
+    bindRequiredMessage(dateStartInput, '請填寫入學日期');
+    bindRequiredMessage(contactInformationInput, '請填寫學校聯繫方式');
+    bindRequiredMessage(otherSexInput, '請註明您的性別');
+
+    ageInput.addEventListener('invalid', () => {
+        if (ageInput.validity.valueMissing) {
+            ageInput.setCustomValidity('請填寫年齡');
+        } else if (
+            ageInput.validity.badInput
+            || ageInput.validity.rangeOverflow
+            || ageInput.validity.rangeUnderflow
+            || ageInput.validity.stepMismatch
+        ) {
+            ageInput.setCustomValidity(`年齡必須是 ${formRules.age.min} 到 ${formRules.age.max} 的整數`);
+        } else {
+            ageInput.setCustomValidity('');
+        }
+    });
+    ageInput.addEventListener('input', () => clearValidity(ageInput));
+    ageInput.addEventListener('change', () => clearValidity(ageInput));
+    citySelect.addEventListener('change', () => clearValidity(countySelect));
+
+    sexSelect.addEventListener('change', toggleOtherSex);
+    sexSelect.addEventListener('change', validateCrossFields);
+    otherSexInput.addEventListener('input', validateCrossFields);
+    dateStartInput.addEventListener('change', validateCrossFields);
+    dateEndInput.addEventListener('change', validateCrossFields);
+    toggleOtherSex();
+    validateCrossFields();
+
+    mainForm.addEventListener('submit', function(e) {
+        validateCrossFields();
+        if (!mainForm.checkValidity()) {
+            e.preventDefault();
+            mainForm.reportValidity();
+        }
+    });
 </script>
 <script src="/js/form_mapChoose.js"></script>
-<script>
-    function openMap(){
-        let mapStatus = document.getElementById('map');
-        if(mapStatus.style.display === 'block') {
-            mapStatus.style.display = 'none';
-            mapStatus.required=true
-        }
-        else {
-            mapStatus.style.display = 'block';
-            setTimeout(function() {
-                map.invalidateSize();
-            }, 1);
-        }
-        
-    }
-</script>
 <%- include('partials/foot') %>
 </body>
 </html>

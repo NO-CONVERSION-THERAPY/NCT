@@ -2,63 +2,138 @@
 
 
 <div class="form-group" style="display: flex; flex-direction: column; align-items: center;">
-    <input type="text" name="school_name" id="school_input" placeholder="检索" onkeydown="if(event.key==='Enter') queryUpd('search',this.value)" required>
-    <div id="results_list"></div>
-    <button onclick="queryUpd('search',document.getElementById('school_input').value)">检索</button>
+    <input type="text" name="search" id="mapSearchInput" placeholder="检索学校名、负责人、省份、地址、丑闻、联系方式等">
+    <button id="mapSearchButton" type="button">检索</button>
 </div>
 
 
 <div id="data-container" style="display: flex; flex-direction: column;align-items: center;"></div>
 
 <script>
-    
-
     const urlParams = new URLSearchParams(window.location.search);
-    const inputType = urlParams.get('inputType')
-    const inputSearch = urlParams.get('search')
-    
+    const inputType = urlParams.get('inputType');
+    const inputSearch = (urlParams.get('search') || '').trim();
+    const mapSearchInput = document.getElementById('mapSearchInput');
+    const dataContainer = document.getElementById('data-container');
+
+    mapSearchInput.value = inputSearch;
+
+    function normalizeSearchText(value) {
+        return String(value || '').trim().toLowerCase().replace(/\s+/g, '');
+    }
+
+    function getSearchTokens(searchText) {
+        return String(searchText || '')
+            .trim()
+            .toLowerCase()
+            .split(/\s+/)
+            .map((token) => normalizeSearchText(token))
+            .filter(Boolean);
+    }
+
+    function matchesInputType(item, expectedInputType) {
+        if (!expectedInputType) return true;
+        if (expectedInputType === '批量数据') return !item.inputType;
+        return item.inputType === expectedInputType;
+    }
+
+    function matchesSearch(item, searchText) {
+        const searchTokens = getSearchTokens(searchText);
+        if (searchTokens.length === 0) return true;
+
+        const searchableFields = [
+            item.name,
+            item.experience,
+            item.HMaster,
+            item.province,
+            item.prov,
+            item.addr,
+            item.scandal,
+            item.contact,
+            item.else,
+            item.inputType
+        ];
+
+        const searchableText = searchableFields.map((field) => normalizeSearchText(field)).join(' ');
+        return searchTokens.every((token) => searchableText.includes(token));
+    }
+
+    function escapeHtml(value) {
+        return String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function buildFilterLink(nextInputType) {
+        const nextParams = new URLSearchParams(window.location.search);
+
+        if (nextInputType) {
+            nextParams.set('inputType', nextInputType);
+        } else {
+            nextParams.delete('inputType');
+        }
+
+        const query = nextParams.toString();
+        return query ? `?${query}` : window.location.pathname;
+    }
+
+    function triggerMapSearch() {
+        queryUpd('search', mapSearchInput.value);
+    }
+
+    mapSearchInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            triggerMapSearch();
+        }
+    });
+
+    document.getElementById('mapSearchButton').addEventListener('click', triggerMapSearch);
+
     async function loadData() {
         try {
-            // 2. 獲取數據
             const response = await axios.get(window.API_URL);
-            
             const rawData = response.data.data;
+            const filteredData = rawData.filter((item) => matchesInputType(item, inputType) && matchesSearch(item, inputSearch));
 
-            const container = document.getElementById('data-container');
+            dataContainer.innerHTML = '';
 
-            // 3. 循環處理
-            rawData.forEach(item => {
-                if(item.inputType != inputType && inputType) {
-                    if(inputType == "批量数据" && item.inputType) return;
-                    else if(inputType !="批量数据") return;
-                }
+            if (filteredData.length === 0) {
+                dataContainer.innerHTML = '<p>沒有符合檢索條件的結果</p>';
+                return;
+            }
 
+            filteredData.forEach(item => {
                 const card = document.createElement('details');
                 card.className = 'div';
                 card.id = `${item.name}`;
-                card.style.width = '100%'
+                card.style.width = '100%';
 
-                let scandalHtml = item.scandal ? `<div><strong>学校丑闻：</strong> ${item.scandal}</div>` : '';
-                let experienceHtml = item.experience ? `<div><strong>受害者经历：</strong> ${item.experience}</div>` : '';
-                let elseHtml = item.else ? `<div><strong>其他：</strong> ${item.else}</div>` : '';
-                let inputHtml = item.inputType ? item.inputType : '批量数据'
+                const scandalHtml = item.scandal ? `<div><strong>学校丑闻：</strong> ${escapeHtml(item.scandal)}</div>` : '';
+                const experienceHtml = item.experience ? `<div><strong>受害者经历：</strong> ${escapeHtml(item.experience)}</div>` : '';
+                const elseHtml = item.else ? `<div><strong>其他：</strong> ${escapeHtml(item.else)}</div>` : '';
+                const inputHtml = item.inputType ? item.inputType : '批量数据';
+                const inputHref = buildFilterLink(inputHtml);
 
                 card.innerHTML = `
-                    <summary><h2>${item.name}</h2><br><small style="margin-left: auto;"><a href="?inputType=${inputHtml}">${inputHtml}</a></small></summary>
+                    <summary><h2>${escapeHtml(item.name)}</h2><br><small style="margin-left: auto;"><a href="${inputHref}">${escapeHtml(inputHtml)}</a></small></summary>
                     <div class="div">
-                        <p><strong>負責人：</strong>${item.HMaster}</p>
-                        <p><strong>省份：</strong>${item.province}</p>
-                        <p><strong>鄉、鎮：</strong>${item.prov}</p>
-                        <p><strong>地址：</strong>${item.addr}</p>
+                        <p><strong>負責人：</strong>${escapeHtml(item.HMaster)}</p>
+                        <p><strong>省份：</strong>${escapeHtml(item.province)}</p>
+                        <p><strong>鄉、鎮：</strong>${escapeHtml(item.prov)}</p>
+                        <p><strong>地址：</strong>${escapeHtml(item.addr)}</p>
                         <hr>
                         ${experienceHtml}
                         ${scandalHtml}
                         ${elseHtml}
-                        <div class="contact"><strong>聯繫方式：</strong>\n${item.contact}</div>
+                        <div class="contact"><strong>聯繫方式：</strong>\n${escapeHtml(item.contact)}</div>
                     </div>
                 `;
 
-                container.appendChild(card);
+                dataContainer.appendChild(card);
             });
         } catch (error) {
             console.error('獲取數據失敗:', error);

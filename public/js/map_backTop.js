@@ -1,17 +1,19 @@
-// 显示/隐藏按钮
-window.onscroll = function() {
-  const btn = document.getElementById("backToTop");
-  if (document.body.scrollTop > 200 || document.documentElement.scrollTop > 200) {
-    btn.style.display = "block"; // 下滑200px显示
-  } else {
-    btn.style.display = "none";
-  }
-};
+const backToTopButton = document.getElementById('backToTop');
 
-// 平滑返回顶部
-function scrollToTop() {
-  window.scrollTo({
-    top: 0,
-    behavior: "smooth" // 平滑滚动
+if (backToTopButton) {
+  // 下滑一定距离后再显示按钮，避免它一直遮住内容。
+  window.addEventListener('scroll', () => {
+    if (document.body.scrollTop > 200 || document.documentElement.scrollTop > 200) {
+      backToTopButton.style.display = 'block';
+    } else {
+      backToTopButton.style.display = 'none';
+    }
+  });
+
+  backToTopButton.addEventListener('click', () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
   });
 }

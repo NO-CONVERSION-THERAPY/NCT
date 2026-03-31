@@ -15,3 +15,9 @@ function queryUpd(addQname,addQvalue) {
     );
     window.location.reload();
 }
+
+document.querySelectorAll('[data-query-name]').forEach((button) => {
+    button.addEventListener('click', () => {
+        queryUpd(button.dataset.queryName || '', button.dataset.queryValue || '');
+    });
+});

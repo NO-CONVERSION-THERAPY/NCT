@@ -84,8 +84,11 @@ input:focus, select:focus, textarea:focus {
 
 .other-input {
     margin-top: 10px;
-    display: none;
     border-style: dashed;
+}
+
+.other-input[hidden] {
+    display: none;
 }
 
 .hint { font-size: 12px; color: #7f8c8d; margin-top: 5px; }

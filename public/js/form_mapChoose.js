@@ -1,26 +1,70 @@
-let currentMarker = null;
-const map = L.map('map').setView([37.5, 109], 3);
+(() => {
+    let currentMarker = null;
+    let formMap = null;
+    const openMapButton = document.getElementById('openMapButton');
 
-// 2. 加载免费的 OpenStreetMap 图层
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap',
-    minZoom: 3
-}).addTo(map);
+    function ensureFormMap() {
+        if (formMap) {
+            return formMap;
+        }
 
-// 3. 监听地图点击事件
-map.on('click', function(e) {
-    const lat = e.latlng.lat.toFixed(6);
-    const lng = e.latlng.lng.toFixed(6);
-    
-    if (currentMarker !== null) {
-        map.removeLayer(currentMarker); // 如果已经有点了，先从地图移除
+        const mapContainer = document.getElementById('map');
+        if (!mapContainer || typeof L === 'undefined') {
+            return null;
+        }
+
+        formMap = L.map(mapContainer).setView([37.5, 109], 3);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap',
+            minZoom: 3
+        }).addTo(formMap);
+
+        formMap.on('click', function(e) {
+            const lat = e.latlng.lat.toFixed(6);
+            const lng = e.latlng.lng.toFixed(6);
+
+            if (currentMarker !== null) {
+                formMap.removeLayer(currentMarker);
+            }
+
+            const addressInput = document.getElementById('addr');
+            if (addressInput) {
+                addressInput.value = `latlng${lat},${lng}`;
+            }
+
+            currentMarker = L.marker([lat, lng]).addTo(formMap)
+                .bindPopup(`選取點: ${lat}, ${lng}`)
+                .openPopup();
+        });
+
+        return formMap;
     }
 
-    const ctAddr = document.getElementById('addr')
-    ctAddr.value = `latlng${lat},${lng}`
+    window.openMap = function openMap() {
+        const mapContainer = document.getElementById('map');
+        if (!mapContainer) {
+            return;
+        }
 
-    // 3. 创建新点并赋值给变量
-    currentMarker = L.marker([lat, lng]).addTo(map)
-        .bindPopup(`選取點: ${lat}, ${lng}`)
-        .openPopup();
-});
+        const willShowMap = mapContainer.style.display !== 'block';
+        mapContainer.style.display = willShowMap ? 'block' : 'none';
+
+        if (!willShowMap) {
+            return;
+        }
+
+        const mapInstance = ensureFormMap();
+        if (!mapInstance) {
+            return;
+        }
+
+        setTimeout(() => {
+            mapInstance.invalidateSize();
+        }, 100);
+    };
+
+    if (openMapButton) {
+        openMapButton.addEventListener('click', window.openMap);
+    }
+})();
