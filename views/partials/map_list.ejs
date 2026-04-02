@@ -80,6 +80,10 @@
             .filter(Boolean);
     }
 
+    function getRecordAnchorId(index) {
+        return `record-${index}`;
+    }
+
     function matchesInputType(item, expectedInputType) {
         if (!expectedInputType) return true;
         if (expectedInputType === '批量数据') return !item.inputType;
@@ -297,10 +301,10 @@
                 return;
             }
 
-            filteredData.forEach(item => {
+            filteredData.forEach((item, index) => {
                 const card = document.createElement('details');
                 card.className = 'div map-record-card';
-                card.id = `${item.name}`;
+                card.id = getRecordAnchorId(index);
                 card.style.width = '100%';
 
                 const experienceHtml = buildTranslatableSection('experience', item.experience);

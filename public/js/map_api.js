@@ -11,6 +11,7 @@ function getColor(d) {
 }
 
 const i18n = window.I18N;
+const MAP_DATA_REFRESH_INTERVAL_SECONDS = 300;
 
 function normalizeSearchText(value) {
     return String(value || '').trim().toLowerCase().replace(/\s+/g, '');
@@ -80,6 +81,10 @@ function getProvinceDisplay(value) {
     return i18n.data.provinceNames[value] || value || '';
 }
 
+function getRecordAnchorId(index) {
+    return `record-${index}`;
+}
+
 function escapeHtml(value) {
     return String(value || '')
         .replace(/&/g, '&amp;')
@@ -87,6 +92,46 @@ function escapeHtml(value) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
+}
+
+function isValidTimestamp(value) {
+    return Number.isFinite(value) && value > 0;
+}
+
+function getElapsedSeconds(lastSyncedTime) {
+    if (!isValidTimestamp(lastSyncedTime)) {
+        return null;
+    }
+
+    return Math.max(0, Math.floor((Date.now() - lastSyncedTime) / 1000));
+}
+
+function renderLastSyncedValue(lastSyncedElement, { elapsedSeconds, refreshInProgress, onRefresh }) {
+    if (!lastSyncedElement) {
+        return;
+    }
+
+    lastSyncedElement.replaceChildren();
+
+    const valueElement = document.createElement('b');
+    valueElement.textContent = elapsedSeconds === null
+        ? i18n.common.loading
+        : formatMessage(i18n.map.stats.secondsAgo, { seconds: elapsedSeconds });
+    lastSyncedElement.appendChild(valueElement);
+
+    if (elapsedSeconds === null || elapsedSeconds <= MAP_DATA_REFRESH_INTERVAL_SECONDS) {
+        return;
+    }
+
+    lastSyncedElement.appendChild(document.createTextNode(', '));
+
+    const refreshButton = document.createElement('button');
+    refreshButton.type = 'button';
+    refreshButton.className = 'map-refresh-button';
+    refreshButton.textContent = refreshInProgress ? i18n.common.loading : i18n.map.stats.refresh;
+    refreshButton.disabled = refreshInProgress;
+    refreshButton.addEventListener('click', onRefresh);
+    lastSyncedElement.appendChild(refreshButton);
 }
 
 function showMapDataError(message) {
@@ -294,12 +339,37 @@ window.getSharedMapData()
             options: createProvincePieChartOptions()
         })
 
-        const lastSyncedTime = jsonResponse.last_synced;
-        function timeUpdate() {
-            const elapsed = Math.floor((Date.now() - lastSyncedTime) / 1000);
-            const refreshLink = elapsed > 300000 ? `, <a href="">${escapeHtml(i18n.map.stats.refresh)}</a>` : '';
-            document.getElementById('lastSynced').innerHTML = `<b>${escapeHtml(formatMessage(i18n.map.stats.secondsAgo, { seconds: elapsed }))}</b>${refreshLink}`;
+        const lastSyncedElement = document.getElementById('lastSynced');
+        let lastSyncedTime = Number(jsonResponse.last_synced);
+        let refreshInProgress = false;
+
+        async function forceRefreshMapData() {
+            if (refreshInProgress) {
+                return;
+            }
+
+            refreshInProgress = true;
+            timeUpdate();
+
+            try {
+                await window.getSharedMapData({ forceRefresh: true });
+                window.location.reload();
+            } catch (error) {
+                console.error('地图数据刷新失败:', error);
+                refreshInProgress = false;
+                timeUpdate();
+            }
         }
+
+        function timeUpdate() {
+            const elapsed = getElapsedSeconds(lastSyncedTime);
+            renderLastSyncedValue(lastSyncedElement, {
+                elapsedSeconds: elapsed,
+                refreshInProgress,
+                onRefresh: forceRefreshMapData
+            });
+        }
+
         setInterval(timeUpdate, 1000);
         timeUpdate();
         
@@ -344,7 +414,7 @@ window.getSharedMapData()
         const inputSearch = (urlParams.get('search') || '').trim();
         const filteredData = data.filter((item) => matchesInputType(item, inputType) && matchesSearch(item, inputSearch));
 
-        filteredData.forEach(item => {
+        filteredData.forEach((item, index) => {
             const marker = L.marker([item.lat, item.lng]).addTo(map);
 
             // 1. 鼠標指到圖標：顯示標題 (Tooltip)
@@ -354,15 +424,30 @@ window.getSharedMapData()
             });
 
             // 2. 點擊：顯示所有詳細資訊 (Popup)
-            const popupContent = `
-                <div class="custom-popup">
-                    <b>${escapeHtml(item.name)}</b><br>
-                    <small>${escapeHtml(item.prov)}</small>
-                    <p>${escapeHtml(item.HMaster)}</p><hr>
-                    <address>${escapeHtml(item.addr)}</address>
-                    <a href="#${item.name}">${escapeHtml(i18n.map.list.viewDetails)}</a>
-                </div>
-            `;
+            const popupContent = document.createElement('div');
+            const nameElement = document.createElement('b');
+            const regionElement = document.createElement('small');
+            const headmasterElement = document.createElement('p');
+            const dividerElement = document.createElement('hr');
+            const addressElement = document.createElement('address');
+            const detailLink = document.createElement('a');
+
+            popupContent.className = 'custom-popup';
+            nameElement.textContent = item.name || '';
+            regionElement.textContent = item.prov || '';
+            headmasterElement.textContent = item.HMaster || '';
+            addressElement.textContent = item.addr || '';
+            detailLink.href = `#${getRecordAnchorId(index)}`;
+            detailLink.textContent = i18n.map.list.viewDetails;
+
+            popupContent.appendChild(nameElement);
+            popupContent.appendChild(document.createElement('br'));
+            popupContent.appendChild(regionElement);
+            popupContent.appendChild(headmasterElement);
+            popupContent.appendChild(dividerElement);
+            popupContent.appendChild(addressElement);
+            popupContent.appendChild(detailLink);
+
             marker.bindPopup(popupContent);
         });
     })

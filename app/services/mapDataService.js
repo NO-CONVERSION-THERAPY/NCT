@@ -3,6 +3,11 @@ let cachedData = null;
 let lastFetchTime = 0;
 const cacheDurationMs = 300000;
 
+function resolveLastSyncedTimestamp(lastSynced, fallbackTimestamp) {
+  const numericLastSynced = Number(lastSynced);
+  return Number.isFinite(numericLastSynced) && numericLastSynced > 0 ? numericLastSynced : fallbackTimestamp;
+}
+
 function resolveMapDataSource({ googleScriptUrl, publicMapDataUrl }) {
   const dataSourceUrl = googleScriptUrl || publicMapDataUrl;
 
@@ -47,10 +52,10 @@ function cleanMapData(rawData) {
 }
 
 // 公开地图接口的主逻辑：读取远端数据、清洗、缓存、失败时尽量回退到缓存。
-async function getMapData({ googleScriptUrl, publicMapDataUrl }) {
+async function getMapData({ forceRefresh = false, googleScriptUrl, publicMapDataUrl }) {
   const now = Date.now();
 
-  if (cachedData && now - lastFetchTime < cacheDurationMs) {
+  if (!forceRefresh && cachedData && now - lastFetchTime < cacheDurationMs) {
     return cachedData;
   }
 
@@ -66,10 +71,11 @@ async function getMapData({ googleScriptUrl, publicMapDataUrl }) {
 
     const responseBody = await response.json();
     const rawData = normalizeRawData(responseBody.data);
+    const avgAge = Number(responseBody.avg_age);
     const finalResponse = {
-      avg_age: responseBody.avg_age,
-      last_synced: now,
-      statistics: responseBody.statistics,
+      avg_age: Number.isFinite(avgAge) ? avgAge : 0,
+      last_synced: resolveLastSyncedTimestamp(responseBody.last_synced, now),
+      statistics: Array.isArray(responseBody.statistics) ? responseBody.statistics : [],
       data: cleanMapData(rawData)
     };
 
@@ -91,5 +97,10 @@ async function getMapData({ googleScriptUrl, publicMapDataUrl }) {
 }
 
 module.exports = {
-  getMapData
+  getMapData,
+  resolveLastSyncedTimestamp,
+  resetMapDataCache() {
+    cachedData = null;
+    lastFetchTime = 0;
+  }
 };

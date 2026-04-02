@@ -6,10 +6,19 @@ const { translateDetailItems } = require('../services/textTranslationService');
 function createApiRoutes({ googleScriptUrl, publicMapDataUrl }) {
   const router = express.Router();
 
+  function shouldForceRefresh(req) {
+    const value = req.query.refresh;
+    return value === '1' || value === 'true';
+  }
+
   // 对外公开的地图数据接口。
   router.get('/api/map-data', async (req, res) => {
     try {
-      const mapData = await getMapData({ googleScriptUrl, publicMapDataUrl });
+      const mapData = await getMapData({
+        forceRefresh: shouldForceRefresh(req),
+        googleScriptUrl,
+        publicMapDataUrl
+      });
       return res.json(mapData);
     } catch (error) {
       console.error('API Error:', error.message);

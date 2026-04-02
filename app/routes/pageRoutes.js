@@ -1,13 +1,34 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
-const marked = require('marked');
 const { getAreaOptions } = require('../../config/areaSelector');
 const { getLocalizedFormRules, getLocalizedIdentityOptions, getLocalizedSexOptions } = require('../../config/formConfig');
 const { loadFriends } = require('../services/friendsService');
+const { renderMarkdown } = require('../services/markedService');
 const { paths } = require('../../config/fileConfig');
+
+function resolveMarkdownPath(blogDirectory, articleId) {
+  if (
+    typeof articleId !== 'string'
+    || articleId.includes('\0')
+    || articleId.includes('/')
+    || articleId.includes('\\')
+  ) {
+    return null;
+  }
+
+  const normalizedBlogDirectory = path.resolve(blogDirectory);
+  const markdownPath = path.resolve(normalizedBlogDirectory, `${articleId}.md`);
+
+  if (!markdownPath.startsWith(`${normalizedBlogDirectory}${path.sep}`)) {
+    return null;
+  }
+
+  return markdownPath;
+}
+
 // 页面路由只负责渲染模板，不承载表单提交或 API 逻辑。
-function createPageRoutes({ apiUrl, title }) {
+function createPageRoutes({ apiUrl, debugMod, title }) {
   const router = express.Router();
 
   // 首頁：项目导航入口。
@@ -51,8 +72,14 @@ function createPageRoutes({ apiUrl, title }) {
 
   // 預留的調試頁面入口。
   router.get('/debug', (req, res) => {
+    if (debugMod !== 'true') {
+      return res.status(404).send('Not Found');
+    }
+
     res.render('debug', {
-      apiUrl
+      apiUrl,
+      debugMode: debugMod,
+      title: `Debug|${title || req.t('common.siteName')}`
     });
   });
 
@@ -77,17 +104,16 @@ function createPageRoutes({ apiUrl, title }) {
 
   router.get('/port/:id', (req, res) => {
     const mdName = req.params.id;
-    const protDir = paths.blog;
-    const mdPath = path.join(protDir, `${mdName}.md`);
+    const mdPath = resolveMarkdownPath(paths.blog, mdName);
     
-    if (!fs.existsSync(mdPath)) {
+    if (!mdPath || !fs.existsSync(mdPath)) {
       return res.status(404).send(req.t('blog.articleNotFound'));
     }
     
     const content = fs.readFileSync(mdPath, 'utf-8');
     const [language, time, ...titleArr] = mdName.split('.');
     const title_B = mdName;
-    const rawHtml = marked.parse(content);
+    const rawHtml = renderMarkdown(content);
     
     const report = {
       language, 

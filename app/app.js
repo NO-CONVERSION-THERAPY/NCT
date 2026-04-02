@@ -2,7 +2,7 @@ const express = require('express');
 const path = require('path');
 const cors = require('cors');
 const helmet = require('helmet');
-const { apiUrl, formDryRun, googleFormUrl, googleScriptUrl, publicMapDataUrl, submitRateLimitMax, title } = require('../config/appConfig');
+const { apiUrl, debugMod, formDryRun, googleFormUrl, googleScriptUrl, publicMapDataUrl, submitRateLimitMax, title } = require('../config/appConfig');
 const { areaOptions, formRules } = require('../config/formConfig');
 const { paths } = require('../config/fileConfig');
 const { helmetConfig, requestBodyLimits } = require('../config/security');
@@ -31,6 +31,7 @@ app.use(express.json({ limit: requestBodyLimits.json }));
 // 页面、表单、API 三类路由分开挂载，便于后续继续扩展。
 app.use(createPageRoutes({
   apiUrl,
+  debugMod,
   title
 }));
 app.use(createFormRoutes({

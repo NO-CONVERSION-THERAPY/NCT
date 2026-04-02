@@ -7,12 +7,23 @@
         return `${CACHE_PREFIX}${apiUrl}`;
     }
 
+    function buildRequestUrl(apiUrl, { forceRefresh = false } = {}) {
+        const requestUrl = new URL(apiUrl, window.location.origin);
+
+        if (forceRefresh) {
+            requestUrl.searchParams.set('refresh', '1');
+        }
+
+        return requestUrl.toString();
+    }
+
     function isValidMapPayload(payload) {
         return Boolean(
             payload
             && Array.isArray(payload.data)
             && Array.isArray(payload.statistics)
             && typeof payload.avg_age === 'number'
+            && typeof payload.last_synced === 'number'
         );
     }
 
@@ -50,8 +61,8 @@
         }
     }
 
-    async function fetchMapPayload(apiUrl) {
-        const response = await window.fetch(apiUrl);
+    async function fetchMapPayload(apiUrl, { forceRefresh = false } = {}) {
+        const response = await window.fetch(buildRequestUrl(apiUrl, { forceRefresh }));
         const payload = await response.json();
 
         if (!response.ok || !isValidMapPayload(payload)) {
@@ -62,24 +73,30 @@
         return payload;
     }
 
-    window.getSharedMapData = async function getSharedMapData() {
+    window.getSharedMapData = async function getSharedMapData(options = {}) {
         const apiUrl = window.API_URL;
+        const forceRefresh = options.forceRefresh === true;
         const cachedPayload = readCache(apiUrl);
 
-        if (cachedPayload) {
+        if (!forceRefresh && cachedPayload) {
             return cachedPayload;
         }
 
-        if (inMemoryRequests.has(apiUrl)) {
+        if (!forceRefresh && inMemoryRequests.has(apiUrl)) {
             return inMemoryRequests.get(apiUrl);
         }
 
-        const request = fetchMapPayload(apiUrl)
+        const request = fetchMapPayload(apiUrl, { forceRefresh })
             .finally(() => {
-                inMemoryRequests.delete(apiUrl);
+                if (!forceRefresh) {
+                    inMemoryRequests.delete(apiUrl);
+                }
             });
 
-        inMemoryRequests.set(apiUrl, request);
+        if (!forceRefresh) {
+            inMemoryRequests.set(apiUrl, request);
+        }
+
         return request;
     };
 })();
