@@ -3,6 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="color-scheme" content="light dark">
         <title><%= title %></title>
         <link rel="stylesheet" href="/css/main.css">
         <script>
@@ -25,31 +26,32 @@
                 margin-top: 1.5rem;
                 overflow-x: auto;
                 border-radius: 14px;
-                box-shadow: 0 10px 24px rgba(32, 52, 76, 0.08);
+                box-shadow: var(--shadow-soft);
                 -webkit-overflow-scrolling: touch;
             }
             .preview-table {
                 width: 100%;
                 border-collapse: collapse;
-                background: #fff;
+                background: var(--card-bg);
+                color: var(--text);
                 min-width: 620px;
             }
             .preview-table th,
             .preview-table td {
-                border: 1px solid #ddd;
+                border: 1px solid var(--panel-border);
                 padding: 0.75rem;
                 text-align: left;
                 vertical-align: top;
             }
             .preview-table th {
-                background: #f5f5f5;
+                background: var(--surface-soft);
             }
             pre {
                 white-space: pre-wrap;
                 word-break: break-word;
                 overflow-wrap: anywhere;
-                background: #111;
-                color: #f5f5f5;
+                background: var(--code-bg);
+                color: var(--code-text);
                 padding: 1rem;
                 border-radius: 8px;
                 overflow-x: auto;
@@ -69,6 +71,7 @@
                 padding: 0.8rem 1rem;
                 border-radius: 12px;
                 background: linear-gradient(135deg, rgba(52, 152, 219, 0.12), rgba(93, 173, 226, 0.22));
+                border: 1px solid var(--panel-border);
                 box-sizing: border-box;
                 text-align: center;
             }

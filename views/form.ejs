@@ -1,10 +1,10 @@
 <%- include('partials/head') %>
-<body style="flex-direction: row;">
+<body class="form-page">
 <a href="/" class="page-back-link">← <%= t('navigation.home') %></a>
 
 <div class="container">
     <h1><%= t('form.title') %></h1>
-    <p style="text-align: center; color: #666;"><%= t('form.subtitle') %></p>
+    <p class="form-subtitle"><%= t('form.subtitle') %></p>
 
     <form action="/submit" method="POST" id="mainForm">
         <h3><%= t('form.sections.basic') %></h3>

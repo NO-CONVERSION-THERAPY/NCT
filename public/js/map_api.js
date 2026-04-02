@@ -12,6 +12,78 @@ function getColor(d) {
 
 const i18n = window.I18N;
 const MAP_DATA_REFRESH_INTERVAL_SECONDS = 300;
+const themeMediaQuery = typeof window.matchMedia === 'function'
+    ? window.matchMedia('(prefers-color-scheme: dark)')
+    : null;
+
+let mapTileLayer = null;
+let provinceLayer = null;
+const chartInstances = [];
+
+function isDarkMode() {
+    return Boolean(themeMediaQuery && themeMediaQuery.matches);
+}
+
+function addThemeChangeListener(listener) {
+    if (!themeMediaQuery) {
+        return;
+    }
+
+    if (typeof themeMediaQuery.addEventListener === 'function') {
+        themeMediaQuery.addEventListener('change', listener);
+        return;
+    }
+
+    if (typeof themeMediaQuery.addListener === 'function') {
+        themeMediaQuery.addListener(listener);
+    }
+}
+
+function getThemeColors() {
+    return isDarkMode()
+        ? {
+            legend: '#d7e3f0',
+            axis: '#a9bdd1',
+            axisStrong: '#d7e3f0',
+            grid: 'rgba(148, 163, 184, 0.22)',
+            mapOutline: '#d6e4f0',
+            error: '#e6eef7'
+        }
+        : {
+            legend: '#30485f',
+            axis: '#5a6d80',
+            axisStrong: '#30485f',
+            grid: 'rgba(112, 136, 163, 0.14)',
+            mapOutline: 'white',
+            error: '#2c3e50'
+        };
+}
+
+function createBaseTileLayer(minZoom) {
+    if (isDarkMode()) {
+        return L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+            subdomains: 'abcd',
+            maxZoom: 20,
+            minZoom
+        });
+    }
+
+    return L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap',
+        maxZoom: 20,
+        minZoom
+    });
+}
+
+function mountBaseTileLayer(targetMap, minZoom) {
+    if (mapTileLayer) {
+        targetMap.removeLayer(mapTileLayer);
+    }
+
+    mapTileLayer = createBaseTileLayer(minZoom);
+    mapTileLayer.addTo(targetMap);
+}
 
 function normalizeSearchText(value) {
     return String(value || '').trim().toLowerCase().replace(/\s+/g, '');
@@ -139,6 +211,7 @@ function showMapDataError(message) {
     const lastSyncedElement = document.getElementById('lastSynced');
     const avgAgeElement = document.getElementById('avgAge');
     const mapElement = document.getElementById('map');
+    const { error: errorColor } = getThemeColors();
 
     if (lastSyncedElement) {
         lastSyncedElement.textContent = safeMessage;
@@ -149,11 +222,13 @@ function showMapDataError(message) {
     }
 
     if (mapElement) {
-        mapElement.innerHTML = `<p style="padding: 1rem; text-align: center;">${safeMessage}</p>`;
+        mapElement.innerHTML = `<p style="padding: 1rem; text-align: center; color: ${errorColor};">${safeMessage}</p>`;
     }
 }
 
 function createPieChartOptions() {
+    const themeColors = getThemeColors();
+
     return {
         responsive: true,
         maintainAspectRatio: false,
@@ -175,6 +250,7 @@ function createPieChartOptions() {
                     padding: 12,
                     usePointStyle: true,
                     pointStyle: 'rectRounded',
+                    color: themeColors.legend,
                     font: {
                         size: 11
                     }
@@ -185,6 +261,8 @@ function createPieChartOptions() {
 }
 
 function createProvincePieChartOptions() {
+    const themeColors = getThemeColors();
+
     return {
         responsive: true,
         maintainAspectRatio: false,
@@ -206,6 +284,7 @@ function createProvincePieChartOptions() {
                     padding: 10,
                     usePointStyle: true,
                     pointStyle: 'rectRounded',
+                    color: themeColors.legend,
                     font: {
                         size: 10
                     }
@@ -216,6 +295,8 @@ function createProvincePieChartOptions() {
 }
 
 function createBarChartOptions() {
+    const themeColors = getThemeColors();
+
     return {
         responsive: true,
         maintainAspectRatio: false,
@@ -245,10 +326,10 @@ function createBarChartOptions() {
                 beginAtZero: true,
                 ticks: {
                     precision: 0,
-                    color: '#5a6d80'
+                    color: themeColors.axis
                 },
                 grid: {
-                    color: 'rgba(112, 136, 163, 0.14)'
+                    color: themeColors.grid
                 },
                 border: {
                     display: false
@@ -256,7 +337,7 @@ function createBarChartOptions() {
             },
             y: {
                 ticks: {
-                    color: '#30485f',
+                    color: themeColors.axisStrong,
                     font: {
                         size: 12
                     }
@@ -272,6 +353,24 @@ function createBarChartOptions() {
     };
 }
 
+function syncExistingChartTheme() {
+    const themeColors = getThemeColors();
+
+    chartInstances.forEach((chart) => {
+        if (chart.options?.plugins?.legend?.labels) {
+            chart.options.plugins.legend.labels.color = themeColors.legend;
+        }
+
+        if (chart.config.type === 'bar' && chart.options?.scales) {
+            chart.options.scales.x.ticks.color = themeColors.axis;
+            chart.options.scales.x.grid.color = themeColors.grid;
+            chart.options.scales.y.ticks.color = themeColors.axisStrong;
+        }
+
+        chart.update('none');
+    });
+}
+
 //const categories = []; // 存放省份名
 //const selfData = [];   // 存放本人填写数
 //const agentData = [];  // 存放代理人填写数
@@ -279,9 +378,19 @@ function createBarChartOptions() {
 const map = L.map('map').setView([37.5, 109], 4); // 預設視角
 const CNprov = '/cn.json'
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    minZoom: 4
-}).addTo(map);
+mountBaseTileLayer(map, 4);
+
+addThemeChangeListener(() => {
+    mountBaseTileLayer(map, 4);
+
+    if (provinceLayer) {
+        provinceLayer.setStyle({
+            color: getThemeColors().mapOutline
+        });
+    }
+
+    syncExistingChartTheme();
+});
 
 let provList = Array.from({ length: 40 }, () => Array(2).fill());
 window.getSharedMapData()
@@ -299,7 +408,7 @@ window.getSharedMapData()
         fetch(CNprov)
             .then(response => response.json())
             .then(dataP => {
-                L.geoJSON(dataP, {
+                provinceLayer = L.geoJSON(dataP, {
                     style: function(feature) {
                         let name = feature.properties.name || feature.properties.province || "";
                         
@@ -308,7 +417,7 @@ window.getSharedMapData()
                             fillColor: getColor(count),
                             weight: 2,
                             opacity: 1,
-                            color: 'white',
+                            color: getThemeColors().mapOutline,
                             dashArray: '3',
                             fillOpacity: 0.7
                         };
@@ -319,7 +428,7 @@ window.getSharedMapData()
             .catch(err => console.error('加载地图数据失败:', err));
 
         const statistics = jsonResponse.statistics
-        new Chart(document.getElementById('prov'), {
+        const provinceChart = new Chart(document.getElementById('prov'), {
             type: 'pie',
             data: {
                 labels: statistics.map(item => getProvinceDisplay(item.province)),
@@ -337,7 +446,8 @@ window.getSharedMapData()
                 }]
             },
             options: createProvincePieChartOptions()
-        })
+        });
+        chartInstances.push(provinceChart);
 
         const lastSyncedElement = document.getElementById('lastSynced');
         let lastSyncedTime = Number(jsonResponse.last_synced);
@@ -386,7 +496,7 @@ window.getSharedMapData()
             if(item.inputType == '受害者的代理人')count_num1++;
             if(!item.inputType)count_num2++;
         })
-        new Chart(document.getElementById('updatedForm'), {
+        const updatedFormChart = new Chart(document.getElementById('updatedForm'), {
         type: 'bar',
             data: {
                 labels: [
@@ -406,6 +516,7 @@ window.getSharedMapData()
             },
             options: createBarChartOptions()
         });
+        chartInstances.push(updatedFormChart);
         
         
         const queryString = window.location.search;
