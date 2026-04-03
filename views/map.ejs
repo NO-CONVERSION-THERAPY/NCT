@@ -12,6 +12,13 @@
             box-sizing: border-box;
         }
 
+        .map-page .map-section-title {
+            border-left: 4px solid var(--primary);
+            padding-left: 15px;
+            margin-top: 30px;
+            color: var(--primary);
+        }
+
         @media (max-width: 650px) {
             .map-page {
                 --map-content-width: 95%;
@@ -29,15 +36,15 @@
     <a href="/" class="page-back-link">← <%= t('navigation.home') %></a>
     <script src="/js/map_data_store.js"></script>
     <h1><%= t('map.title') %></h1>
-    <h3><%= t('map.sections.stats') %></h3>
+    <h2 class="map-section-title"><%= t('map.sections.stats') %></h2>
     <%- include('partials/map_allnum') %>
-    <h3><%= t('map.sections.tags') %></h3>
+    <h2 class="map-section-title"><%= t('map.sections.tags') %></h2>
     <%- include('partials/map_tag') %>
-    <h3><%= t('map.sections.map') %></h3>
+    <h2 class="map-section-title"><%= t('map.sections.map') %></h2>
     <small><%= t('map.note') %></small>
     <div id="map" class="div"></div>
     <%- include('partials/map_apimd') %>
-    <h3><%= t('map.sections.allData') %></h3>
+    <h2 class="map-section-title"><%= t('map.sections.allData') %></h2>
     <%- include('partials/map_list') %>
     <button id="backToTop" type="button">↑</button>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
