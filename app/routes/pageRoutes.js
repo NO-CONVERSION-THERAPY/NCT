@@ -95,6 +95,13 @@ function createPageRoutes({ apiUrl, debugMod, siteUrl, title }) {
     });
   });
 
+  router.get('/privacy', (req, res) => {
+    res.render('privacy', {
+      title: req.t('pageTitles.privacy', { title }),
+      apiUrl
+    });
+  });
+
   // 預留的調試頁面入口。
   router.get('/debug', (req, res) => {
     if (debugMod !== 'true') {

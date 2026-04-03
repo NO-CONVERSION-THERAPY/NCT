@@ -62,6 +62,11 @@ function getStaticSitemapEntries(siteUrl) {
       priority: '0.6'
     }),
     createUrlEntry({
+      changefreq: 'monthly',
+      loc: createAbsoluteUrl(siteUrl, '/privacy'),
+      priority: '0.4'
+    }),
+    createUrlEntry({
       changefreq: 'weekly',
       loc: createAbsoluteUrl(siteUrl, '/blog'),
       priority: '0.8'

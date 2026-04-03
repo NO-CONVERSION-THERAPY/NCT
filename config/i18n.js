@@ -173,6 +173,7 @@ const messages = {
       form: '填写表单|{title}',
       map: '地图|{title}',
       about: '关于我们|{title}',
+      privacy: '隐私政策与 Cookie 说明|{title}',
       submitPreview: '提交预览|{title}',
       blog: '文库|{title}',
       article: '{articleTitle}|{title}'
@@ -180,6 +181,7 @@ const messages = {
     navigation: {
       home: '返回首页',
       about: '关于我们',
+      privacy: '隐私政策 / Cookie 说明',
       allArticles: '所有文章'
     },
     index: {
@@ -338,6 +340,36 @@ const messages = {
       origin: '本网站建站于 2026 年 2 月 21 日，由 HosinoNeko 站长在逃到上海后建立。',
       thanks: '在这里衷心感谢以下项目、企业和个人为本项目提供了免费的援助，没有他们就没有这个网站的诞生：'
     },
+    privacy: {
+      title: '隐私政策与 Cookie 说明',
+      intro: '本页面说明本站如何处理与您访问有关的基础信息，以及本站当前使用的 Cookie。',
+      sections: {
+        summary: '我们处理什么',
+        cookie: '当前使用的 Cookie',
+        manage: '如何管理',
+        contact: '联系我们'
+      },
+      summary: '本站当前仅在您主动切换语言时，使用一个站内 Cookie 来记住您的语言偏好。我们不会将该 Cookie 用于广告投放、跨站跟踪或画像分析。',
+      cookieIntro: '当前网站使用的 Cookie 如下：',
+      cookieFields: {
+        name: '名称',
+        purpose: '用途',
+        trigger: '写入时机',
+        retention: '保存期限',
+        scope: '作用范围',
+        attributes: '附加属性'
+      },
+      cookieValues: {
+        purpose: '记住您选择的界面语言，避免下次访问时重复切换。',
+        trigger: '当您通过页面语言切换器访问带有 ?lang=... 的地址，且新语言与现有设置不同时写入。',
+        retention: '最长 30 天（Max-Age=2592000）。',
+        scope: '本站根路径 / 下的页面。',
+        attributes: 'SameSite=Lax。'
+      },
+      manageBody: '您可以随时通过浏览器设置删除或拦截该 Cookie。删除后，网站会恢复为默认语言，直到您再次主动切换语言。',
+      manageNote: '如果您继续使用本站但不触发语言切换，本站不会额外写入新的语言偏好 Cookie。',
+      contactBody: '如果您对本站的隐私说明有疑问，可以通过以下方式联系项目维护者：'
+    },
     submitSuccess: {
       title: '提交成功！感谢你的参与。',
       message: '我们已经收到了你的表单，感谢你的参与。你的参与将是我们前进的动力！',
@@ -434,6 +466,7 @@ const messages = {
       form: '填寫表單|{title}',
       map: '地圖|{title}',
       about: '關於我們|{title}',
+      privacy: '隱私政策與 Cookie 說明|{title}',
       submitPreview: '提交預覽|{title}',
       blog: '文庫|{title}',
       article: '{articleTitle}|{title}'
@@ -441,6 +474,7 @@ const messages = {
     navigation: {
       home: '返回首頁',
       about: '關於我們',
+      privacy: '隱私政策 / Cookie 說明',
       allArticles: '所有文章'
     },
     index: {
@@ -599,6 +633,36 @@ const messages = {
       origin: '本網站建站於 2026 年 2 月 21 日，由 HosinoNeko 站長在逃到上海後建立。',
       thanks: '在這裡衷心感謝以下項目、企業和個人為本項目提供了免費的援助，沒有他們就沒有這個網站的誕生：'
     },
+    privacy: {
+      title: '隱私政策與 Cookie 說明',
+      intro: '本頁面說明本站如何處理與您造訪有關的基礎資訊，以及本站目前使用的 Cookie。',
+      sections: {
+        summary: '我們處理什麼',
+        cookie: '目前使用的 Cookie',
+        manage: '如何管理',
+        contact: '聯絡我們'
+      },
+      summary: '本站目前僅在您主動切換語言時，使用一個站內 Cookie 來記住您的語言偏好。我們不會將該 Cookie 用於廣告投放、跨站追蹤或人物畫像分析。',
+      cookieIntro: '本站目前使用的 Cookie 如下：',
+      cookieFields: {
+        name: '名稱',
+        purpose: '用途',
+        trigger: '寫入時機',
+        retention: '保存期限',
+        scope: '作用範圍',
+        attributes: '附加屬性'
+      },
+      cookieValues: {
+        purpose: '記住您選擇的介面語言，避免下次造訪時重複切換。',
+        trigger: '當您透過頁面語言切換器造訪帶有 ?lang=... 的網址，且新語言與現有設定不同時寫入。',
+        retention: '最長 30 天（Max-Age=2592000）。',
+        scope: '本站根路徑 / 下的頁面。',
+        attributes: 'SameSite=Lax。'
+      },
+      manageBody: '您可以隨時透過瀏覽器設定刪除或封鎖該 Cookie。刪除後，網站會恢復為預設語言，直到您再次主動切換語言。',
+      manageNote: '如果您繼續使用本站但不觸發語言切換，本站不會額外寫入新的語言偏好 Cookie。',
+      contactBody: '如果您對本站的隱私說明有疑問，可以透過以下方式聯絡項目維護者：'
+    },
     submitSuccess: {
       title: '提交成功！感謝您的參與。',
       message: '我們已經收到了您的表單，感謝您的參與。您的參與將是我們前進的動力！',
@@ -695,6 +759,7 @@ const messages = {
       form: 'Form | {title}',
       map: 'Map | {title}',
       about: 'About | {title}',
+      privacy: 'Privacy & Cookie Notice | {title}',
       submitPreview: 'Submission Preview | {title}',
       blog: 'Library | {title}',
       article: '{articleTitle} | {title}'
@@ -702,6 +767,7 @@ const messages = {
     navigation: {
       home: 'Back to Home',
       about: 'About Us',
+      privacy: 'Privacy / Cookie Notice',
       allArticles: 'All Articles'
     },
     index: {
@@ -859,6 +925,36 @@ const messages = {
       ownership: 'This project belongs to the TRANS UNION team, which holds all related intellectual property rights.',
       origin: 'This website went online on February 21, 2026. HosinoNeko created it shortly after reaching Shanghai.',
       thanks: 'We sincerely thank the following projects, organizations, and individuals for helping make this website possible:'
+    },
+    privacy: {
+      title: 'Privacy & Cookie Notice',
+      intro: 'This page explains what basic information this site handles during your visit and what cookie the site currently uses.',
+      sections: {
+        summary: 'What We Process',
+        cookie: 'Cookie Currently In Use',
+        manage: 'How To Manage It',
+        contact: 'Contact'
+      },
+      summary: 'At the moment, this site only uses one first-party cookie to remember your language preference when you actively switch languages. We do not use this cookie for advertising, cross-site tracking, or profiling.',
+      cookieIntro: 'The cookie currently used by this site is listed below:',
+      cookieFields: {
+        name: 'Name',
+        purpose: 'Purpose',
+        trigger: 'When It Is Written',
+        retention: 'Retention',
+        scope: 'Scope',
+        attributes: 'Attributes'
+      },
+      cookieValues: {
+        purpose: 'Remembers the interface language you selected so you do not need to switch again on your next visit.',
+        trigger: 'It is written when you use the language switcher to visit a URL with ?lang=... and the new language differs from the current setting.',
+        retention: 'Up to 30 days (Max-Age=2592000).',
+        scope: 'Pages under the site root path /.',
+        attributes: 'SameSite=Lax.'
+      },
+      manageBody: 'You can delete or block this cookie at any time in your browser settings. If you remove it, the site will fall back to the default language until you actively switch again.',
+      manageNote: 'If you continue browsing without triggering a language switch, the site will not write an additional language-preference cookie.',
+      contactBody: 'If you have questions about this privacy notice, you can contact the project maintainer here:'
     },
     submitSuccess: {
       title: 'Submission received. Thank you.',
@@ -1023,7 +1119,7 @@ function parseCookieHeader(cookieHeader = '') {
 }
 
 function serializeLanguageCookie(language) {
-  return `lang=${encodeURIComponent(language)}; Path=/; Max-Age=31536000; SameSite=Lax`;
+  return `lang=${encodeURIComponent(language)}; Path=/; Max-Age=2592000; SameSite=Lax`;
 }
 
 module.exports = {

@@ -100,6 +100,15 @@ test('root page renders successfully', async () => {
   assert.match(response.body, /NO CONVERSION THERAPY/i);
 });
 
+test('map page renders the record container and lazy-load sentinel', async () => {
+  const app = loadApp({ DEBUG_MOD: 'false' });
+  const response = await requestPath(app, '/map');
+
+  assert.equal(response.statusCode, 200);
+  assert.match(response.body, /id="data-container"/);
+  assert.match(response.body, /id="data-container-sentinel"/);
+});
+
 test('sitemap.xml lists static pages and blog articles', async () => {
   const app = loadApp({
     DEBUG_MOD: 'false',
@@ -112,6 +121,7 @@ test('sitemap.xml lists static pages and blog articles', async () => {
   assert.match(response.body, /<loc>https:\/\/example\.com\/<\/loc>/);
   assert.match(response.body, /<loc>https:\/\/example\.com\/form<\/loc>/);
   assert.match(response.body, /<loc>https:\/\/example\.com\/map<\/loc>/);
+  assert.match(response.body, /<loc>https:\/\/example\.com\/privacy<\/loc>/);
   assert.match(response.body, /<loc>https:\/\/example\.com\/blog<\/loc>/);
   assert.match(response.body, /https:\/\/example\.com\/port\/%E9%97%9C%E6%96%BC%E5%BF%83%E7%A8%AE%E5%AD%90%E6%95%99%E8%82%B2%E9%81%95%E6%B3%95%E8%BE%A6%E5%AD%B8%E7%9A%84%E6%8E%A7%E5%91%8A/);
   assert.doesNotMatch(response.body, /\/debug<\/loc>/);
@@ -166,6 +176,22 @@ test('about page translates friend descriptions with google translation in engli
     restoreFetch();
     clearProjectModules();
   }
+});
+
+test('privacy page documents the language cookie and footer exposes the link', async () => {
+  const app = loadApp({ DEBUG_MOD: 'false' });
+  const rootResponse = await requestPath(app, '/');
+  const privacyResponse = await requestPath(app, '/privacy?lang=en');
+
+  assert.equal(rootResponse.statusCode, 200);
+  assert.match(rootResponse.body, /href="\/privacy"/);
+
+  assert.equal(privacyResponse.statusCode, 200);
+  assert.match(privacyResponse.body, /Privacy &amp; Cookie Notice|Privacy & Cookie Notice/);
+  assert.match(privacyResponse.body, /<code>lang<\/code>/);
+  assert.match(privacyResponse.body, /2592000/);
+  assert.match(privacyResponse.body, /SameSite=Lax/);
+  assert.match(String(privacyResponse.headers['set-cookie']), /Max-Age=2592000/);
 });
 
 test('translation service normalizes spaces around apostrophes in english text', async () => {

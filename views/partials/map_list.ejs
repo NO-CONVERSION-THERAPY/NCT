@@ -5,6 +5,7 @@
 
 
 <div id="data-container" class="map-record-list"></div>
+<div id="data-container-sentinel" class="map-record-list__status" aria-live="polite" hidden></div>
 
 <script>
 (() => {
@@ -14,7 +15,14 @@
     const inputSearch = (urlParams.get('search') || '').trim();
     const mapSearchInput = document.getElementById('mapSearchInput');
     const dataContainer = document.getElementById('data-container');
+    const loadSentinel = document.getElementById('data-container-sentinel');
     const shouldTranslateDetails = window.APP_LANG !== 'zh-CN';
+    const RECORD_BATCH_SIZE = 24;
+    const RECORD_LOAD_ROOT_MARGIN = '1200px 0px 1200px 0px';
+    let filteredRecords = [];
+    let renderedRecordCount = 0;
+    let recordsObserver = null;
+    let scrollFallbackAttached = false;
     const originalChineseFieldLabels = {
         experience: '受害者经历：',
         scandal: '学校丑闻：',
@@ -42,6 +50,7 @@
     ];
 
     mapSearchInput.value = inputSearch;
+    loadSentinel.textContent = i18n.common.loading;
 
     function normalizeSearchText(value) {
         return String(value || '').trim().toLowerCase().replace(/\s+/g, '');
@@ -82,6 +91,16 @@
 
     function getRecordAnchorId(index) {
         return `record-${index}`;
+    }
+
+    function getHashTargetIndex() {
+        const match = window.location.hash.match(/^#record-(\d+)$/);
+        if (!match) {
+            return null;
+        }
+
+        const targetIndex = Number(match[1]);
+        return Number.isInteger(targetIndex) ? targetIndex : null;
     }
 
     function matchesInputType(item, expectedInputType) {
@@ -288,69 +307,192 @@
 
     document.getElementById('mapSearchButton').addEventListener('click', triggerMapSearch);
 
+    function disconnectLoadWatcher() {
+        if (recordsObserver) {
+            recordsObserver.disconnect();
+            recordsObserver = null;
+        }
+
+        if (scrollFallbackAttached) {
+            window.removeEventListener('scroll', handleWindowScrollLoad);
+            scrollFallbackAttached = false;
+        }
+    }
+
+    function updateLoadSentinel() {
+        const hasMoreRecords = renderedRecordCount < filteredRecords.length;
+        loadSentinel.hidden = !hasMoreRecords;
+        loadSentinel.textContent = hasMoreRecords ? i18n.common.loading : '';
+
+        if (!hasMoreRecords) {
+            disconnectLoadWatcher();
+        }
+    }
+
+    function createRecordCard(item, index) {
+        const card = document.createElement('details');
+        card.className = 'div map-record-card';
+        card.id = getRecordAnchorId(index);
+        card.style.width = '100%';
+
+        const experienceHtml = buildTranslatableSection('experience', item.experience);
+        const scandalHtml = buildTranslatableSection('scandal', item.scandal);
+        const elseHtml = buildTranslatableSection('other', item.else);
+        const inputHtml = item.inputType ? item.inputType : '批量数据';
+        const inputHref = buildFilterLink(inputHtml);
+        const inputDisplay = getInputTypeDisplay(inputHtml);
+
+        card.innerHTML = `
+            <summary class="map-record-summary">
+                <div class="map-record-summary__title-group">
+                    <h2 class="map-record-summary__title">${escapeHtml(item.name)}</h2>
+                </div>
+                <small class="map-record-summary__tag">
+                    <a href="${inputHref}">${escapeHtml(inputDisplay)}</a>
+                </small>
+            </summary>
+            <div class="div map-record-body">
+                <p><strong>${escapeHtml(i18n.map.list.fields.headmaster)}</strong>${escapeHtml(item.HMaster)}</p>
+                <p><strong>${escapeHtml(i18n.map.list.fields.province)}</strong>${escapeHtml(getProvinceDisplay(item.province))}</p>
+                <p><strong>${escapeHtml(i18n.map.list.fields.region)}</strong>${escapeHtml(item.prov)}</p>
+                <p><strong>${escapeHtml(i18n.map.list.fields.address)}</strong>${escapeHtml(item.addr)}</p>
+                <hr>
+                ${experienceHtml}
+                ${scandalHtml}
+                ${elseHtml}
+                <div class="contact"><strong>${escapeHtml(i18n.map.list.fields.contact)}</strong>\n${escapeHtml(item.contact)}</div>
+            </div>
+        `;
+
+        if (shouldTranslateDetails) {
+            card.addEventListener('toggle', () => {
+                if (card.open) {
+                    hydrateTranslations(card, item);
+                }
+            });
+        }
+
+        return card;
+    }
+
+    function renderRecordsThroughIndex(targetIndex) {
+        const nextCount = Math.min(filteredRecords.length, targetIndex + 1);
+        if (nextCount <= renderedRecordCount) {
+            updateLoadSentinel();
+            return;
+        }
+
+        const fragment = document.createDocumentFragment();
+
+        for (let index = renderedRecordCount; index < nextCount; index += 1) {
+            fragment.appendChild(createRecordCard(filteredRecords[index], index));
+        }
+
+        dataContainer.appendChild(fragment);
+        renderedRecordCount = nextCount;
+        updateLoadSentinel();
+    }
+
+    function renderNextBatch() {
+        renderRecordsThroughIndex(renderedRecordCount + RECORD_BATCH_SIZE - 1);
+    }
+
+    function scrollRecordIntoView(targetIndex) {
+        const targetCard = document.getElementById(getRecordAnchorId(targetIndex));
+
+        if (!targetCard) {
+            return;
+        }
+
+        window.requestAnimationFrame(() => {
+            targetCard.scrollIntoView({ block: 'start' });
+        });
+    }
+
+    function ensureHashTargetIsRendered() {
+        const targetIndex = getHashTargetIndex();
+
+        if (targetIndex === null || targetIndex < 0 || targetIndex >= filteredRecords.length) {
+            return;
+        }
+
+        if (renderedRecordCount <= targetIndex) {
+            renderRecordsThroughIndex(targetIndex);
+        }
+
+        scrollRecordIntoView(targetIndex);
+    }
+
+    function handleWindowScrollLoad() {
+        if (loadSentinel.hidden) {
+            return;
+        }
+
+        const sentinelTop = loadSentinel.getBoundingClientRect().top;
+        if (sentinelTop <= window.innerHeight + 1200) {
+            renderNextBatch();
+        }
+    }
+
+    function observeLoadSentinel() {
+        disconnectLoadWatcher();
+
+        if (filteredRecords.length <= renderedRecordCount) {
+            updateLoadSentinel();
+            return;
+        }
+
+        if ('IntersectionObserver' in window) {
+            recordsObserver = new IntersectionObserver((entries) => {
+                if (entries.some((entry) => entry.isIntersecting)) {
+                    renderNextBatch();
+                }
+            }, {
+                rootMargin: RECORD_LOAD_ROOT_MARGIN
+            });
+
+            recordsObserver.observe(loadSentinel);
+            return;
+        }
+
+        window.addEventListener('scroll', handleWindowScrollLoad, { passive: true });
+        scrollFallbackAttached = true;
+        handleWindowScrollLoad();
+    }
+
+    function resetRenderedRecords(nextRecords) {
+        disconnectLoadWatcher();
+        filteredRecords = nextRecords;
+        renderedRecordCount = 0;
+        dataContainer.innerHTML = '';
+        loadSentinel.hidden = true;
+        loadSentinel.textContent = '';
+    }
+
     async function loadData() {
         try {
             const response = await window.getSharedMapData();
             const rawData = response.data;
-            const filteredData = rawData.filter((item) => matchesInputType(item, inputType) && matchesSearch(item, inputSearch));
+            const nextFilteredRecords = rawData.filter((item) => matchesInputType(item, inputType) && matchesSearch(item, inputSearch));
 
-            dataContainer.innerHTML = '';
+            resetRenderedRecords(nextFilteredRecords);
 
-            if (filteredData.length === 0) {
+            if (filteredRecords.length === 0) {
                 dataContainer.innerHTML = `<p>${escapeHtml(i18n.map.list.noResults)}</p>`;
                 return;
             }
 
-            filteredData.forEach((item, index) => {
-                const card = document.createElement('details');
-                card.className = 'div map-record-card';
-                card.id = getRecordAnchorId(index);
-                card.style.width = '100%';
-
-                const experienceHtml = buildTranslatableSection('experience', item.experience);
-                const scandalHtml = buildTranslatableSection('scandal', item.scandal);
-                const elseHtml = buildTranslatableSection('other', item.else);
-                const inputHtml = item.inputType ? item.inputType : '批量数据';
-                const inputHref = buildFilterLink(inputHtml);
-                const inputDisplay = getInputTypeDisplay(inputHtml);
-
-                card.innerHTML = `
-                    <summary class="map-record-summary">
-                        <div class="map-record-summary__title-group">
-                            <h2 class="map-record-summary__title">${escapeHtml(item.name)}</h2>
-                        </div>
-                        <small class="map-record-summary__tag">
-                            <a href="${inputHref}">${escapeHtml(inputDisplay)}</a>
-                        </small>
-                    </summary>
-                    <div class="div map-record-body">
-                        <p><strong>${escapeHtml(i18n.map.list.fields.headmaster)}</strong>${escapeHtml(item.HMaster)}</p>
-                        <p><strong>${escapeHtml(i18n.map.list.fields.province)}</strong>${escapeHtml(getProvinceDisplay(item.province))}</p>
-                        <p><strong>${escapeHtml(i18n.map.list.fields.region)}</strong>${escapeHtml(item.prov)}</p>
-                        <p><strong>${escapeHtml(i18n.map.list.fields.address)}</strong>${escapeHtml(item.addr)}</p>
-                        <hr>
-                        ${experienceHtml}
-                        ${scandalHtml}
-                        ${elseHtml}
-                        <div class="contact"><strong>${escapeHtml(i18n.map.list.fields.contact)}</strong>\n${escapeHtml(item.contact)}</div>
-                    </div>
-                `;
-
-                dataContainer.appendChild(card);
-
-                if (shouldTranslateDetails) {
-                    card.addEventListener('toggle', () => {
-                        if (card.open) {
-                            hydrateTranslations(card, item);
-                        }
-                    });
-                }
-            });
+            renderNextBatch();
+            observeLoadSentinel();
+            ensureHashTargetIsRendered();
         } catch (error) {
             console.error('獲取數據失敗:', error);
+            resetRenderedRecords([]);
             document.getElementById('data-container').innerHTML = `<p>${escapeHtml(i18n.map.list.loadFailed)}</p>`;
         }
     }
+
+    window.addEventListener('hashchange', ensureHashTargetIsRendered);
 
     // 執行函數
     loadData();

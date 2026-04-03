@@ -83,6 +83,8 @@ body {
 
 .form-page {
     flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 
 /* 標題樣式 */
@@ -142,6 +144,43 @@ h3 {
 
 .about-copy {
     margin: 0;
+}
+
+.privacy-page__intro {
+    max-width: 78ch;
+    margin: 0 auto 1.25rem;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.privacy-cookie-list {
+    display: grid;
+    gap: 0.85rem;
+    margin-top: 1.2rem;
+}
+
+.privacy-cookie-list__row {
+    display: grid;
+    grid-template-columns: minmax(140px, 180px) minmax(0, 1fr);
+    gap: 0.9rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--panel-border);
+    border-radius: 16px;
+    background: linear-gradient(180deg, var(--surface-elevated), var(--surface-soft));
+}
+
+.privacy-cookie-list__row dt {
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.privacy-cookie-list__row dd {
+    margin: 0;
+    color: var(--text-muted);
+}
+
+.privacy-page__contact {
+    margin-bottom: 0;
 }
 
 .about-copy ul {
@@ -563,8 +602,19 @@ button:hover { background: var(--button-hover); }
     width: 100%;
 }
 
+.map-record-list__status {
+    width: 100%;
+    min-height: 1.5rem;
+    padding: 0.2rem 0 0.6rem;
+    text-align: center;
+    color: var(--text-subtle);
+    font-size: 0.92rem;
+}
+
 .map-record-card {
+    --map-record-card-radius: 16px;
     margin-top: 0;
+    border-radius: var(--map-record-card-radius);
 }
 
 .map-record-summary {
@@ -625,7 +675,7 @@ button:hover { background: var(--button-hover); }
     padding: 0.95rem 1.15rem 0.2rem;
     background: transparent;
     box-shadow: none;
-    border-radius: 0;
+    border-radius: var(--map-record-card-radius);
     border-top: 1px solid var(--panel-border);
 }
 
@@ -677,6 +727,70 @@ button:hover { background: var(--button-hover); }
 .map-page .map-api-card,
 .map-page .map-record-card {
     margin: 0;
+}
+
+.map-page details.map-record-card {
+    position: relative;
+    isolation: isolate;
+    border: 1px solid rgba(255, 255, 255, 0.58);
+    background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.16)),
+        linear-gradient(180deg, rgba(244, 249, 255, 0.82), rgba(225, 236, 248, 0.48));
+    box-shadow:
+        0 20px 40px rgba(121, 145, 176, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.68);
+    backdrop-filter: blur(22px) saturate(145%);
+    -webkit-backdrop-filter: blur(22px) saturate(145%);
+    transition: transform 0.24s ease, box-shadow 0.24s ease, border-color 0.24s ease, background 0.24s ease;
+}
+
+.map-page details.map-record-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(circle at top left, rgba(255, 255, 255, 0.72), transparent 42%),
+        radial-gradient(circle at 88% 12%, rgba(139, 191, 241, 0.22), transparent 28%),
+        linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0));
+    pointer-events: none;
+    z-index: 0;
+}
+
+.map-page details.map-record-card > * {
+    position: relative;
+    z-index: 1;
+}
+
+.map-page details.map-record-card:hover,
+.map-page details.map-record-card[open] {
+    transform: translateY(-3px);
+    border-color: rgba(255, 255, 255, 0.74);
+    box-shadow:
+        0 24px 48px rgba(121, 145, 176, 0.24),
+        inset 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.map-page details.map-record-card[open] {
+    background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.2)),
+        linear-gradient(180deg, rgba(246, 250, 255, 0.88), rgba(223, 235, 248, 0.54));
+}
+
+.map-page .map-record-summary {
+    background: transparent;
+}
+
+.map-page .map-record-summary__tag a {
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.38), rgba(255, 255, 255, 0.14)),
+        linear-gradient(135deg, rgba(52, 152, 219, 0.08), rgba(93, 173, 226, 0.18));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.map-page .map-record-body {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
+    border-top-color: rgba(180, 201, 224, 0.55);
 }
 
 .blog-list-card__title {
@@ -861,6 +975,36 @@ a {
 a:hover {
     opacity: 0.7;
     text-decoration: underline;
+}
+
+.site-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    width: min(1120px, calc(100vw - 2rem));
+    margin: 1.2rem auto 2rem;
+    padding: 1rem 1.15rem;
+    box-sizing: border-box;
+    align-items: center;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.site-footer__meta {
+    margin: 0;
+}
+
+.site-footer__links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.9rem;
+}
+
+.form-page .site-footer {
+    flex-basis: 100%;
+    width: min(650px, calc(100vw - 2rem));
+    margin-top: 1rem;
 }
 
 .page-back-link {
@@ -1049,6 +1193,46 @@ hr {
             radial-gradient(circle at 80.7% 58.8%, rgba(255, 255, 255, 0.24) 0 0.4px, transparent 0.82px),
             radial-gradient(circle at 84.6% 91.1%, rgba(183, 214, 255, 0.3) 0 0.48px, transparent 0.92px),
             radial-gradient(circle at 91.8% 24.9%, rgba(255, 255, 255, 0.26) 0 0.44px, transparent 0.88px),
+            radial-gradient(circle at 2.7% 34.1%, rgba(255, 255, 255, 0.68) 0 0.96px, transparent 1.68px),
+            radial-gradient(circle at 7.9% 74.6%, rgba(190, 220, 255, 0.42) 0 0.58px, transparent 1.08px),
+            radial-gradient(circle at 12.5% 18.9%, rgba(255, 242, 208, 0.44) 0 0.62px, transparent 1.16px),
+            radial-gradient(circle at 15.2% 95.1%, rgba(255, 255, 255, 0.3) 0 0.46px, transparent 0.88px),
+            radial-gradient(circle at 19.7% 44.4%, rgba(165, 208, 255, 0.54) 0 0.78px, transparent 1.38px),
+            radial-gradient(circle at 23.4% 82.7%, rgba(255, 255, 255, 0.28) 0 0.42px, transparent 0.82px),
+            radial-gradient(circle at 28.8% 9.8%, rgba(255, 244, 214, 0.5) 0 0.74px, transparent 1.34px),
+            radial-gradient(circle at 32.6% 60.5%, rgba(228, 237, 255, 0.4) 0 0.56px, transparent 1.02px),
+            radial-gradient(circle at 37.1% 27.8%, rgba(255, 255, 255, 0.32) 0 0.48px, transparent 0.92px),
+            radial-gradient(circle at 42.9% 74.2%, rgba(156, 205, 255, 0.36) 0 0.54px, transparent 1px),
+            radial-gradient(circle at 47.5% 11.7%, rgba(255, 255, 255, 0.7) 0 1px, transparent 1.76px),
+            radial-gradient(circle at 52.3% 57.6%, rgba(255, 243, 208, 0.38) 0 0.54px, transparent 1.02px),
+            radial-gradient(circle at 56.4% 89.8%, rgba(255, 255, 255, 0.3) 0 0.44px, transparent 0.86px),
+            radial-gradient(circle at 60.6% 21.4%, rgba(194, 221, 255, 0.48) 0 0.68px, transparent 1.22px),
+            radial-gradient(circle at 64.7% 49.5%, rgba(255, 255, 255, 0.26) 0 0.4px, transparent 0.8px),
+            radial-gradient(circle at 69.2% 93.3%, rgba(255, 244, 214, 0.56) 0 0.82px, transparent 1.42px),
+            radial-gradient(circle at 73.8% 14.5%, rgba(255, 255, 255, 0.34) 0 0.48px, transparent 0.92px),
+            radial-gradient(circle at 78.4% 67.1%, rgba(171, 211, 255, 0.38) 0 0.56px, transparent 1.04px),
+            radial-gradient(circle at 82.1% 39.6%, rgba(255, 255, 255, 0.3) 0 0.44px, transparent 0.86px),
+            radial-gradient(circle at 87.5% 6.8%, rgba(255, 243, 208, 0.62) 0 0.92px, transparent 1.56px),
+            radial-gradient(circle at 92.3% 61.7%, rgba(255, 255, 255, 0.36) 0 0.52px, transparent 0.98px),
+            radial-gradient(circle at 97.4% 88.9%, rgba(189, 218, 255, 0.4) 0 0.6px, transparent 1.08px),
+            radial-gradient(circle at 5.6% 3.7%, rgba(255, 255, 255, 0.26) 0 0.4px, transparent 0.8px),
+            radial-gradient(circle at 10.8% 49.2%, rgba(181, 213, 255, 0.32) 0 0.48px, transparent 0.92px),
+            radial-gradient(circle at 14.9% 66.5%, rgba(255, 243, 208, 0.28) 0 0.42px, transparent 0.84px),
+            radial-gradient(circle at 18.1% 2.4%, rgba(255, 255, 255, 0.24) 0 0.38px, transparent 0.78px),
+            radial-gradient(circle at 24.6% 53.9%, rgba(188, 217, 255, 0.34) 0 0.5px, transparent 0.96px),
+            radial-gradient(circle at 30.4% 92.6%, rgba(255, 255, 255, 0.22) 0 0.36px, transparent 0.74px),
+            radial-gradient(circle at 35.7% 36.4%, rgba(255, 243, 208, 0.3) 0 0.44px, transparent 0.88px),
+            radial-gradient(circle at 40.2% 55.8%, rgba(255, 255, 255, 0.24) 0 0.38px, transparent 0.8px),
+            radial-gradient(circle at 45.8% 96.5%, rgba(178, 212, 255, 0.32) 0 0.48px, transparent 0.92px),
+            radial-gradient(circle at 50.7% 30.1%, rgba(255, 255, 255, 0.26) 0 0.42px, transparent 0.84px),
+            radial-gradient(circle at 55.1% 8.6%, rgba(255, 243, 208, 0.34) 0 0.5px, transparent 0.96px),
+            radial-gradient(circle at 62.8% 72.4%, rgba(255, 255, 255, 0.22) 0 0.36px, transparent 0.74px),
+            radial-gradient(circle at 67.4% 41.3%, rgba(184, 216, 255, 0.3) 0 0.46px, transparent 0.9px),
+            radial-gradient(circle at 74.9% 55.6%, rgba(255, 255, 255, 0.24) 0 0.38px, transparent 0.8px),
+            radial-gradient(circle at 79.6% 4.3%, rgba(255, 243, 208, 0.28) 0 0.42px, transparent 0.84px),
+            radial-gradient(circle at 85.9% 73.8%, rgba(255, 255, 255, 0.26) 0 0.42px, transparent 0.84px),
+            radial-gradient(circle at 90.4% 43.1%, rgba(185, 216, 255, 0.32) 0 0.48px, transparent 0.92px),
+            radial-gradient(circle at 95.2% 12.4%, rgba(255, 255, 255, 0.22) 0 0.36px, transparent 0.76px),
             linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
         background-size: auto;
         background-repeat: no-repeat;
@@ -1094,6 +1278,50 @@ hr {
         background: linear-gradient(180deg, rgba(10, 18, 30, 0.44), rgba(16, 28, 45, 0.36));
         backdrop-filter: blur(16px);
         -webkit-backdrop-filter: blur(16px);
+    }
+
+    .map-page details.map-record-card {
+        border-color: rgba(219, 233, 248, 0.18);
+        background:
+            linear-gradient(135deg, rgba(31, 47, 70, 0.6), rgba(11, 19, 31, 0.34)),
+            linear-gradient(180deg, rgba(24, 38, 58, 0.62), rgba(11, 19, 31, 0.42));
+        box-shadow:
+            0 24px 48px rgba(0, 0, 0, 0.34),
+            inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    .map-page details.map-record-card::before {
+        background:
+            radial-gradient(circle at top left, rgba(255, 255, 255, 0.12), transparent 40%),
+            radial-gradient(circle at 88% 12%, rgba(100, 181, 246, 0.18), transparent 28%),
+            linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0));
+    }
+
+    .map-page details.map-record-card:hover,
+    .map-page details.map-record-card[open] {
+        border-color: rgba(160, 194, 229, 0.3);
+        box-shadow:
+            0 28px 54px rgba(0, 0, 0, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    }
+
+    .map-page details.map-record-card[open] {
+        background:
+            linear-gradient(135deg, rgba(36, 56, 82, 0.66), rgba(12, 22, 34, 0.38)),
+            linear-gradient(180deg, rgba(27, 43, 66, 0.7), rgba(12, 21, 34, 0.46));
+    }
+
+    .map-page .map-record-summary__tag a {
+        border-color: rgba(219, 233, 248, 0.18);
+        background:
+            linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03)),
+            linear-gradient(135deg, rgba(52, 152, 219, 0.14), rgba(93, 173, 226, 0.2));
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    .map-page .map-record-body {
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+        border-top-color: rgba(184, 206, 231, 0.18);
     }
 
     .map-page #map {
@@ -1323,7 +1551,8 @@ hr {
     }
 
     .map-record-card {
-        border-radius: 18px;
+        --map-record-card-radius: 18px;
+        border-radius: var(--map-record-card-radius);
     }
 
     .map-record-summary {
@@ -1400,6 +1629,16 @@ hr {
     .about-page {
         width: calc(100vw - 0.8rem);
         padding-top: 5rem;
+    }
+
+    .privacy-cookie-list__row {
+        grid-template-columns: 1fr;
+        gap: 0.35rem;
+    }
+
+    .site-footer {
+        width: calc(100vw - 0.8rem);
+        padding: 0.8rem 0.4rem 1.2rem;
     }
 
     .friends-grid {
