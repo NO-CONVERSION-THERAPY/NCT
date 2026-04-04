@@ -11,10 +11,12 @@
     let recordsCache = null;
     let recordsRequest = null;
 
+    // 搜索时忽略大小写和空白，提升学校名/地址混合输入的命中率。
     function normalizeAutocompleteText(value) {
         return String(value || '').trim().toLowerCase().replace(/\s+/g, '');
     }
 
+    // 原始地图数据里可能有重复学校，这里先按“名称+地址”做一次去重。
     function buildAutocompleteRecords(data) {
         const dedupedRecords = new Map();
 
@@ -42,6 +44,7 @@
         return [...dedupedRecords.values()];
     }
 
+    // 评分越小越靠前：优先当前字段前缀命中，再退化到包含匹配。
     function getMatchScore(record, query, field) {
         const primaryText = field === 'address' ? record.normalizedAddr : record.normalizedName;
         const secondaryText = field === 'address' ? record.normalizedName : record.normalizedAddr;
@@ -70,6 +73,7 @@
         return Number.POSITIVE_INFINITY;
     }
 
+    // 自动补全结果按匹配质量排序，并限制数量，避免下拉列表过长。
     function getAutocompleteSuggestions(records, keyword, field, limit = MAX_AUTOCOMPLETE_RESULTS) {
         const normalizedKeyword = normalizeAutocompleteText(keyword);
         if (!normalizedKeyword) {
@@ -108,6 +112,7 @@
         return payload;
     }
 
+    // 读取补全数据时同时做“结果缓存 + 请求去重”，减少重复网络开销。
     async function loadAutocompleteRecords() {
         if (recordsCache) {
             return recordsCache;
@@ -207,6 +212,7 @@
         }
 
         function applySuggestion(record) {
+            // 选中学校时同步回填地址，减少用户二次输入。
             schoolInput.value = record.name || schoolInput.value;
             addressInput.value = record.addr || addressInput.value;
             schoolInput.setCustomValidity('');
@@ -221,6 +227,7 @@
             const otherResultsList = field === 'address' ? schoolResultsList : addressResultsList;
             const keyword = input.value.trim();
 
+            // 同一时刻只保留当前输入框对应的候选面板，避免两列结果同时展开。
             hideResults(otherResultsList);
 
             if (!keyword) {
@@ -247,6 +254,7 @@
             let debounceTimer = null;
 
             input.addEventListener('focus', () => {
+                // 聚焦时先预热数据，首个字符输入后的响应会更快。
                 loadAutocompleteRecords().catch((error) => {
                     console.debug('预加载学校补全数据失败:', error);
                 });
@@ -257,6 +265,7 @@
             });
 
             input.addEventListener('input', () => {
+                // 防抖处理，避免用户连续输入时每个字符都触发一次筛选。
                 globalObject.clearTimeout(debounceTimer);
                 debounceTimer = globalObject.setTimeout(() => {
                     updateSuggestions(field);

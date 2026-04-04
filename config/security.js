@@ -25,6 +25,7 @@ const requestBodyLimits = {
   urlencoded: '50kb'
 };
 
+// 复用 Redis client 和 rate-limit store，避免每个 limiter 单独建连接。
 const redisClientCache = new Map();
 const rateLimitStoreCache = new Map();
 
@@ -64,6 +65,7 @@ function getRedisRateLimitStore({ redisUrl, prefix = 'rate-limit:' } = {}) {
   return store;
 }
 
+// 所有限流都收敛到这一层，路由只负责传策略参数和返回文案。
 function createRateLimiter({
   windowMs = 15 * 60 * 1000,
   max,

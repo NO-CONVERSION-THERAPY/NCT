@@ -22,6 +22,7 @@ let mapTileLayer = null;
 let provinceLayer = null;
 const chartInstances = [];
 
+// 底图、边框和图表主题都跟随系统深色模式一起切换。
 function isDarkMode() {
     return Boolean(themeMediaQuery && themeMediaQuery.matches);
 }
@@ -41,6 +42,7 @@ function addThemeChangeListener(listener) {
     }
 }
 
+// 统一管理地图和图表的配色，避免多个组件各自判断深浅色模式。
 function getThemeColors() {
     return isDarkMode()
         ? {
@@ -61,6 +63,7 @@ function getThemeColors() {
         };
 }
 
+// 深浅色主题使用不同底图源，但对外保持同一个挂载接口。
 function createBaseTileLayer(minZoom) {
     if (isDarkMode()) {
         return L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
@@ -87,6 +90,7 @@ function mountBaseTileLayer(targetMap, minZoom) {
     mapTileLayer.addTo(targetMap);
 }
 
+// 搜索时同样忽略大小写和空白，兼容姓名、地址、地区的混合检索。
 function normalizeSearchText(value) {
     return String(value || '').trim().toLowerCase().replace(/\s+/g, '');
 }
@@ -106,12 +110,14 @@ function getSearchTokens(searchText) {
         .filter(Boolean);
 }
 
+// inputType 为空时视为历史批量数据，这样能兼容旧数据结构。
 function matchesInputType(item, expectedInputType) {
     if (!expectedInputType) return true;
     if (expectedInputType === '批量数据') return !item.inputType;
     return item.inputType === expectedInputType;
 }
 
+// 搜索词会在多字段聚合后的字符串里逐个匹配，支持组合搜索。
 function matchesSearch(item, searchText) {
     const searchTokens = getSearchTokens(searchText);
     if (searchTokens.length === 0) return true;
@@ -188,6 +194,7 @@ function showMapDataError(message) {
     }
 }
 
+// 各类图表都通过工厂函数生成配置，这样主题切换时更容易统一更新。
 function createPieChartOptions() {
     const themeColors = getThemeColors();
 
@@ -360,6 +367,7 @@ window.getSharedMapData()
         const data = jsonResponse.data;
         const provinceMap = {};
 
+        // 将学校数量聚合到省级，用于绘制着色地图。
         data.forEach(item => {
             const prov = (item.province || "").replace(/(省|市|自治区|特别行政区)/g, "");
             provinceMap[prov] = (provinceMap[prov] || 0) + 1;
@@ -374,6 +382,7 @@ window.getSharedMapData()
                     style: function(feature) {
                         let name = feature.properties.name || feature.properties.province || "";
                         
+                        // 省份 GeoJSON 名称与业务数据做一次映射后再上色。
                         const count = provinceMap[name] || 0;
                         return {
                             fillColor: getColor(count),
@@ -420,6 +429,7 @@ window.getSharedMapData()
                 return;
             }
 
+            // 防止用户连续点击刷新导致重复请求和重复 reload。
             refreshInProgress = true;
             timeUpdate();
 
@@ -433,6 +443,7 @@ window.getSharedMapData()
             }
         }
 
+        // “上次同步时间”显示每秒重绘一次，并根据状态切换成刷新按钮。
         function timeUpdate() {
             const elapsed = getElapsedSeconds(lastSyncedTime);
             renderLastSyncedValue(lastSyncedElement, {
@@ -487,6 +498,7 @@ window.getSharedMapData()
         const urlParams = new URLSearchParams(queryString);
         const inputType = urlParams.get('inputType');// 找筛选条件
         const inputSearch = (urlParams.get('search') || '').trim();
+        // 地图 marker 和列表详情共用同一份筛选结果，保证锚点能一一对应。
         const filteredData = data.filter((item) => matchesInputType(item, inputType) && matchesSearch(item, inputSearch));
         const groupedFilteredData = groupSchoolRecords(filteredData);
         const groupIndexBySchoolKey = new Map(
@@ -529,6 +541,7 @@ window.getSharedMapData()
             popupContent.appendChild(headmasterElement);
             popupContent.appendChild(dividerElement);
             popupContent.appendChild(addressElement);
+            // 点击弹窗可直接跳到列表中的聚合学校卡片，而不是原始数据行。
             popupContent.appendChild(detailLink);
 
             marker.bindPopup(popupContent);

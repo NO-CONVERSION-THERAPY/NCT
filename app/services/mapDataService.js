@@ -4,13 +4,16 @@ let lastFetchTime = 0;
 let inFlightRequest = null;
 let lastForceRefreshTime = 0;
 const cacheDurationMs = 300000;
+// 即使用户手动点刷新，也给上游 Apps Script 一个冷却时间，避免被连续击穿。
 const forceRefreshCooldownMs = 30000;
 
+// 远端没有提供 last_synced 时，用当前抓取时间兜底，保证前端总能显示相对时间。
 function resolveLastSyncedTimestamp(lastSynced, fallbackTimestamp) {
   const numericLastSynced = Number(lastSynced);
   return Number.isFinite(numericLastSynced) && numericLastSynced > 0 ? numericLastSynced : fallbackTimestamp;
 }
 
+// 优先使用服务端私有数据源；没有时再退回公开 map-data 接口。
 function resolveMapDataSource({ googleScriptUrl, publicMapDataUrl }) {
   const dataSourceUrl = googleScriptUrl || publicMapDataUrl;
 
@@ -38,6 +41,7 @@ function normalizeRawData(rawData) {
 function cleanMapData(rawData) {
   return rawData
     .filter((item) => item && (item.lat || item['緯度']))
+    // 同时兼容新字段名与历史中文列名，方便表结构渐进迁移。
     .map((item) => ({
       name: item.name || item['學校名稱'] || '未填寫名稱',
       addr: item.addr || item['學校地址'] || '無地址',
@@ -58,14 +62,17 @@ function cleanMapData(rawData) {
 async function getMapData({ forceRefresh = false, googleScriptUrl, publicMapDataUrl }) {
   const now = Date.now();
 
+  // 常规请求优先命中缓存，避免每次页面访问都走网络。
   if (!forceRefresh && cachedData && now - lastFetchTime < cacheDurationMs) {
     return cachedData;
   }
 
+  // 强制刷新也受冷却保护，避免多个用户同时点刷新时频繁命中上游。
   if (forceRefresh && cachedData && now - lastForceRefreshTime < forceRefreshCooldownMs) {
     return cachedData;
   }
 
+  // 并发请求复用同一个 Promise，避免同一时间发出多次相同抓取。
   if (inFlightRequest) {
     return cachedData && !forceRefresh ? cachedData : inFlightRequest;
   }
@@ -100,6 +107,7 @@ async function getMapData({ forceRefresh = false, googleScriptUrl, publicMapData
 
       return finalResponse;
     } catch (error) {
+      // 抓取失败但本地仍有旧缓存时，优先保服务可用而不是直接报错。
       if (cachedData) {
         return cachedData;
       }

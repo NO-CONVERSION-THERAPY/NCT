@@ -1,11 +1,13 @@
 const { execFile } = require('child_process');
 const { promisify } = require('util');
 
+// 轻量级进程内缓存：避免同一批详情文案反复请求翻译接口。
 const translationCache = new Map();
 const translationCacheMaxEntries = 250;
 const translationCacheTtlMs = 6 * 60 * 60 * 1000;
 const execFileAsync = promisify(execFile);
 
+// 当前只开放给英文和繁中，其他语言直接走“原文回显”。
 function normalizeTargetLanguage(targetLanguage) {
   if (targetLanguage === 'en' || targetLanguage === 'zh-TW') {
     return targetLanguage;
@@ -18,6 +20,7 @@ function getCacheKey(targetLanguage, text) {
   return `${targetLanguage}::${text}`;
 }
 
+// 在读取统计或写入前顺手清理过期项，避免常驻进程缓存无上限膨胀。
 function pruneExpiredTranslations(now = Date.now()) {
   for (const [cacheKey, entry] of translationCache.entries()) {
     if (!entry || entry.expiresAt <= now) {
@@ -65,6 +68,7 @@ function writeCachedTranslation(cacheKey, translatedText) {
   return translatedText;
 }
 
+// Google Translate 的返回结构比较嵌套，这里只抽取真正的翻译文本片段。
 function extractTranslatedText(responseBody) {
   if (!Array.isArray(responseBody) || !Array.isArray(responseBody[0])) {
     return '';
@@ -86,6 +90,7 @@ function normalizeTranslatedText(text, targetLanguage) {
   return normalizedText.replace(/(\p{L})\s*[’']\s*(\p{L})/gu, "$1'$2");
 }
 
+// fetch 失败时退回 curl，尽量减少运行环境 TLS/代理差异带来的不可用。
 async function requestTranslationWithCurl(text, targetLanguage) {
   const { stdout } = await execFileAsync('curl', [
     '-sS',
@@ -102,6 +107,7 @@ async function requestTranslationWithCurl(text, targetLanguage) {
   return JSON.parse(stdout);
 }
 
+// 单条翻译包含“查缓存 -> 请求远端 -> 规范化结果 -> 写回缓存”四个步骤。
 async function translateSingleText(text, targetLanguage) {
   const cacheKey = getCacheKey(targetLanguage, text);
   const cachedTranslation = readCachedTranslation(cacheKey);
@@ -143,6 +149,7 @@ async function translateSingleText(text, targetLanguage) {
   return writeCachedTranslation(cacheKey, normalizedTranslatedText);
 }
 
+// 批量接口先按原文去重，既减少请求次数，也避免相同文本返回不一致翻译。
 async function translateDetailItems({ items, targetLanguage }) {
   const normalizedTargetLanguage = normalizeTargetLanguage(targetLanguage);
 

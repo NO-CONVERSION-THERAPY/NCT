@@ -1,6 +1,7 @@
 const { escapeHtml, lexMarkdown, renderMarkdownTokens } = require('./markedService');
 const { translateDetailItems } = require('./textTranslationService');
 
+// 复用通用翻译 service，把纯文本数组改造成它接受的字段结构。
 async function defaultTranslateBatch(texts, targetLanguage) {
   if (!Array.isArray(texts) || texts.length === 0) {
     return [];
@@ -17,10 +18,12 @@ async function defaultTranslateBatch(texts, targetLanguage) {
   return translations.map((entry) => entry.translatedText || '');
 }
 
+// 目前博客仅在英文场景下注入双语块，其他语言继续显示原文。
 function normalizeTranslationTarget(targetLanguage) {
   return targetLanguage === 'en' ? 'en' : null;
 }
 
+// 从 marked 的内联 token 树里抽纯文本，作为后续翻译输入。
 function extractPlainTextFromInlineTokens(tokens = []) {
   return tokens.map((token) => {
     if (!token) {
@@ -47,6 +50,7 @@ function extractPlainTextFromInlineTokens(tokens = []) {
   }).join('');
 }
 
+// 块级 token 的处理与渲染结构保持一致，避免翻译时丢掉列表/表格里的正文。
 function extractPlainTextFromBlockTokens(tokens = []) {
   return tokens.map((token) => {
     if (!token) {
@@ -83,6 +87,7 @@ function extractPlainTextFromBlockTokens(tokens = []) {
   }).filter(Boolean).join('\n');
 }
 
+// 先在服务端渲染出占位节点，真正翻译内容由前端按需填充。
 function buildTranslationSlot(sourceText, className) {
   const normalizedText = String(sourceText || '').trim();
 
@@ -93,6 +98,7 @@ function buildTranslationSlot(sourceText, className) {
   return `<p class="${className} blog-bilingual-translation-slot" data-blog-translation-source="${escapeHtml(normalizedText)}" hidden></p>`;
 }
 
+// 文本翻译统一走“去重 -> 批量翻译 -> 还原原始顺序”，减少重复请求。
 async function translateTexts(texts, { targetLanguage, translateBatch = defaultTranslateBatch } = {}) {
   const normalizedTargetLanguage = normalizeTranslationTarget(targetLanguage);
 
@@ -128,6 +134,7 @@ function shouldHydrateArticleTranslations(targetLanguage) {
   return normalizeTranslationTarget(targetLanguage) === 'en';
 }
 
+// 标题、段落、列表分别单独包装，便于前端做双语排版和样式区分。
 function renderHeadingToken(token, shouldTranslate) {
   const originalHtml = renderMarkdownTokens([token]);
   const sourceText = extractPlainTextFromInlineTokens(token.tokens || []) || token.text || '';
@@ -180,6 +187,7 @@ function renderListToken(token, shouldTranslate) {
   return `<${tagName} class="blog-bilingual-list"${startAttribute}>${itemsHtml}</${tagName}>`;
 }
 
+// 文章详情尽量保留原 markdown 渲染结果，只在适合翻译的块旁边插槽。
 function renderBlogArticleHtml(content, { targetLanguage } = {}) {
   const shouldTranslate = shouldHydrateArticleTranslations(targetLanguage);
   const tokens = lexMarkdown(content);
@@ -216,6 +224,7 @@ function renderBlogArticleHtml(content, { targetLanguage } = {}) {
   return htmlChunks.join('\n');
 }
 
+// 列表页只翻译标题，避免为摘要/正文预先发起额外翻译请求。
 async function translateBlogListEntries(entries, { targetLanguage, translateBatch = defaultTranslateBatch } = {}) {
   const normalizedTargetLanguage = normalizeTranslationTarget(targetLanguage);
 

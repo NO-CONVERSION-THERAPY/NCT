@@ -1,6 +1,7 @@
 (() => {
     const CACHE_TTL_MS = 300000;
     const CACHE_PREFIX = 'map-data-cache:';
+    // 记录同一时刻的共享请求，避免多个组件重复拉同一份地图数据。
     const inMemoryRequests = new Map();
 
     function getCacheKey(apiUrl) {
@@ -10,6 +11,7 @@
     function buildRequestUrl(apiUrl, { forceRefresh = false } = {}) {
         const requestUrl = new URL(apiUrl, window.location.origin);
 
+        // refresh=1 只作为“跳过缓存”的信号，由服务端决定是否真的强刷。
         if (forceRefresh) {
             requestUrl.searchParams.set('refresh', '1');
         }
@@ -73,15 +75,18 @@
         return payload;
     }
 
+    // 暴露给表单补全、地图页等多个入口复用的共享数据读取函数。
     window.getSharedMapData = async function getSharedMapData(options = {}) {
         const apiUrl = window.API_URL;
         const forceRefresh = options.forceRefresh === true;
         const cachedPayload = readCache(apiUrl);
 
+        // 常规读取先走 sessionStorage，刷新页面时也能复用最近一次数据。
         if (!forceRefresh && cachedPayload) {
             return cachedPayload;
         }
 
+        // 同一页面生命周期内的并发普通请求合并成一个 Promise。
         if (!forceRefresh && inMemoryRequests.has(apiUrl)) {
             return inMemoryRequests.get(apiUrl);
         }
