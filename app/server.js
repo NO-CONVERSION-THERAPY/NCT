@@ -5,7 +5,8 @@ const {
   debugMod,
   formProtectionSecretConfigured,
   googleScriptUrl,
-  rateLimitRedisUrl
+  rateLimitRedisUrl,
+  translationProviderConfigured
 } = require('../config/appConfig');
 
 // server.js 只负责启动 HTTP 服务，业务装配在 app/app.js 里。
@@ -24,6 +25,11 @@ if (require.main === module) {
     }
     if (rateLimitRedisUrl) {
       console.log('已啟用 Redis 共享限流存储。');
+    }
+    if (!translationProviderConfigured) {
+      console.warn('警告！未配置正式翻譯服務，翻譯 API 將返回失敗。');
+    } else {
+      console.log('已啟用正式翻譯服務：google-cloud');
     }
     console.log(`Server is running at http://localhost:${appPort}`);
   });

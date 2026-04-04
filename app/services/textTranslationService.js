@@ -1,11 +1,11 @@
-const { execFile } = require('child_process');
-const { promisify } = require('util');
+const { translateTextsWithProvider } = require('./translationProviderService');
 
 // 轻量级进程内缓存：避免同一批详情文案反复请求翻译接口。
 const translationCache = new Map();
 const translationCacheMaxEntries = 250;
 const translationCacheTtlMs = 6 * 60 * 60 * 1000;
-const execFileAsync = promisify(execFile);
+const translationFailureCooldownMs = 90 * 1000;
+let translationServiceUnavailableUntil = 0;
 
 // 当前只开放给英文和繁中，其他语言直接走“原文回显”。
 function normalizeTargetLanguage(targetLanguage) {
@@ -68,18 +68,6 @@ function writeCachedTranslation(cacheKey, translatedText) {
   return translatedText;
 }
 
-// Google Translate 的返回结构比较嵌套，这里只抽取真正的翻译文本片段。
-function extractTranslatedText(responseBody) {
-  if (!Array.isArray(responseBody) || !Array.isArray(responseBody[0])) {
-    return '';
-  }
-
-  return responseBody[0]
-    .map((part) => Array.isArray(part) ? part[0] || '' : '')
-    .join('')
-    .trim();
-}
-
 function normalizeTranslatedText(text, targetLanguage) {
   const normalizedText = String(text || '').trim();
 
@@ -90,63 +78,93 @@ function normalizeTranslatedText(text, targetLanguage) {
   return normalizedText.replace(/(\p{L})\s*[’']\s*(\p{L})/gu, "$1'$2");
 }
 
-// fetch 失败时退回 curl，尽量减少运行环境 TLS/代理差异带来的不可用。
-async function requestTranslationWithCurl(text, targetLanguage) {
-  const { stdout } = await execFileAsync('curl', [
-    '-sS',
-    '--get',
-    '--max-time', '10',
-    'https://translate.googleapis.com/translate_a/single',
-    '--data-urlencode', 'client=gtx',
-    '--data-urlencode', 'sl=auto',
-    '--data-urlencode', `tl=${targetLanguage}`,
-    '--data-urlencode', 'dt=t',
-    '--data-urlencode', `q=${text}`
-  ]);
+function getErrorDiagnostics(error) {
+  const details = [];
 
-  return JSON.parse(stdout);
-}
-
-// 单条翻译包含“查缓存 -> 请求远端 -> 规范化结果 -> 写回缓存”四个步骤。
-async function translateSingleText(text, targetLanguage) {
-  const cacheKey = getCacheKey(targetLanguage, text);
-  const cachedTranslation = readCachedTranslation(cacheKey);
-
-  if (cachedTranslation) {
-    return cachedTranslation;
-  }
-
-  const translateUrl = new URL('https://translate.googleapis.com/translate_a/single');
-  translateUrl.searchParams.set('client', 'gtx');
-  translateUrl.searchParams.set('sl', 'auto');
-  translateUrl.searchParams.set('tl', targetLanguage);
-  translateUrl.searchParams.set('dt', 't');
-  translateUrl.searchParams.set('q', text);
-
-  let responseBody;
-
-  try {
-    const response = await fetch(translateUrl, {
-      signal: AbortSignal.timeout(10000)
-    });
-
-    if (!response.ok) {
-      throw new Error(`翻譯服務返回 ${response.status}`);
+  function collectDiagnostics(currentError) {
+    if (!currentError || typeof currentError !== 'object') {
+      return;
     }
 
-    responseBody = await response.json();
-  } catch (error) {
-    responseBody = await requestTranslationWithCurl(text, targetLanguage);
+    if (currentError.name) {
+      details.push(`name=${currentError.name}`);
+    }
+
+    if (currentError.code) {
+      details.push(`code=${currentError.code}`);
+    }
+
+    if (currentError.message) {
+      details.push(`message=${currentError.message}`);
+    }
+
+    if (Array.isArray(currentError.errors)) {
+      currentError.errors.forEach(collectDiagnostics);
+    }
+
+    if (currentError.cause && currentError.cause !== currentError) {
+      collectDiagnostics(currentError.cause);
+    }
   }
 
-  const translatedText = extractTranslatedText(responseBody);
+  collectDiagnostics(error);
 
-  if (!translatedText) {
-    throw new Error('翻譯結果為空');
+  return [...new Set(details)].join(', ');
+}
+
+function isTranslationServiceCoolingDown(now = Date.now()) {
+  return translationServiceUnavailableUntil > now;
+}
+
+function openTranslationFailureCooldown(now = Date.now()) {
+  translationServiceUnavailableUntil = now + translationFailureCooldownMs;
+}
+
+function resetTranslationFailureCooldown() {
+  translationServiceUnavailableUntil = 0;
+}
+
+async function requestTranslationBatch(texts, targetLanguage) {
+  if (isTranslationServiceCoolingDown()) {
+    throw new Error('翻譯服務連線冷卻中');
   }
 
-  const normalizedTranslatedText = normalizeTranslatedText(translatedText, targetLanguage);
-  return writeCachedTranslation(cacheKey, normalizedTranslatedText);
+  let lastError = null;
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const translatedTexts = await translateTextsWithProvider(texts, targetLanguage);
+
+      if (!Array.isArray(translatedTexts) || translatedTexts.length !== texts.length) {
+        throw new Error('翻譯結果格式異常');
+      }
+
+      resetTranslationFailureCooldown();
+      return translatedTexts;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  openTranslationFailureCooldown();
+  throw lastError || new Error('翻譯服務暫時不可用');
+}
+
+function logTranslationFailure(error, texts, targetLanguage) {
+  console.warn(
+    '翻譯服務暫時不可用，未返回翻譯結果：',
+    getErrorDiagnostics(error) || (error && error.message ? error.message : error),
+    '| targetLanguage =',
+    targetLanguage,
+    '| textCount =',
+    Array.isArray(texts) ? texts.length : 0,
+    '| sample =',
+    (Array.isArray(texts) ? texts : [texts])
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((text) => String(text).slice(0, 40))
+      .join(' | ')
+  );
 }
 
 // 批量接口先按原文去重，既减少请求次数，也避免相同文本返回不一致翻译。
@@ -160,16 +178,49 @@ async function translateDetailItems({ items, targetLanguage }) {
     }));
   }
 
-  const uniqueTexts = [...new Set(items.map((item) => item.text).filter(Boolean))];
   const translatedTextBySource = Object.create(null);
+  const pendingTexts = [];
+  const uniqueTexts = [...new Set(items.map((item) => item.text).filter(Boolean))];
 
-  await Promise.all(uniqueTexts.map(async (text) => {
-    translatedTextBySource[text] = await translateSingleText(text, normalizedTargetLanguage);
-  }));
+  uniqueTexts.forEach((text) => {
+    const cacheKey = getCacheKey(normalizedTargetLanguage, text);
+    const cachedTranslation = readCachedTranslation(cacheKey);
+
+    if (cachedTranslation) {
+      translatedTextBySource[text] = cachedTranslation;
+      return;
+    }
+
+    pendingTexts.push(text);
+  });
+
+  if (pendingTexts.length > 0) {
+    let translatedPendingTexts = [];
+
+    try {
+      translatedPendingTexts = await requestTranslationBatch(pendingTexts, normalizedTargetLanguage);
+    } catch (error) {
+      logTranslationFailure(error, pendingTexts, normalizedTargetLanguage);
+      throw error;
+    }
+
+    pendingTexts.forEach((text, index) => {
+      const translatedText = normalizeTranslatedText(translatedPendingTexts[index], normalizedTargetLanguage);
+
+      if (!translatedText) {
+        throw new Error('翻譯結果為空');
+      }
+
+      translatedTextBySource[text] = writeCachedTranslation(
+        getCacheKey(normalizedTargetLanguage, text),
+        translatedText
+      );
+    });
+  }
 
   return items.map((item) => ({
     ...item,
-    translatedText: translatedTextBySource[item.text] || item.text
+    translatedText: translatedTextBySource[item.text] || ''
   }));
 }
 
@@ -178,8 +229,12 @@ module.exports = {
     pruneExpiredTranslations();
     return translationCache.size;
   },
+  getTranslationFailureCooldownMs() {
+    return Math.max(0, translationServiceUnavailableUntil - Date.now());
+  },
   resetTranslationCache() {
     translationCache.clear();
+    resetTranslationFailureCooldown();
   },
   translateDetailItems,
   translationCacheMaxEntries

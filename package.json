@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "start": "node app/server.js",
-    "test": "node --test"
+    "test": "node --test",
+    "dev:workers": "npx wrangler dev",
+    "deploy:workers": "npx wrangler deploy"
   },
   "keywords": [],
   "author": "",

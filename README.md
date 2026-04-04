@@ -1,351 +1,431 @@
-# NO CONVERSION THERAPY
+# N·C·T
 
-## N·C·T project
+## N·C·T Project
 
 [![Status](https://img.shields.io/badge/Status-Active-brightgreen)]()
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-blue.svg)]()
 
-**我們致力於記錄、曝光並抵制所有形式的「扭轉治療」機構。** 每一份真實的聲音，都是終結傷害的力量。你的簽名與參與，將幫助更多人避開深淵。
+**我們致力於記錄、曝光並抵制所有形式的「扭轉治療」機構。**  
+每一份真實的聲音，都是終結傷害的力量。
+
+- 站點首頁：https://nct.hosinoneko.me
+- 匿名表單：https://nct.hosinoneko.me/form
+- 公開地圖：https://nct.hosinoneko.me/map
+- 原始 Google Form：https://forms.gle/eHwkmNCZtmZhLjzh7
+
+> 我們承諾不以任何理由主動收集不必要的個人資訊。
 
 ---
 
-## 我爲什麼要這麼做？
+## 項目目標
 
-1. **信息對稱**：打破非法人格糾正機構的信息壟斷。
-2. **證據固定**：為受害者提供一個經歷記錄平台。
-3. **地圖瀏覽**：讓所有人看到那些溝槽的物件在國内的覆蓋程度
-4. **法律推動**：wc這個好像有點難，但是我們在做了！！！！
+1. 打破信息壟斷，讓更多人看見相關機構與風險資訊。
+2. 為受害者與知情者提供一個可匿名提交、可持續保存的經歷記錄入口。
+3. 透過地圖與公開 API 讓資料更容易被查閱、分析與再利用。
+4. 在必要時支持他人自行部署，降低單點失效與封鎖風險。
 
-## 表單收集
+## 主要功能
 
-如果你曾是受害者或知情者，請通過我們的網站匿名提交詳細信息。我們會根據您的表單匯總出一個地圖：
- **[填寫表單](https://NCT.hosinoneko.me/form)**
+- 匿名表單提交，支援基礎防刷、限流與審計日志。
+- 機構地圖頁與公開 `GET /api/map-data` 資料接口。
+- 博客 / 通知 / 文章頁面。
+- 多語言界面與部分內容翻譯。
+- 自動輸出 `sitemap.xml` 與 `robots.txt`。
+- 可透過 GitHub + Cloudflare Workers Builds 自動部署。
 
-原表單LINK:[Google From](https://forms.gle/eHwkmNCZtmZhLjzh7)
+## 技術棧
 
-*我承諾我不會以任何理由收集您的個人資訊*
+- Node.js 18+
+- Express 5
+- EJS
+- Cloudflare Workers
+- Google Form
+- 可選 Google Apps Script 資料源
+
+當前代碼保留兩種本地運行方式：
+
+- 傳統 Node 啓動：`npm start`
+- Workers 本地調試：`npm run dev:workers`
+
+正式部署方式以 **GitHub + Workers Builds** 為主。
 
 ---
 
-## 開發與貢獻
+## 快速開始
 
-若出現國家級的域名封鎖，各位可以自行部署。
+### 1. 取得專案
 
-本專案基於 **Node.js + Express + EJS** 構建，並部署於 Vercel。
-
-### 環境要求
-- Node.js 18.x 
-
-### 快速開始
-
-Build command
-```bash
-npm install
-```
-
-請先在專案根目錄建立 `.env`：
-
-```bash
-# 站點標題
-TITLE="NO CONVERSION THERAPY"
-
-# 本地開發建議開啓，方便直接走公開地圖 API
-DEBUG_MOD="true"
-
-# 本地開發建議開啓，提交表單時只顯示預覽，不真的送到 Google Form
-FORM_DRY_RUN="true"
-
-# 站點對外網址，會用於 sitemap.xml / robots.txt
-SITE_URL="https://nct.hosinoneko.me"
-
-# 服務埠號
-PORT="3000"
-
-# 表單提交限流，15 分鐘內最多提交次數
-SUBMIT_RATE_LIMIT_MAX="5"
-
-# 表單防刷 token 的簽名密鑰；正式環境強烈建議設置一個長隨機字串
-# 用途：/form 下發的 form_token 會用它簽名，/submit 會用它驗證 token 是否被篡改
-# 要求：所有應用實例必須使用同一個值，建議使用至少 32 位隨機字串
-# 示例：openssl rand -hex 32
-FORM_PROTECTION_SECRET=""
-
-# 表單最短填寫時間（毫秒），過快提交會被視為異常
-FORM_PROTECTION_MIN_FILL_MS="3000"
-
-# 表單 token 最長有效時間（毫秒），超過後需刷新表單重新取得
-FORM_PROTECTION_MAX_AGE_MS="86400000"
-
-# Google Form 的表單 ID；不填則使用專案內建預設值
-FORM_ID="1FAIpQLScggjQgYutXQrjQDrutyxL0eLaFMktTMRKsFWPffQGavUFspA"
-
-# Google Apps Script API 位址
-# 若未設置，地圖頁會直接使用公開 API
-GOOGLE_SCRIPT_URL=""
-
-# 公開地圖資料 API
-PUBLIC_MAP_DATA_URL="https://nct.hosinoneko.me/api/map-data"
-
-# 若部署在 Nginx / Caddy / Vercel 等反向代理後，可設為 1 或 true
-# 讓限流與審計正確識別用戶真實 IP。Vercel 會自動開啓。
-TRUST_PROXY="false"
-
-# 若部署為多實例，建議配置共享 Redis，讓限流能跨實例生效
-# 也可直接使用 REDIS_URL
-# 用途：讓 /submit 與其他限流接口共用同一份計數，避免多實例時每台各算各的
-# 留空行為：自動退回單實例進程內記憶體限流；應用重啓後計數會清空，多實例之間不共享
-# 常見格式：
-#   本地 Redis: redis://127.0.0.1:6379
-#   帶密碼 Redis: redis://default:password@host:6379
-#   TLS Redis: rediss://default:password@host:6379
-RATE_LIMIT_REDIS_URL=""
-```
-
-常見配置建議：
-
-- 本地開發：保留 `DEBUG_MOD="true"` 與 `FORM_DRY_RUN="true"`。
-- 正式部署：將 `DEBUG_MOD="false"`、`FORM_DRY_RUN="false"`，並把 `SITE_URL` 改成你的正式網域。
-- 正式部署時強烈建議一併設置 `FORM_PROTECTION_SECRET`；否則表單防刷 token 只能退回使用派生值。
-- 若你有自己的 Google Apps Script 資料源，請填入 `GOOGLE_SCRIPT_URL`；否則網站會退回使用 `PUBLIC_MAP_DATA_URL`。
-- 如果你把站點放在反向代理後面，自行部署時建議一併設置 `TRUST_PROXY="1"`。
-- 若你的站點會跑多個實例，建議配置 `RATE_LIMIT_REDIS_URL` 或 `REDIS_URL`，避免每個實例各算各的限流額度。
-- 若 `RATE_LIMIT_REDIS_URL` / `REDIS_URL` 留空，程式會回退到單實例記憶體限流；單機部署可接受，但應用重啓後會清空計數，且多實例之間不共享。
-
-補充說明：
-
-- `FORM_PROTECTION_SECRET` 是服務端簽名密鑰，不是前端公開配置。請只放在伺服器環境變數中，不要寫進客戶端腳本或提交到版本庫。
-- `RATE_LIMIT_REDIS_URL` 與 `REDIS_URL` 二選一即可；程式會優先讀 `RATE_LIMIT_REDIS_URL`，沒有時再退回 `REDIS_URL`。
-
-*一般來説 `TITLE` 填 `NO CONVERSION THERAPY` 就可以了。*
-
-若想在本地開發
 ```bash
 git clone https://github.com/HosinoEJ/No-Torsion.git
 cd No-Torsion
 npm install
 ```
-最後就可以啓動了：
+
+### 2. 建立環境變數
+
+建議直接從範例檔開始：
+
+```bash
+cp .env.example .env
+```
+
+然後根據你的環境修改 `.env`。
+
+如果你要用 Workers 本地調試，建議改用 `.dev.vars`，不要和 `.env` 混用。
+
+### 3. 本地啓動
+
+Node 模式：
+
 ```bash
 npm start
 ```
 
-如需跑一下目前專案內建的 smoke test：
+Workers 模式：
+
+```bash
+npm run dev:workers
+```
+
+### 4. 跑測試
+
 ```bash
 npm test
 ```
 
-警告：在本地運行時，發送表單功能可能會受到GFW的影響。
+> 提示：本地運行時，表單實際提交到 Google Form 可能受到網絡環境影響。開發時建議先使用 `FORM_DRY_RUN="true"`。
 
-### API 與站點輸出
+---
 
-如果你想在你的網站顯示網站地圖，或者用來分析數據，可以使用我們的api，這在一定程度上可以促進去中心化。
+## 配置說明
 
-公開 API：
+完整註釋版配置請直接查看 [.env.example](./.env.example)。
+
+### 常用環境變數
+
+| 變數 | 用途 | 建議 |
+| --- | --- | --- |
+| `TITLE` | 站點標題 | 一般填 `N·C·T` |
+| `DEBUG_MOD` | 是否開啓調試頁 | 本地 `true`，正式 `false` |
+| `FORM_DRY_RUN` | 是否只預覽提交、不真正送出 | 本地 `true`，正式 `false` |
+| `SITE_URL` | 站點正式網址 | 正式環境必填自己的域名 |
+| `SUBMIT_RATE_LIMIT_MAX` | 15 分鐘內單 IP 最多提交次數 | 正式環境建議保留或按需調整 |
+| `FORM_PROTECTION_SECRET` | 表單防刷簽名密鑰 | 正式環境強烈建議顯式設置 |
+| `FORM_PROTECTION_MIN_FILL_MS` | 最短填寫時間 | 預設 `3000` |
+| `FORM_PROTECTION_MAX_AGE_MS` | 表單 token 最長有效期 | 預設 `86400000` |
+| `FORM_ID` | Google Form ID | 不填則使用內建預設值 |
+| `GOOGLE_SCRIPT_URL` | 私有 Google Apps Script 資料源 | 有私有資料源時填寫 |
+| `PUBLIC_MAP_DATA_URL` | 公開地圖 API 地址 | 一般填你的 `/api/map-data` |
+| `GOOGLE_CLOUD_TRANSLATION_API_KEY` | Google Cloud Translation API Key | 啓用翻譯功能時必填 |
+| `TRANSLATION_PROVIDER_TIMEOUT_MS` | 翻譯請求超時 | 預設 `10000` |
+| `TRUST_PROXY` | 是否信任反向代理 | Workers / 代理環境建議啓用 |
+| `RATE_LIMIT_REDIS_URL` | 共享限流存儲 | 多實例部署強烈建議配置 |
+
+### 翻譯服務配置
+
+翻譯功能現在只支持 **Google Cloud Translation API**，不再保留其他翻譯 provider，也不再使用非正式公共接口。
+
+建議：
+
+- `GOOGLE_CLOUD_TRANSLATION_API_KEY` 屬於敏感資訊，應放在 Workers `Secret`，不要提交到 GitHub。
+- Google Cloud Translation 固定使用官方地址 `https://translation.googleapis.com`，不需要單獨配置 base URL。
+- `TRANSLATION_PROVIDER_TIMEOUT_MS` 控制單次翻譯請求超時，預設 `10000` 毫秒。
+- 若未配置 `GOOGLE_CLOUD_TRANSLATION_API_KEY`，`/api/translate-text` 會直接返回失敗，地圖詳情與博客雙語區塊也不會顯示翻譯結果。
+
+### 配置建議
+
+- 本地開發：`DEBUG_MOD="true"`、`FORM_DRY_RUN="true"`。
+- 正式部署：`DEBUG_MOD="false"`、`FORM_DRY_RUN="false"`。
+- 翻譯功能現在只走**正式翻譯後端**，不再使用 `translate.googleapis.com` 這類非正式接口。
+- 啓用翻譯時只需要配置 `GOOGLE_CLOUD_TRANSLATION_API_KEY`。
+- `FORM_PROTECTION_SECRET` 屬於服務端敏感資訊，不要提交到版本庫。
+- 若未配置 `GOOGLE_SCRIPT_URL`，地圖頁會退回使用 `PUBLIC_MAP_DATA_URL`。
+- 若未配置 `RATE_LIMIT_REDIS_URL`，限流會退回單實例記憶體模式。
+
+### 翻譯服務示例
+
+Google Cloud Translation：
+
+```bash
+GOOGLE_CLOUD_TRANSLATION_API_KEY="替換成你的 Google Cloud API Key"
+TRANSLATION_PROVIDER_TIMEOUT_MS="10000"
 ```
+
+---
+
+## 部署到 Cloudflare Workers
+
+本專案的正式部署流程只保留 **GitHub + Workers Builds**。
+
+倉庫根目錄已包含：
+
+- [worker.mjs](./worker.mjs)：Workers 入口
+- [wrangler.jsonc](./wrangler.jsonc)：Workers 配置
+
+這兩個文件會把 `views/`、`blog/`、`public/`、`data.json`、`friends.json` 一併打包進 Workers 的 `/bundle`。
+
+### 0. 前置條件
+
+你需要準備：
+
+- 一個 Cloudflare 帳號
+- 一個 GitHub 倉庫
+- Node.js 18+
+- 已提交並推送的專案代碼
+
+如果你要綁定正式域名，還需要：
+
+- 網域已接入 Cloudflare
+- 你對該 zone 擁有管理權限
+
+### 1. 先做本地驗證
+
+部署前建議先在本地驗證 Workers 版本：
+
+```bash
+npm install
+npm run dev:workers
+npm test
+```
+
+Workers 本地開發時，建議把變數放進 `.dev.vars`。最小示例：
+
+```bash
+TITLE="N·C·T"
+DEBUG_MOD="true"
+FORM_DRY_RUN="true"
+SITE_URL="http://127.0.0.1:8787"
+SUBMIT_RATE_LIMIT_MAX="5"
+FORM_PROTECTION_SECRET="請換成你自己的長隨機字串"
+FORM_PROTECTION_MIN_FILL_MS="3000"
+FORM_PROTECTION_MAX_AGE_MS="86400000"
+FORM_ID="1FAIpQLScggjQgYutXQrjQDrutyxL0eLaFMktTMRKsFWPffQGavUFspA"
+GOOGLE_SCRIPT_URL=""
+PUBLIC_MAP_DATA_URL="https://nct.hosinoneko.me/api/map-data"
+GOOGLE_CLOUD_TRANSLATION_API_KEY="換成你自己的正式 API Key"
+TRANSLATION_PROVIDER_TIMEOUT_MS="10000"
+TRUST_PROXY="1"
+RATE_LIMIT_REDIS_URL=""
+```
+
+### 2. 連接 GitHub 倉庫
+
+1. 將本專案推送到 GitHub。
+2. 打開 Cloudflare Dashboard。
+3. 進入 **Workers & Pages**。
+4. 點擊 **Create application**。
+5. 在 **Import a repository** 旁選擇 **Get started**。
+6. 授權 **Cloudflare Workers & Pages** GitHub App。
+7. 選擇本專案所在的倉庫。
+
+### 3. 配置 Workers Builds
+
+推薦配置：
+
+| 項目 | 建議值 |
+| --- | --- |
+| `Git branch` | `main` |
+| `Root directory` | `.` |
+| `Build command` | 留空 |
+| `Deploy command` | `npm run deploy:workers` |
+| `Non-production branch deploy command` | 保持預設 `npx wrangler versions upload` |
+
+完成後點擊 **Save and Deploy**。
+
+### 4. 補齊 Variables 和 Secrets
+
+第一次部署完成後，請到：
+
+`Workers & Pages` -> 你的 Worker -> `Settings` -> `Variables and Secrets`
+
+建議配置以下值：
+
+| 名稱 | 類型 | 建議 |
+| --- | --- | --- |
+| `TITLE` | Text | `N·C·T` |
+| `DEBUG_MOD` | Text | 正式環境填 `false` |
+| `FORM_DRY_RUN` | Text | 正式環境填 `false` |
+| `SITE_URL` | Text | 你的正式網址 |
+| `SUBMIT_RATE_LIMIT_MAX` | Text | 例如 `5` |
+| `FORM_PROTECTION_SECRET` | Secret | 強烈建議配置 |
+| `FORM_PROTECTION_MIN_FILL_MS` | Text | 例如 `3000` |
+| `FORM_PROTECTION_MAX_AGE_MS` | Text | 例如 `86400000` |
+| `FORM_ID` | Text | 你的 Google Form ID |
+| `GOOGLE_SCRIPT_URL` | Text 或 Secret | 有私有資料源時填 |
+| `PUBLIC_MAP_DATA_URL` | Text | 通常填你的 `/api/map-data` |
+| `GOOGLE_CLOUD_TRANSLATION_API_KEY` | Secret | 啓用翻譯功能時必填 |
+| `TRANSLATION_PROVIDER_TIMEOUT_MS` | Text | 例如 `10000` |
+| `TRUST_PROXY` | Text | 建議 `1` 或 `true` |
+| `RATE_LIMIT_REDIS_URL` | Secret | 有共享 Redis 時配置 |
+
+> 建議把 `FORM_PROTECTION_SECRET`、`GOOGLE_CLOUD_TRANSLATION_API_KEY` 與帶密碼的 `RATE_LIMIT_REDIS_URL` 設為 `Secret`，其餘非敏感值可設為 `Text`。
+
+補完變數後，重新觸發一次部署。
+
+### 5. 名稱一致性
+
+如果你是先在 Cloudflare 裡建立 Worker，再去接 GitHub 倉庫，請確保：
+
+- Dashboard 中的 Worker 名稱
+- [wrangler.jsonc](./wrangler.jsonc) 裡的 `name`
+
+兩者完全一致，否則 Builds 會失敗。
+
+目前本專案的 Worker 名稱為：
+
+```text
+no-torsion
+```
+
+### 6. 綁定正式域名
+
+如果你不想使用 `*.workers.dev`，可以綁定自己的 Cloudflare 網域：
+
+1. 進入 **Workers & Pages**
+2. 選擇你的 Worker
+3. 打開 **Settings > Domains & Routes**
+4. 點 **Add > Custom Domain**
+5. 輸入你的網域或子網域，例如：
+   - `nct.example.com`
+   - `example.com`
+6. 點 **Add Custom Domain**
+
+綁定成功後，記得同步更新：
+
+- `SITE_URL`
+- `PUBLIC_MAP_DATA_URL`
+
+### 7. 上線後檢查清單
+
+正式部署完成後，建議至少手動驗證以下路徑：
+
+- `/`
+- `/map`
+- `/form`
+- `/blog`
+- `/api/map-data`
+- `/sitemap.xml`
+- `/robots.txt`
+
+如果 `FORM_DRY_RUN="false"`，也要實測表單是否能成功送到 Google Form。
+
+### 8. Workers 上的已知差異
+
+- 模板、博客 Markdown 與 JSON 檔案會從 Workers 的 `/bundle` 讀取。
+- 翻譯服務已移除 `curl` 子進程兜底，現在固定使用 Google Cloud Translation API。
+- 若未配置正式翻譯服務，翻譯相關 API 會直接返回失敗，而不是回退原文。
+- `sitemap.xml` 在 Workers 上會優先使用文章元資料中的 `CreationDate` 作為 `lastmod`。
+- 若未配置共享 Redis，限流會退回單實例記憶體模式，跨實例一致性較弱。
+
+### 9. 常見問題
+
+**Q: 本地 `npm start` 和 Workers 版本會衝突嗎？**  
+A: 不會。兩者只是不同的本地運行入口。
+
+**Q: 為什麼本地 `.env` 能跑，但上到 Workers 還要重新填變數？**  
+A: 因為 Cloudflare 線上環境不會讀你本地磁碟裡的 `.env`，必須在 Dashboard 中重新配置。
+
+**Q: 這個專案要不要額外跑前端 build？**  
+A: 目前不需要。Workers Builds 的 `Build command` 一般留空即可。
+
+**Q: 為什麼 `Deploy command` 用的是 `npm run deploy:workers`？**  
+A: 因為它會呼叫 `npx wrangler deploy`，且與本倉庫的 `package.json` 保持一致。
+
+---
+
+## 公開 API
+
+### `GET /api/map-data`
+
+公開接口：
+
+```text
 https://nct.hosinoneko.me/api/map-data
 ```
 
-如果你是自行部署，則改用你自己的網域，例如：
+如果你是自行部署，則改用你自己的域名，例如：
+
 ```text
 https://你的網域/api/map-data
 ```
 
-另外，網站現在也會自動提供：
+返回值示例：
+
+```json
+{
+  "avg_age": 17,
+  "last_synced": 1774925078387,
+  "statistics": [
+    { "province": "河南", "count": 12 },
+    { "province": "湖北", "count": 66 }
+  ],
+  "data": [
+    {
+      "name": "學校名稱",
+      "addr": "學校地址",
+      "province": "省份",
+      "prov": "區、縣",
+      "else": "其他補充内容",
+      "lat": 36.62728,
+      "lng": 118.58882,
+      "experience": "經歷描述",
+      "HMaster": "負責人/校長姓名",
+      "scandal": "已知醜聞",
+      "contact": "學校聯繫方式",
+      "inputType": "受害者本人"
+    }
+  ]
+}
+```
+
+字段說明：
+
+- `lat` / `lng`：經緯度
+- `last_synced`：毫秒級 Unix timestamp
+- 真正的機構列表位於 `data` 欄位
+
+### 站點還會自動輸出
+
 ```text
 https://你的網域/sitemap.xml
 https://你的網域/robots.txt
 ```
 
-`/api/map-data` 會回傳一個 `GET` 類型的 JSON 物件，以下是案例：
+### 最簡單的調用示例
 
-```JSON
-{
-    "avg_age": 17,
-    "last_synced": 1774925078387,
-    "statistics": [
-        {
-            "province": "河南",
-            "count": 12
-        },
-        {
-            "province": "湖北",
-            "count": 66
-        },
-        {
-            "province": "福建",
-            "count": 3
-        }
-    ],
-    "data": [
-        {
-            "name": "學校名稱",
-            "addr": "學校地址",
-            "province": "省份",
-            "prov": "區、縣",
-            "else": "其他補充内容",
-            "lat": 36.62728,
-            "lng": 118.58882,
-            "experience": "經歷描述",
-            "HMaster": "負責人/校長姓名",
-            "scandal": "已知醜聞",
-            "contact": "學校聯繫方式",
-            "inputType": "受害者本人"
-        }
-    ]
-}
-```
-
-其中：
-
-- `lat` 和 `lng` 是經緯度。
-- `last_synced` 是毫秒級 Unix timestamp。
-- 真正的機構列表在 `data` 欄位中，不是整個回傳值本身。
-
-### API案例：機構地圖
-
-本網站其實已經是一個案例了：https://NCT.hosinoneko.me/map
-
-當然我也鼓勵大家去自己製作：
-
-我們在這裏使用的是[LEAFLETJS](https://leafletjs.com)這個項目實現的在綫地圖查看，html程式碼在此處：
-
-```HTML
-<!DOCTYPE html>
-<html>
-<head>
-    <title>机构综合地图</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <style>
-        #map { height: 80vh; width: 100%; border-radius: 8px; }
-        .custom-popup b { color: #e63946; }
-    </style>
-</head>
-<body>
-    <h1>机构综合地图</h1>
-    <div id="map"></div>
-    <p><a href="/">返回首页</a></p>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script>
-        const map = L.map('map').setView([36.06, 120.38], 6); // 預設視角
-
-        // 選用簡潔的底圖風格
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
-
-        const apiUrl = 'https://nct.hosinoneko.me/api/map-data';
-
-        fetch(apiUrl)
-            .then(res => res.json())
-            .then(payload => {
-                payload.data.forEach(item => {
-                    const marker = L.marker([item.lat, item.lng]).addTo(map);
-
-                    // 1. 鼠標指到圖標：顯示標題 (Tooltip)
-                    marker.bindTooltip(item.name, {
-                        sticky: true, 
-                        direction: 'top' 
-                    });
-
-                    // 2. 點擊：顯示所有詳細資訊 (Popup)
-                    const popupContent = document.createElement('div');
-                    const title = document.createElement('b');
-                    const region = document.createElement('small');
-                    const headmaster = document.createElement('p');
-                    const divider = document.createElement('hr');
-                    const address = document.createElement('address');
-
-                    popupContent.className = 'custom-popup';
-                    title.textContent = item.name || '';
-                    region.textContent = item.prov || '';
-                    headmaster.textContent = item.HMaster || '';
-                    address.textContent = item.addr || '';
-
-                    popupContent.appendChild(title);
-                    popupContent.appendChild(document.createElement('br'));
-                    popupContent.appendChild(region);
-                    popupContent.appendChild(headmaster);
-                    popupContent.appendChild(divider);
-                    popupContent.appendChild(address);
-
-                    marker.bindPopup(popupContent);
-                });
-            });
-    </script>
-</body>
-</html>
-```
-
-你也可以將資訊全部列出來：
-
-```HTML
-<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-<div id="data-container">
-    <h3>所有數據</h3>
-</div>
+```html
 <script>
-    async function loadData() {
-        try {
-            const response = await axios.get('https://nct.hosinoneko.me/api/map-data');
-            
-            const rawData = response.data.data;
-
-            const container = document.getElementById('data-container');
-
-            rawData.forEach(item => {
-                const card = document.createElement('div');
-                card.className = 'card';
-
-                const wrapper = document.createElement('div');
-                wrapper.className = 'div';
-                wrapper.style.width = '100%';
-
-                const title = document.createElement('h2');
-                title.textContent = item.name || '';
-
-                const headmaster = document.createElement('p');
-                headmaster.textContent = `負責人：${item.HMaster || ''}`;
-
-                const province = document.createElement('p');
-                province.textContent = `省份：${item.province || ''}`;
-
-                const region = document.createElement('p');
-                region.textContent = `鄉、鎮：${item.prov || ''}`;
-
-                const address = document.createElement('p');
-                address.textContent = `地址：${item.addr || ''}`;
-
-                const divider = document.createElement('hr');
-
-                wrapper.appendChild(title);
-                wrapper.appendChild(headmaster);
-                wrapper.appendChild(province);
-                wrapper.appendChild(region);
-                wrapper.appendChild(address);
-                wrapper.appendChild(divider);
-
-                if (item.scandal) {
-                    const scandal = document.createElement('div');
-                    scandal.className = 'scandal';
-                    scandal.textContent = `⚠️ ${item.scandal}`;
-                    wrapper.appendChild(scandal);
-                }
-
-                const contact = document.createElement('div');
-                contact.className = 'contact';
-                contact.textContent = `聯繫方式：${item.contact || ''}`;
-                wrapper.appendChild(contact);
-
-                card.appendChild(wrapper);
-                container.appendChild(card);
-            });
-        } catch (error) {
-            console.error('獲取數據失敗:', error);
-            document.getElementById('data-container').innerHTML = '<p>數據加載失敗</p>';
-        }
-    }
-
-    // 執行函數
-    loadData();
+  fetch('https://你的網域/api/map-data')
+    .then((res) => res.json())
+    .then((payload) => {
+      console.log(payload.data);
+    });
 </script>
 ```
 
-就這樣沒啦！你完全不需要搞什麽複雜的伺服器編寫，只需要你寫一個html頁面，上傳到github pages就可以了！
+如果你想把資料做成地圖，可直接配合 [Leaflet](https://leafletjs.com) 等前端地圖庫使用；本專案自己的 `/map` 頁面就是一個完整示例。
+
+---
+
+## 貢獻
+
+歡迎提交 issue、PR 或 fork 自行部署。
+
+在提交前建議至少確認：
+
+```bash
+npm test
+```
+
+若你是針對部署、環境變數或表單流程做修改，也建議一併驗證：
+
+- `/form`
+- `/submit`
+- `/api/map-data`
+- `/blog`
+
+---
+
+## 授權
+
+本專案授權資訊請參見 [LICENSE](./LICENSE)。

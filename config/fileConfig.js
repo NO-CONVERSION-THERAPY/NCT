@@ -1,9 +1,11 @@
-const path = require('path')
+const { resolveProjectPath } = require('./runtimeConfig')
+
 const paths = {
-    views: path.join(__dirname, '../views'),
-    public: path.join(__dirname, '../public'),
-    blogData: path.join(__dirname, '../data.json'),
-    blog: path.join(__dirname, '../blog')
+    views: resolveProjectPath('views'),
+    public: resolveProjectPath('public'),
+    blogData: resolveProjectPath('data.json'),
+    blog: resolveProjectPath('blog'),
+    friendsData: resolveProjectPath('friends.json')
 }
 module.exports = {
     paths

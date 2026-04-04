@@ -1,6 +1,9 @@
 const crypto = require('crypto');
+const { isWorkersRuntime } = require('./runtimeConfig');
 
-require('dotenv').config();
+if (!isWorkersRuntime()) {
+  require('dotenv').config();
+}
 
 function resolveTrustProxy(value) {
   if (typeof value !== 'string') {
@@ -29,6 +32,16 @@ function parsePositiveInteger(value, fallback) {
   return Number.isInteger(parsedValue) && parsedValue > 0 ? parsedValue : fallback;
 }
 
+function readTrimmedEnvValue(...values) {
+  for (const value of values) {
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+  }
+
+  return '';
+}
+
 function resolveFormProtectionSecret({ explicitSecret, formId, siteUrl, title }) {
   if (typeof explicitSecret === 'string' && explicitSecret.trim()) {
     return explicitSecret.trim();
@@ -36,7 +49,7 @@ function resolveFormProtectionSecret({ explicitSecret, formId, siteUrl, title })
 
   return crypto
     .createHash('sha256')
-    .update([formId, siteUrl, title || 'NO-TORSION'].join(':'))
+    .update([formId, siteUrl, title || 'N·C·T'].join(':'))
     .digest('hex');
 }
 
@@ -63,6 +76,12 @@ const formProtectionSecret = resolveFormProtectionSecret({
   title
 });
 const rateLimitRedisUrl = String(process.env.RATE_LIMIT_REDIS_URL || process.env.REDIS_URL || '').trim();
+const googleCloudTranslationApiKey = readTrimmedEnvValue(
+  process.env.GOOGLE_CLOUD_TRANSLATION_API_KEY,
+  process.env.GOOGLE_TRANSLATE_API_KEY
+);
+const translationProviderTimeoutMs = parsePositiveInteger(process.env.TRANSLATION_PROVIDER_TIMEOUT_MS, 10000);
+const translationProviderConfigured = Boolean(googleCloudTranslationApiKey);
 
 module.exports = {
   appPort,
@@ -74,12 +93,16 @@ module.exports = {
   formProtectionMinFillMs,
   formProtectionSecret,
   formProtectionSecretConfigured,
+  googleCloudTranslationApiKey,
   googleFormUrl,
   googleScriptUrl,
   publicMapDataUrl,
   rateLimitRedisUrl,
+  isWorkersRuntime: isWorkersRuntime(),
   siteUrl,
   submitRateLimitMax,
+  translationProviderConfigured,
+  translationProviderTimeoutMs,
   trustProxy,
   title
 };

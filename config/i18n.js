@@ -166,7 +166,7 @@ const messages = {
         'zh-TW': '繁中',
         en: 'English'
       },
-      footerBy: '© 2026 NO CONVERSION THERAPY Project. By:',
+      footerBy: '© 2026 N·C·T Project. By: ',
       loading: '加载中...',
       notFound: '未找到'
     },
@@ -506,7 +506,7 @@ const messages = {
         'zh-TW': '繁中',
         en: 'English'
       },
-      footerBy: '© 2026 NO CONVERSION THERAPY Project. By:',
+      footerBy: '© 2026 N·C·T Project. By: ',
       loading: '載入中...',
       notFound: '未找到'
     },
@@ -846,7 +846,7 @@ const messages = {
         'zh-TW': '繁中',
         en: 'English'
       },
-      footerBy: '© 2026 NO CONVERSION THERAPY Project. By:',
+      footerBy: '© 2026 N·C·T Project. By: ',
       loading: 'Loading...',
       notFound: 'Not Found'
     },

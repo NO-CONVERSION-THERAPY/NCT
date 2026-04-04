@@ -1,4 +1,5 @@
 const fs = require('fs');
+const { isWorkersRuntime } = require('../../config/runtimeConfig');
 
 function createUrlEntry({ changefreq, lastmod, loc, priority }) {
   return {
@@ -37,6 +38,39 @@ function getIsoDate(value) {
   }
 
   return date.toISOString();
+}
+
+function parseBlogCreationDate(value) {
+  const rawValue = String(value || '').trim();
+
+  if (!rawValue) {
+    return null;
+  }
+
+  const zhDateMatch = rawValue.match(/^(\d{4})年(\d{1,2})月(\d{1,2})日$/);
+  if (zhDateMatch) {
+    const [, year, month, day] = zhDateMatch;
+    return getIsoDate(Date.UTC(Number(year), Number(month) - 1, Number(day)));
+  }
+
+  return getIsoDate(rawValue);
+}
+
+function resolveArticleLastModified(markdownPath, article) {
+  if (!isWorkersRuntime()) {
+    try {
+      const stat = fs.statSync(markdownPath);
+      const lastModified = getIsoDate(stat.mtime);
+
+      if (lastModified && stat.mtimeMs > 0) {
+        return lastModified;
+      }
+    } catch (error) {
+      // 回退到文章元数据里的创建时间。
+    }
+  }
+
+  return parseBlogCreationDate(article && article.CreationDate);
 }
 
 function getStaticSitemapEntries(siteUrl) {
@@ -88,13 +122,7 @@ function getBlogSitemapEntries({ blogDataPath, blogDirectory, siteUrl }) {
     .map((article) => {
       const trimmedFilename = article.filename.trim();
       const markdownPath = `${blogDirectory}/${trimmedFilename}.md`;
-      let lastmod = null;
-
-      try {
-        lastmod = getIsoDate(fs.statSync(markdownPath).mtime);
-      } catch (error) {
-        lastmod = null;
-      }
+      const lastmod = resolveArticleLastModified(markdownPath, article);
 
       return createUrlEntry({
         changefreq: 'monthly',

@@ -37,6 +37,37 @@ function loadApp(envOverrides = {}) {
   return app;
 }
 
+function withEnvOverrides(envOverrides, callback) {
+  const originalValues = Object.fromEntries(
+    Object.keys(envOverrides).map((key) => [key, process.env[key]])
+  );
+
+  Object.entries(envOverrides).forEach(([key, value]) => {
+    process.env[key] = value;
+  });
+
+  try {
+    return callback();
+  } finally {
+    Object.entries(originalValues).forEach(([key, value]) => {
+      if (typeof value === 'undefined') {
+        delete process.env[key];
+        return;
+      }
+
+      process.env[key] = value;
+    });
+  }
+}
+
+function getGoogleTranslationTestEnv(overrides = {}) {
+  return {
+    GOOGLE_CLOUD_TRANSLATION_API_KEY: 'test-google-cloud-api-key',
+    TRANSLATION_PROVIDER_TIMEOUT_MS: '10000',
+    ...overrides
+  };
+}
+
 function requestPath(app, requestPath) {
   return new Promise((resolve, reject) => {
     const server = app.listen(0, () => {
@@ -117,16 +148,46 @@ function requestApp(app, { path: requestPath, method = 'GET', headers = {}, body
 function installTranslationFetchStub(prefix = 'EN:') {
   const originalFetch = global.fetch;
 
-  global.fetch = async (input) => {
+  global.fetch = async (input, init = {}) => {
     const requestUrl = input instanceof URL
       ? input
       : new URL(typeof input === 'string' ? input : input.url);
-    const sourceText = requestUrl.searchParams.get('q') || '';
+    const requestBody = typeof init.body === 'string' && init.body
+      ? JSON.parse(init.body)
+      : {};
+    const sourceTexts = Array.isArray(requestBody.q)
+      ? requestBody.q
+      : Array.isArray(requestBody.text)
+        ? requestBody.text
+        : requestBody.q
+          ? [requestBody.q]
+          : [];
+
+    if (requestUrl.hostname === 'translation.googleapis.com') {
+      return {
+        ok: true,
+        async json() {
+          return {
+            data: {
+              translations: sourceTexts.map((sourceText) => ({
+                translatedText: `${prefix}${sourceText}`
+              }))
+            }
+          };
+        }
+      };
+    }
 
     return {
       ok: true,
       async json() {
-        return [[[`${prefix}${sourceText}`, sourceText]]];
+        return {
+          data: {
+            translations: sourceTexts.map((sourceText) => ({
+              translatedText: `${prefix}${sourceText}`
+            }))
+          }
+        };
       }
     };
   };
@@ -249,7 +310,10 @@ test('area options API localizes city options for the current language', async (
   const restoreFetch = installTranslationFetchStub();
 
   try {
-    const app = loadApp({ DEBUG_MOD: 'false' });
+    const app = loadApp({
+      DEBUG_MOD: 'false',
+      ...getGoogleTranslationTestEnv()
+    });
     const response = await requestPath(app, '/api/area-options?provinceCode=110000&lang=en');
     const payload = JSON.parse(response.body);
 
@@ -364,25 +428,214 @@ test('privacy page documents the language cookie and footer exposes the link', a
 });
 
 test('translation service normalizes spaces around apostrophes in english text', async () => {
-  clearProjectModules();
   const originalFetch = global.fetch;
   global.fetch = async () => ({
     ok: true,
     async json() {
-      return [[["A cute little medicine girl ’ s website", "一隻可愛的小藥娘的網站"]]];
+      return {
+        data: {
+          translations: [{ translatedText: 'A cute little medicine girl ’ s website' }]
+        }
+      };
     }
   });
 
   try {
-    const { translateDetailItems } = require(path.join(projectRoot, 'app/services/textTranslationService'));
-    const [result] = await translateDetailItems({
-      items: [{ fieldKey: '0', text: '一隻可愛的小藥娘的網站' }],
-      targetLanguage: 'en'
-    });
+    await withEnvOverrides(getGoogleTranslationTestEnv(), async () => {
+      clearProjectModules();
+      const { translateDetailItems } = require(path.join(projectRoot, 'app/services/textTranslationService'));
+      const [result] = await translateDetailItems({
+        items: [{ fieldKey: '0', text: '一隻可愛的小藥娘的網站' }],
+        targetLanguage: 'en'
+      });
 
-    assert.equal(result.translatedText, "A cute little medicine girl's website");
+      assert.equal(result.translatedText, "A cute little medicine girl's website");
+    });
   } finally {
     global.fetch = originalFetch;
+    clearProjectModules();
+  }
+});
+
+test('translation service uses Google Cloud Translation when configured', async () => {
+  const originalFetch = global.fetch;
+  const requests = [];
+
+  global.fetch = async (input, init = {}) => {
+    const requestUrl = input instanceof URL
+      ? input
+      : new URL(typeof input === 'string' ? input : input.url);
+
+    requests.push({
+      body: typeof init.body === 'string' ? JSON.parse(init.body) : null,
+      headers: init.headers || {},
+      url: requestUrl
+    });
+
+    return {
+      ok: true,
+      async json() {
+        return {
+          data: {
+            translations: [{ translatedText: 'EN:原文內容' }]
+          }
+        };
+      }
+    };
+  };
+
+  try {
+    await withEnvOverrides(getGoogleTranslationTestEnv(), async () => {
+      clearProjectModules();
+      const { translateDetailItems } = require(path.join(projectRoot, 'app/services/textTranslationService'));
+      const [result] = await translateDetailItems({
+        items: [{ fieldKey: '0', text: '原文內容' }],
+        targetLanguage: 'en'
+      });
+
+      assert.equal(result.translatedText, 'EN:原文內容');
+      assert.equal(requests.length, 1);
+      assert.equal(requests[0].url.hostname, 'translation.googleapis.com');
+      assert.equal(requests[0].url.pathname, '/language/translate/v2');
+      assert.equal(requests[0].headers['x-goog-api-key'], 'test-google-cloud-api-key');
+      assert.equal(requests[0].body.target, 'en');
+      assert.equal(requests[0].body.format, 'text');
+      assert.deepEqual(requests[0].body.q, ['原文內容']);
+    });
+  } finally {
+    global.fetch = originalFetch;
+    clearProjectModules();
+  }
+});
+
+test('translation service retries transient fetch failures without relying on child processes', async () => {
+  const originalFetch = global.fetch;
+  let fetchCount = 0;
+
+  global.fetch = async () => {
+    fetchCount += 1;
+
+    if (fetchCount === 1) {
+      throw new Error('temporary network failure');
+    }
+
+    return {
+      ok: true,
+      async json() {
+        return {
+          data: {
+            translations: [{ translatedText: 'Recovered translation' }]
+          }
+        };
+      }
+    };
+  };
+
+  try {
+    await withEnvOverrides(getGoogleTranslationTestEnv(), async () => {
+      clearProjectModules();
+      const { translateDetailItems } = require(path.join(projectRoot, 'app/services/textTranslationService'));
+      const [result] = await translateDetailItems({
+        items: [{ fieldKey: '0', text: '原文' }],
+        targetLanguage: 'en'
+      });
+
+      assert.equal(fetchCount, 2);
+      assert.equal(result.translatedText, 'Recovered translation');
+    });
+  } finally {
+    global.fetch = originalFetch;
+    clearProjectModules();
+  }
+});
+
+test('translation service throws when the upstream translation request keeps failing', async () => {
+  const originalFetch = global.fetch;
+  const originalWarn = console.warn;
+  const warningMessages = [];
+
+  global.fetch = async () => {
+    throw new Error('fetch failed');
+  };
+  console.warn = (...args) => {
+    warningMessages.push(args.join(' '));
+  };
+
+  try {
+    await withEnvOverrides(getGoogleTranslationTestEnv(), async () => {
+      clearProjectModules();
+      const { translateDetailItems } = require(path.join(projectRoot, 'app/services/textTranslationService'));
+      await assert.rejects(
+        translateDetailItems({
+          items: [{ fieldKey: '0', text: '原文內容' }],
+          targetLanguage: 'en'
+        }),
+        /fetch failed/
+      );
+
+      assert.equal(warningMessages.length, 1);
+      assert.match(warningMessages[0], /未返回翻譯結果/);
+    });
+  } finally {
+    global.fetch = originalFetch;
+    console.warn = originalWarn;
+    clearProjectModules();
+  }
+});
+
+test('translation service skips repeated upstream requests during the cooldown window after repeated failures', async () => {
+  const originalFetch = global.fetch;
+  const originalWarn = console.warn;
+  const warningMessages = [];
+  let fetchCount = 0;
+
+  global.fetch = async () => {
+    fetchCount += 1;
+
+    const aggregateError = new AggregateError([
+      Object.assign(new Error('connect ETIMEDOUT 142.250.66.74:443'), { code: 'ETIMEDOUT' }),
+      Object.assign(new Error('connect ENETUNREACH 2404:6800:4012:9::200a:443'), { code: 'ENETUNREACH' })
+    ], 'fetch failed');
+
+    throw Object.assign(new TypeError('fetch failed'), { cause: aggregateError });
+  };
+  console.warn = (...args) => {
+    warningMessages.push(args.join(' '));
+  };
+
+  try {
+    await withEnvOverrides(getGoogleTranslationTestEnv(), async () => {
+      clearProjectModules();
+      const {
+        getTranslationFailureCooldownMs,
+        resetTranslationCache,
+        translateDetailItems
+      } = require(path.join(projectRoot, 'app/services/textTranslationService'));
+
+      resetTranslationCache();
+
+      await assert.rejects(
+        translateDetailItems({
+          items: [{ fieldKey: '0', text: '第一段原文' }],
+          targetLanguage: 'en'
+        }),
+        /fetch failed/
+      );
+      await assert.rejects(
+        translateDetailItems({
+          items: [{ fieldKey: '1', text: '第二段原文' }],
+          targetLanguage: 'en'
+        }),
+        /翻譯服務連線冷卻中/
+      );
+
+      assert.equal(fetchCount, 2);
+      assert.ok(getTranslationFailureCooldownMs() > 0);
+      assert.equal(warningMessages.length, 2);
+    });
+  } finally {
+    global.fetch = originalFetch;
+    console.warn = originalWarn;
     clearProjectModules();
   }
 });
@@ -458,7 +711,10 @@ test('blog list shows translated titles when english language is selected', asyn
   const restoreFetch = installTranslationFetchStub();
 
   try {
-    const app = loadApp({ DEBUG_MOD: 'false' });
+    const app = loadApp({
+      DEBUG_MOD: 'false',
+      ...getGoogleTranslationTestEnv()
+    });
     const response = await requestPath(app, '/blog?lang=en');
     const originalTitle = '關於心種子教育違法辦學的控告';
     const translatedTitle = `EN:${originalTitle}`;
@@ -480,7 +736,10 @@ test('blog article shows bilingual content when english language is selected', a
   const restoreFetch = installTranslationFetchStub();
 
   try {
-    const app = loadApp({ DEBUG_MOD: 'false' });
+    const app = loadApp({
+      DEBUG_MOD: 'false',
+      ...getGoogleTranslationTestEnv()
+    });
     const articleId = encodeURIComponent('關於心種子教育違法辦學的控告');
     const response = await requestPath(app, `/port/${articleId}?lang=en`);
     const originalHeading = '关于山东心种子教育咨询有限公司非法限制人身自由及身心摧残的维权通告';
@@ -514,6 +773,37 @@ test('map data service normalizes simplified and traditional province names to o
   assert.equal(normalizeProvinceNameToLegacy('重庆'), '重慶');
   assert.equal(normalizeProvinceNameToLegacy('重慶'), '重慶');
   assert.equal(normalizeProvinceNameToLegacy('广东'), '廣東');
+});
+
+test('runtime config resolves bundle paths in workers mode', () => {
+  withEnvOverrides({ RUNTIME_TARGET: 'workers' }, () => {
+    clearProjectModules();
+    const { isWorkersRuntime, resolveProjectPath } = require(path.join(projectRoot, 'config/runtimeConfig'));
+
+    assert.equal(isWorkersRuntime(), true);
+    assert.equal(resolveProjectPath('views/index.ejs'), '/bundle/views/index.ejs');
+    assert.equal(resolveProjectPath('blog\\article.md'), '/bundle/blog/article.md');
+  });
+
+  clearProjectModules();
+});
+
+test('sitemap service falls back to article metadata timestamps in workers mode', () => {
+  withEnvOverrides({ RUNTIME_TARGET: 'workers' }, () => {
+    clearProjectModules();
+    const { getBlogSitemapEntries } = require(path.join(projectRoot, 'app/services/sitemapService'));
+    const entries = getBlogSitemapEntries({
+      blogDataPath: path.join(projectRoot, 'data.json'),
+      blogDirectory: path.join(projectRoot, 'blog'),
+      siteUrl: 'https://example.com'
+    });
+
+    assert.equal(entries.length, 2);
+    assert.equal(entries[0].lastmod, '2026-03-13T00:00:00.000Z');
+    assert.equal(entries[1].lastmod, '2026-04-03T00:00:00.000Z');
+  });
+
+  clearProjectModules();
 });
 
 test('map timer renders elapsed seconds and adds refresh control after the refresh interval', () => {
@@ -867,6 +1157,40 @@ test('map data service merges province statistics that differ only by script', a
   }
 });
 
+test('map data service accepts lowercase schoolNum from upstream payloads', async () => {
+  clearProjectModules();
+  const mapDataService = require(path.join(projectRoot, 'app/services/mapDataService'));
+  const originalFetch = global.fetch;
+
+  mapDataService.resetMapDataCache();
+  global.fetch = async () => ({
+    ok: true,
+    async json() {
+      return {
+        avg_age: 18,
+        last_synced: 1000,
+        schoolNum: 497,
+        formNum: 18,
+        statistics: [],
+        statisticsForm: [],
+        data: [
+          { province: '北京', lat: 39.9, lng: 116.4 }
+        ]
+      };
+    }
+  });
+
+  try {
+    const result = await mapDataService.getMapData({ publicMapDataUrl: 'https://example.com/api/map-data' });
+
+    assert.equal(result.schoolNum, 497);
+    assert.equal(result.formNum, 18);
+  } finally {
+    global.fetch = originalFetch;
+    mapDataService.resetMapDataCache();
+  }
+});
+
 test('public map API keeps CORS enabled while translate API stays same-origin only', async () => {
   const originalFetch = global.fetch;
   global.fetch = async () => ({
@@ -908,6 +1232,41 @@ test('public map API keeps CORS enabled while translate API stays same-origin on
     assert.equal(translateResponse.headers['access-control-allow-origin'], undefined);
   } finally {
     global.fetch = originalFetch;
+    clearProjectModules();
+  }
+});
+
+test('translate API returns 500 when upstream translation fails', async () => {
+  const originalFetch = global.fetch;
+  const originalWarn = console.warn;
+
+  global.fetch = async () => {
+    throw new Error('fetch failed');
+  };
+  console.warn = () => {};
+
+  try {
+    const app = loadApp({
+      DEBUG_MOD: 'false',
+      ...getGoogleTranslationTestEnv()
+    });
+    const response = await requestApp(app, {
+      path: '/api/translate-text',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        items: [{ fieldKey: 'experience', text: '原文內容' }],
+        targetLanguage: 'en'
+      })
+    });
+
+    assert.equal(response.statusCode, 500);
+    assert.match(response.body, /翻译失败|翻譯失敗|Translation unavailable/);
+  } finally {
+    global.fetch = originalFetch;
+    console.warn = originalWarn;
     clearProjectModules();
   }
 });
@@ -958,44 +1317,52 @@ test('map refresh requests are rate limited even when callers force refresh', as
 });
 
 test('translation service bounds in-memory cache growth', async () => {
-  clearProjectModules();
   const originalFetch = global.fetch;
-  global.fetch = async (input) => {
-    const requestUrl = input instanceof URL
-      ? input
-      : new URL(typeof input === 'string' ? input : input.url);
-    const sourceText = requestUrl.searchParams.get('q') || '';
+  global.fetch = async (_input, init = {}) => {
+    const requestBody = typeof init.body === 'string' && init.body
+      ? JSON.parse(init.body)
+      : {};
+    const sourceTexts = Array.isArray(requestBody.q) ? requestBody.q : [];
 
     return {
       ok: true,
       async json() {
-        return [[[`EN:${sourceText}`, sourceText]]];
+        return {
+          data: {
+            translations: sourceTexts.map((sourceText) => ({
+              translatedText: `EN:${sourceText}`
+            }))
+          }
+        };
       }
     };
   };
 
   try {
-    const {
-      getTranslationCacheSize,
-      resetTranslationCache,
-      translateDetailItems,
-      translationCacheMaxEntries
-    } = require(path.join(projectRoot, 'app/services/textTranslationService'));
+    await withEnvOverrides(getGoogleTranslationTestEnv(), async () => {
+      clearProjectModules();
+      const {
+        getTranslationCacheSize,
+        resetTranslationCache,
+        translateDetailItems,
+        translationCacheMaxEntries
+      } = require(path.join(projectRoot, 'app/services/textTranslationService'));
 
-    resetTranslationCache();
+      resetTranslationCache();
 
-    for (let index = 0; index < translationCacheMaxEntries + 25; index += 1) {
-      await translateDetailItems({
-        items: [{
-          fieldKey: '0',
-          text: `样本文本-${index}`
-        }],
-        targetLanguage: 'en'
-      });
-    }
+      for (let index = 0; index < translationCacheMaxEntries + 25; index += 1) {
+        await translateDetailItems({
+          items: [{
+            fieldKey: '0',
+            text: `样本文本-${index}`
+          }],
+          targetLanguage: 'en'
+        });
+      }
 
-    assert.equal(getTranslationCacheSize(), translationCacheMaxEntries);
-    resetTranslationCache();
+      assert.equal(getTranslationCacheSize(), translationCacheMaxEntries);
+      resetTranslationCache();
+    });
   } finally {
     global.fetch = originalFetch;
     clearProjectModules();

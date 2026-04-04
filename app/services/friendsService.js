@@ -1,5 +1,5 @@
 const fs = require('fs');
-const path = require('path');
+const { paths } = require('../../config/fileConfig');
 
 function getFriendDescriptionKey(name) {
   const normalizedName = String(name || '').trim().toLowerCase();
@@ -32,8 +32,7 @@ function readFriendsFromJson() {
   let friendsData = { friends: [] };
 
   try {
-    const jsonPath = path.join(__dirname, '../../friends.json');
-    const rawData = fs.readFileSync(jsonPath, 'utf8');
+    const rawData = fs.readFileSync(paths.friendsData, 'utf8');
     friendsData = JSON.parse(rawData);
   } catch (error) {
     console.error('讀取友鏈出錯：', error);

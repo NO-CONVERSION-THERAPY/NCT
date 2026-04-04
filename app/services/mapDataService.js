@@ -64,6 +64,17 @@ function normalizeProvinceStatistics(items) {
   return [...mergedStatistics.values()];
 }
 
+function resolveNumericValue(...candidates) {
+  for (const value of candidates) {
+    const numericValue = Number(value);
+    if (Number.isFinite(numericValue)) {
+      return numericValue;
+    }
+  }
+
+  return null;
+}
+
 // 远端没有提供 last_synced 时，用当前抓取时间兜底，保证前端总能显示相对时间。
 function resolveLastSyncedTimestamp(lastSynced, fallbackTimestamp) {
   const numericLastSynced = Number(lastSynced);
@@ -151,11 +162,13 @@ async function getMapData({ forceRefresh = false, googleScriptUrl, publicMapData
 
       const responseBody = await response.json();
       const rawData = normalizeRawData(responseBody.data);
-      const avgAge = Number(responseBody.avg_age);
+      const avgAge = resolveNumericValue(responseBody.avg_age);
+      const schoolNum = resolveNumericValue(responseBody.schoolNum, responseBody.SchoolNum);
+      const formNum = resolveNumericValue(responseBody.formNum, responseBody.FormNum);
       const finalResponse = {
         avg_age: Number.isFinite(avgAge) ? avgAge : 0,//受害者平均年齡
-        schoolNum: Number.isFinite(responseBody.SchoolNum) ? Number(responseBody.SchoolNum) : 0,//學校數量
-        formNum: Number.isFinite(responseBody.formNum) ? Number(responseBody.formNum) : 0,//表單數量
+        schoolNum: Number.isFinite(schoolNum) ? schoolNum : 0,//學校數量
+        formNum: Number.isFinite(formNum) ? formNum : 0,//表單數量
         last_synced: resolveLastSyncedTimestamp(responseBody.last_synced, now),//上一次更新時間
         statistics: normalizeProvinceStatistics(responseBody.statistics),//各省扭轉幾個數量
         statisticsForm: normalizeProvinceStatistics(responseBody.statisticsForm),//各省收到的表單數量
