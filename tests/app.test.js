@@ -219,6 +219,7 @@ test('map page renders the record container and lazy-load sentinel', async () =>
   assert.equal(response.statusCode, 200);
   assert.match(response.body, /id="data-container"/);
   assert.match(response.body, /id="data-container-sentinel"/);
+  assert.match(response.body, /\/js\/map_record_stats\.js/);
 });
 
 test('form page includes school name and address autocomplete hooks', async () => {
@@ -226,6 +227,9 @@ test('form page includes school name and address autocomplete hooks', async () =
   const response = await requestPath(app, '/form');
 
   assert.equal(response.statusCode, 200);
+  assert.match(response.body, /机构所在省份/);
+  assert.match(response.body, /机构所在城市 \/ 区县/);
+  assert.match(response.body, /机构所在县区（可选）/);
   assert.match(response.body, /id="school_results_list"/);
   assert.match(response.body, /id="address_results_list"/);
   assert.match(response.body, /name="website"/);
@@ -518,6 +522,41 @@ test('map timer renders elapsed seconds and adds refresh control after the refre
 
   refreshButton.listeners.get('click')();
   assert.equal(refreshTriggered, true);
+});
+
+test('map record stats count self and agent reports per school', () => {
+  clearProjectModules();
+  const {
+    buildSchoolReportStats,
+    getSchoolReportStats,
+    groupSchoolRecords
+  } = require(path.join(projectRoot, 'public/js/map_record_stats'));
+
+  const statsBySchool = buildSchoolReportStats([
+    { name: '启明学校', province: '山东', addr: '地址 A', inputType: '受害者本人' },
+    { name: '启明学校', province: '山东', addr: '地址 B', inputType: '受害者本人' },
+    { name: '启明学校', province: '山东', addr: '地址 A', inputType: '受害者的代理人' },
+    { name: '晨光学校', province: '北京', addr: '地址 C', inputType: '受害者的代理人' },
+    { name: '晨光学校', province: '北京', addr: '地址 C', inputType: '' }
+  ]);
+
+  assert.deepEqual(
+    getSchoolReportStats(statsBySchool, { name: '启明学校', province: '山东', addr: '其他地址' }),
+    { selfCount: 2, agentCount: 1 }
+  );
+  assert.deepEqual(
+    getSchoolReportStats(statsBySchool, { name: '晨光学校', province: '北京', addr: '地址 C' }),
+    { selfCount: 0, agentCount: 1 }
+  );
+
+  const groupedRecords = groupSchoolRecords([
+    { name: '启明学校', province: '山东', addr: '地址 A', experience: '经历 1', scandal: '', else: '', HMaster: '甲', prov: '青岛', contact: '1' },
+    { name: '启明学校', province: '山东', addr: '地址 A', experience: '经历 1', scandal: '', else: '', HMaster: '甲', prov: '青岛', contact: '1' },
+    { name: '启明学校', province: '山东', addr: '地址 A', experience: '经历 2', scandal: '', else: '', HMaster: '甲', prov: '青岛', contact: '1' }
+  ]);
+
+  assert.equal(groupedRecords.length, 1);
+  assert.equal(groupedRecords[0].pages.length, 2);
 });
 
 test('form protection tokens reject honeypot, tampering, and overly fast submissions', () => {

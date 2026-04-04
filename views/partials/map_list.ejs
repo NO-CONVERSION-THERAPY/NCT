@@ -10,6 +10,7 @@
 <script>
 (() => {
     const i18n = window.I18N;
+    const { buildSchoolReportStats, getSchoolReportStats, groupSchoolRecords } = window.MapRecordStats;
     const urlParams = new URLSearchParams(window.location.search);
     const inputType = urlParams.get('inputType');
     const inputSearch = (urlParams.get('search') || '').trim();
@@ -23,6 +24,7 @@
     let renderedRecordCount = 0;
     let recordsObserver = null;
     let scrollFallbackAttached = false;
+    let schoolReportStatsBySchool = new Map();
     const originalChineseFieldLabels = {
         experience: '受害者经历：',
         scandal: '学校丑闻：',
@@ -51,6 +53,12 @@
 
     mapSearchInput.value = inputSearch;
     loadSentinel.textContent = i18n.common.loading;
+
+    function formatMessage(template, values) {
+        return Object.entries(values).reduce((result, [key, value]) => {
+            return result.replaceAll(`{${key}}`, value);
+        }, String(template || ''));
+    }
 
     function normalizeSearchText(value) {
         return String(value || '').trim().toLowerCase().replace(/\s+/g, '');
@@ -215,8 +223,8 @@
         return Array.isArray(payload.translations) ? payload.translations : [];
     }
 
-    async function hydrateTranslations(card, item) {
-        if (!shouldTranslateDetails || card.dataset.translationState === 'loaded' || card.dataset.translationState === 'loading') {
+    async function hydrateTranslations(container, item) {
+        if (!shouldTranslateDetails || container.dataset.translationState === 'loaded' || container.dataset.translationState === 'loading') {
             return;
         }
 
@@ -228,7 +236,7 @@
             .filter((entry) => entry.text);
 
         if (itemsToTranslate.length === 0) {
-            card.dataset.translationState = 'loaded';
+            container.dataset.translationState = 'loaded';
             return;
         }
 
@@ -245,7 +253,7 @@
             }
         });
 
-        card.dataset.translationState = 'loading';
+        container.dataset.translationState = 'loading';
 
         try {
             if (pendingItems.length > 0) {
@@ -260,38 +268,25 @@
             }
 
             itemsToTranslate.forEach((entry) => {
-                const targetNode = card.querySelector(`[data-translate-field="${entry.fieldKey}"] .map-detail-translation__text`);
+                const targetNode = container.querySelector(`[data-translate-field="${entry.fieldKey}"] .map-detail-translation__text`);
 
                 if (targetNode) {
                     targetNode.textContent = translatedTextByField[entry.fieldKey] || i18n.map.list.translationUnavailable;
                 }
             });
 
-            card.dataset.translationState = 'loaded';
+            container.dataset.translationState = 'loaded';
         } catch (error) {
             console.error('翻译详情失败:', error);
             itemsToTranslate.forEach((entry) => {
-                const targetNode = card.querySelector(`[data-translate-field="${entry.fieldKey}"] .map-detail-translation__text`);
+                const targetNode = container.querySelector(`[data-translate-field="${entry.fieldKey}"] .map-detail-translation__text`);
 
                 if (targetNode) {
                     targetNode.textContent = i18n.map.list.translationUnavailable;
                 }
             });
-            card.dataset.translationState = 'error';
+            container.dataset.translationState = 'error';
         }
-    }
-
-    function buildFilterLink(nextInputType) {
-        const nextParams = new URLSearchParams(window.location.search);
-
-        if (nextInputType) {
-            nextParams.set('inputType', nextInputType);
-        } else {
-            nextParams.delete('inputType');
-        }
-
-        const query = nextParams.toString();
-        return query ? `?${query}` : window.location.pathname;
     }
 
     function triggerMapSearch() {
@@ -329,45 +324,112 @@
         }
     }
 
-    function createRecordCard(item, index) {
+    function buildRecordBodyHtml(item, currentPage, totalPages) {
+        const experienceHtml = buildTranslatableSection('experience', item.experience);
+        const scandalHtml = buildTranslatableSection('scandal', item.scandal);
+        const elseHtml = buildTranslatableSection('other', item.else);
+        const paginationHtml = totalPages > 1 ? `
+            <div class="map-record-pagination">
+                <button
+                    type="button"
+                    class="map-record-pagination__button"
+                    data-page-action="prev"
+                    ${currentPage === 0 ? 'disabled' : ''}
+                >${escapeHtml(i18n.map.list.pagination.previous)}</button>
+                <span class="map-record-pagination__status">${escapeHtml(formatMessage(i18n.map.list.pagination.page, {
+                    current: currentPage + 1,
+                    total: totalPages
+                }))}</span>
+                <button
+                    type="button"
+                    class="map-record-pagination__button"
+                    data-page-action="next"
+                    ${currentPage >= totalPages - 1 ? 'disabled' : ''}
+                >${escapeHtml(i18n.map.list.pagination.next)}</button>
+            </div>
+        ` : '';
+
+        return `
+            <p><strong>${escapeHtml(i18n.map.list.fields.headmaster)}</strong>${escapeHtml(item.HMaster)}</p>
+            <p><strong>${escapeHtml(i18n.map.list.fields.province)}</strong>${escapeHtml(getProvinceDisplay(item.province))}</p>
+            <p><strong>${escapeHtml(i18n.map.list.fields.region)}</strong>${escapeHtml(item.prov)}</p>
+            <p><strong>${escapeHtml(i18n.map.list.fields.address)}</strong>${escapeHtml(item.addr)}</p>
+            <hr>
+            ${experienceHtml}
+            ${scandalHtml}
+            ${elseHtml}
+            <div class="contact"><strong>${escapeHtml(i18n.map.list.fields.contact)}</strong>\n${escapeHtml(item.contact)}</div>
+            ${paginationHtml}
+        `;
+    }
+
+    function createRecordCard(group, index) {
         const card = document.createElement('details');
         card.className = 'div map-record-card';
         card.id = getRecordAnchorId(index);
         card.style.width = '100%';
 
-        const experienceHtml = buildTranslatableSection('experience', item.experience);
-        const scandalHtml = buildTranslatableSection('scandal', item.scandal);
-        const elseHtml = buildTranslatableSection('other', item.else);
-        const inputHtml = item.inputType ? item.inputType : '批量数据';
-        const inputHref = buildFilterLink(inputHtml);
-        const inputDisplay = getInputTypeDisplay(inputHtml);
+        const summaryRecord = group.summaryRecord;
+        const pages = group.pages;
+        const schoolReportStats = getSchoolReportStats(schoolReportStatsBySchool, summaryRecord);
+        let currentPageIndex = 0;
 
         card.innerHTML = `
             <summary class="map-record-summary">
                 <div class="map-record-summary__title-group">
-                    <h3 class="map-record-summary__title">${escapeHtml(item.name)}</h3>
+                    <h3 class="map-record-summary__title">${escapeHtml(summaryRecord.name)}</h3>
                 </div>
                 <small class="map-record-summary__tag">
-                    <a href="${inputHref}">${escapeHtml(inputDisplay)}</a>
+                    <span class="map-record-summary__count">${escapeHtml(i18n.map.list.reportCounts.self)} ${schoolReportStats.selfCount}</span>
+                    <span class="map-record-summary__count">${escapeHtml(i18n.map.list.reportCounts.agent)} ${schoolReportStats.agentCount}</span>
                 </small>
             </summary>
-            <div class="div map-record-body">
-                <p><strong>${escapeHtml(i18n.map.list.fields.headmaster)}</strong>${escapeHtml(item.HMaster)}</p>
-                <p><strong>${escapeHtml(i18n.map.list.fields.province)}</strong>${escapeHtml(getProvinceDisplay(item.province))}</p>
-                <p><strong>${escapeHtml(i18n.map.list.fields.region)}</strong>${escapeHtml(item.prov)}</p>
-                <p><strong>${escapeHtml(i18n.map.list.fields.address)}</strong>${escapeHtml(item.addr)}</p>
-                <hr>
-                ${experienceHtml}
-                ${scandalHtml}
-                ${elseHtml}
-                <div class="contact"><strong>${escapeHtml(i18n.map.list.fields.contact)}</strong>\n${escapeHtml(item.contact)}</div>
-            </div>
+            <div class="div map-record-body"></div>
         `;
+
+        const bodyContainer = card.querySelector('.map-record-body');
+
+        function renderRecordPage() {
+            const currentRecord = pages[currentPageIndex];
+            bodyContainer.innerHTML = buildRecordBodyHtml(currentRecord, currentPageIndex, pages.length);
+            bodyContainer.dataset.translationState = '';
+
+            const prevButton = bodyContainer.querySelector('[data-page-action="prev"]');
+            const nextButton = bodyContainer.querySelector('[data-page-action="next"]');
+
+            if (prevButton) {
+                prevButton.addEventListener('click', () => {
+                    if (currentPageIndex <= 0) {
+                        return;
+                    }
+
+                    currentPageIndex -= 1;
+                    renderRecordPage();
+                });
+            }
+
+            if (nextButton) {
+                nextButton.addEventListener('click', () => {
+                    if (currentPageIndex >= pages.length - 1) {
+                        return;
+                    }
+
+                    currentPageIndex += 1;
+                    renderRecordPage();
+                });
+            }
+
+            if (card.open) {
+                hydrateTranslations(bodyContainer, currentRecord);
+            }
+        }
+
+        renderRecordPage();
 
         if (shouldTranslateDetails) {
             card.addEventListener('toggle', () => {
                 if (card.open) {
-                    hydrateTranslations(card, item);
+                    hydrateTranslations(bodyContainer, pages[currentPageIndex]);
                 }
             });
         }
@@ -473,9 +535,11 @@
         try {
             const response = await window.getSharedMapData();
             const rawData = response.data;
+            schoolReportStatsBySchool = buildSchoolReportStats(rawData);
             const nextFilteredRecords = rawData.filter((item) => matchesInputType(item, inputType) && matchesSearch(item, inputSearch));
+            const nextFilteredGroups = groupSchoolRecords(nextFilteredRecords);
 
-            resetRenderedRecords(nextFilteredRecords);
+            resetRenderedRecords(nextFilteredGroups);
 
             if (filteredRecords.length === 0) {
                 dataContainer.innerHTML = `<p>${escapeHtml(i18n.map.list.noResults)}</p>`;

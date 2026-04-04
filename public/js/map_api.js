@@ -13,6 +13,7 @@ function getColor(d) {
 const i18n = window.I18N;
 const MAP_DATA_REFRESH_INTERVAL_SECONDS = 300;
 const { getElapsedSeconds, renderLastSyncedValue } = window.MapTimeUtils;
+const { getSchoolStatsKey, groupSchoolRecords } = window.MapRecordStats;
 const themeMediaQuery = typeof window.matchMedia === 'function'
     ? window.matchMedia('(prefers-color-scheme: dark)')
     : null;
@@ -487,6 +488,10 @@ window.getSharedMapData()
         const inputType = urlParams.get('inputType');// 找筛选条件
         const inputSearch = (urlParams.get('search') || '').trim();
         const filteredData = data.filter((item) => matchesInputType(item, inputType) && matchesSearch(item, inputSearch));
+        const groupedFilteredData = groupSchoolRecords(filteredData);
+        const groupIndexBySchoolKey = new Map(
+            groupedFilteredData.map((group, index) => [group.schoolKey, index])
+        );
 
         filteredData.forEach((item, index) => {
             const marker = L.marker([item.lat, item.lng]).addTo(map);
@@ -505,13 +510,17 @@ window.getSharedMapData()
             const dividerElement = document.createElement('hr');
             const addressElement = document.createElement('address');
             const detailLink = document.createElement('a');
+            const schoolKey = getSchoolStatsKey(item);
+            const targetGroupIndex = groupIndexBySchoolKey.has(schoolKey)
+                ? groupIndexBySchoolKey.get(schoolKey)
+                : index;
 
             popupContent.className = 'custom-popup';
             nameElement.textContent = item.name || '';
             regionElement.textContent = item.prov || '';
             headmasterElement.textContent = item.HMaster || '';
             addressElement.textContent = item.addr || '';
-            detailLink.href = `#${getRecordAnchorId(index)}`;
+            detailLink.href = `#${getRecordAnchorId(targetGroupIndex)}`;
             detailLink.textContent = i18n.map.list.viewDetails;
 
             popupContent.appendChild(nameElement);
