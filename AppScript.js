@@ -20,9 +20,11 @@ function doGet(e) {
     const statsSheet = ss.getSheetByName('统计');
     // 直接抓取 W2 那一格的平均年齡 (第 2 行, W 欄是第 23 欄)
     const overallAvgAge = statsSheet.getRange("W2").getValue();
-    const overallSchoolNum = statsSheet.getRange("X2").getValue();
+    const overallSchoolNum = statsSheet.getRange("Y2").getValue();
+    const formNum = statsSheet.getRange("X2").getValue();
     // 抓取 U 和 V 兩欄 (省份 和 頻率)
     const uvData = statsSheet.getRange("U:V").getValues();
+
     const statsResult = uvData.map((row, index) => {
       // 跳過標題，從第三行開始
       if (index < 1) return null;
@@ -34,17 +36,34 @@ function doGet(e) {
       };
     }).filter(item => item !== null);
 
+    const zaaData = statsSheet.getRange("Z:AA").getValues();
+    const statsResultForm = zaaData.map((row, index) => {
+      // 跳過標題，從第三行開始
+      if (index < 1) return null;
+      const provName = row[0] ? row[0].toString().trim() : ""; // U 欄
+      if (!provName || provName === "省份" || provName === "總計") return null;
+      return {
+        "province": provName.replace(/(省|市|自治区|特别行政区)/g, ""),
+        "count": Number(row[1]) || 0  // V 欄
+      };
+    }).filter(item => item !== null);
+
+
+
     // --- 3. 組合輸出 ---
     const finalResult = {
-      "SchoolNum": Number(overallSchoolNum),
+      "SchoolNum": Number(overallSchoolNum) || 0,
       "avg_age": Number(overallAvgAge) || 0,
+      "formNum": Number(formNum) || 0,
       "LastSynced": new Date().toISOString(),
       "statistics": statsResult,
+      "statisticsForm": statsResultForm,
       "data": rows
     };
 
     return ContentService.createTextOutput(JSON.stringify(finalResult))
       .setMimeType(ContentService.MimeType.JSON);
+
   } catch (err) {
     return ContentService.createTextOutput(JSON.stringify({error: err.message}))
       .setMimeType(ContentService.MimeType.JSON);

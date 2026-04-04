@@ -293,7 +293,8 @@ const messages = {
         averageAge: '受害者平均年龄：',
         secondsAgo: '{seconds} 秒前',
         refresh: '刷新',
-        ageValue: '{age} 岁'
+        ageValue: '{age} 岁',
+        schoolNum: '已统计学校数量'
       },
       tags: {
         title: '填写类型',
@@ -596,7 +597,8 @@ const messages = {
         averageAge: '受害者平均年齡：',
         secondsAgo: '{seconds} 秒前',
         refresh: '刷新',
-        ageValue: '{age} 歲'
+        ageValue: '{age} 歲',
+        schoolNum: '已統計學校數量'
       },
       tags: {
         title: '填寫類型',
@@ -899,7 +901,8 @@ const messages = {
         averageAge: 'Average age of survivors:',
         secondsAgo: '{seconds} seconds ago',
         refresh: 'Refresh',
-        ageValue: '{age} years old'
+        ageValue: '{age} years old',
+        schoolNum: 'Number of schools already counted'
       },
       tags: {
         title: 'Submission Type',

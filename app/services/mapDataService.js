@@ -96,9 +96,12 @@ async function getMapData({ forceRefresh = false, googleScriptUrl, publicMapData
       const rawData = normalizeRawData(responseBody.data);
       const avgAge = Number(responseBody.avg_age);
       const finalResponse = {
-        avg_age: Number.isFinite(avgAge) ? avgAge : 0,
-        last_synced: resolveLastSyncedTimestamp(responseBody.last_synced, now),
-        statistics: Array.isArray(responseBody.statistics) ? responseBody.statistics : [],
+        avg_age: Number.isFinite(avgAge) ? avgAge : 0,//受害者平均年齡
+        schoolNum: Number.isFinite(responseBody.SchoolNum) ? Number(responseBody.SchoolNum) : 0,//學校數量
+        formNum: Number.isFinite(responseBody.formNum) ? Number(responseBody.formNum) : 0,//表單數量
+        last_synced: resolveLastSyncedTimestamp(responseBody.last_synced, now),//上一次更新時間
+        statistics: Array.isArray(responseBody.statistics) ? responseBody.statistics : [],//各省扭轉幾個數量
+        statisticsForm: Array.isArray(responseBody.statisticsForm) ? responseBody.statisticsForm : [],//各省收到的表單數量
         data: cleanMapData(rawData)
       };
 
