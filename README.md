@@ -28,7 +28,7 @@
 ---
 
 ## Stargazers over time
-[![Stargazers over time](https://starchart.cc/bghtnya/TransFlag_Avatar_Tool.svg?variant=adaptive)](https://starchart.cc/bghtnya/TransFlag_Avatar_Tool)
+[![Stargazers over time](https://starchart.cc/NO-CONVERSION-THERAPY/NCT.svg?variant=adaptive)](https://starchart.cc/NO-CONVERSION-THERAPY/NCT)
 
 ---
 
