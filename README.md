@@ -27,6 +27,11 @@
 
 ---
 
+## Stargazers over time
+[![Stargazers over time](https://starchart.cc/bghtnya/TransFlag_Avatar_Tool.svg?variant=adaptive)](https://starchart.cc/bghtnya/TransFlag_Avatar_Tool)
+
+---
+
 ## 開發與貢獻
 
 若出現國家級的域名封鎖，各位可以自行部署。
