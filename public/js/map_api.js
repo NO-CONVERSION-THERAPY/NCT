@@ -478,10 +478,42 @@ function syncExistingChartTheme() {
 //const selfData = [];   // 存放本人填写数
 //const agentData = [];  // 存放代理人填写数
 
-const map = L.map('map').setView([37.5, 109], 4); // 預設視角
-const CNprov = '/cn.json'
+const map = L.map('map', {
+    // Workers 部署里省级 GeoJSON 偶发出现 SVG 路径存在但不可见的情况，
+    // 这里优先使用 Canvas 渲染，并继续保留后面的尺寸重算兜底。
+    preferCanvas: true
+}).setView([37.5, 109], 4); // 預設視角
+const provinceLayerRenderer = L.canvas({ padding: 0.5 });
+const CNprov = '/cn.json';
+let pendingMapLayoutRefreshId = 0;
+
+function scheduleMapLayoutRefresh(delayMs = 0) {
+    window.clearTimeout(pendingMapLayoutRefreshId);
+    pendingMapLayoutRefreshId = window.setTimeout(() => {
+        map.invalidateSize({ pan: false, animate: false });
+
+        if (provinceLayer && typeof provinceLayer.bringToFront === 'function') {
+            provinceLayer.bringToFront();
+        }
+    }, delayMs);
+}
 
 mountBaseTileLayer(map, 4);
+map.whenReady(() => {
+    scheduleMapLayoutRefresh();
+});
+
+window.addEventListener('load', () => {
+    scheduleMapLayoutRefresh(64);
+}, { once: true });
+
+window.addEventListener('pageshow', () => {
+    scheduleMapLayoutRefresh(64);
+});
+
+window.addEventListener('resize', () => {
+    scheduleMapLayoutRefresh(120);
+});
 
 addThemeChangeListener(() => {
     mountBaseTileLayer(map, 4);
@@ -493,6 +525,7 @@ addThemeChangeListener(() => {
     }
 
     syncExistingChartTheme();
+    scheduleMapLayoutRefresh(32);
 });
 
 let provList = Array.from({ length: 40 }, () => Array(2).fill());
@@ -510,9 +543,16 @@ window.getSharedMapData()
         
         
         fetch(CNprov)
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`地图图层返回 ${response.status}`);
+                }
+
+                return response.json();
+            })
             .then(dataP => {
                 provinceLayer = L.geoJSON(dataP, {
+                    renderer: provinceLayerRenderer,
                     style: function(feature) {
                         let name = feature.properties.name || feature.properties.province || "";
                         
@@ -531,6 +571,20 @@ window.getSharedMapData()
                         bindProvinceLabel(feature, layer);
                     }
                 }).addTo(map);
+
+                if (typeof provinceLayer.bringToFront === 'function') {
+                    provinceLayer.bringToFront();
+                }
+
+                const provinceBounds = provinceLayer.getBounds();
+                if (provinceBounds && typeof provinceBounds.isValid === 'function' && provinceBounds.isValid()) {
+                    map.fitBounds(provinceBounds.pad(0.03), {
+                        animate: false,
+                        maxZoom: 4
+                    });
+                }
+
+                scheduleMapLayoutRefresh(32);
                 //addMarkers(data);
             })
             .catch(err => console.error('加载地图数据失败:', err));

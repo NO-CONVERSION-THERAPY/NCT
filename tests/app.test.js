@@ -309,6 +309,16 @@ test('vercel config preserves an OSM-compatible referrer policy at the edge', ()
   assert.equal(referrerHeader.value, 'strict-origin-when-cross-origin');
 });
 
+test('map frontend keeps a renderer and layout fallback for province overlays', () => {
+  const mapScript = fs.readFileSync(path.join(projectRoot, 'public/js/map_api.js'), 'utf8');
+  const mainStylesheet = fs.readFileSync(path.join(projectRoot, 'public/css/main.css'), 'utf8');
+
+  assert.match(mapScript, /preferCanvas:\s*true/);
+  assert.match(mapScript, /scheduleMapLayoutRefresh/);
+  assert.match(mapScript, /map\.invalidateSize\(\{ pan: false, animate: false \}\)/);
+  assert.match(mainStylesheet, /#map \.leaflet-pane > svg,\s*#map \.leaflet-pane > canvas/);
+});
+
 test('form page includes school name and address autocomplete hooks', async () => {
   const app = loadApp({ DEBUG_MOD: 'false' });
   const response = await requestPath(app, '/form');

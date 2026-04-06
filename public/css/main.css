@@ -1230,6 +1230,17 @@ button:hover { background: var(--button-hover); }
     transform: translateY(-5px);
 }
 
+#map .leaflet-pane > svg,
+#map .leaflet-pane > canvas {
+    display: block;
+    max-width: none !important;
+    max-height: none !important;
+}
+
+#map .leaflet-pane path.leaflet-interactive {
+    vector-effect: non-scaling-stroke;
+}
+
 .map-province-label {
     background: rgba(255, 255, 255, 0.78);
     border: 1px solid rgba(255, 255, 255, 0.58);
