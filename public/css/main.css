@@ -616,6 +616,12 @@ h3 {
 label { display: block; margin-bottom: 8px; font-weight: bold; }
 label.required::after { content: " *"; color: #e74c3c; }
 
+.birth-date-group {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
 .form-honeypot {
     position: absolute;
     left: -10000px;
@@ -678,6 +684,12 @@ button {
 }
 
 button:hover { background: var(--button-hover); }
+
+@media (max-width: 640px) {
+    .birth-date-group {
+        grid-template-columns: 1fr;
+    }
+}
 
 .map-refresh-button {
     display: inline-flex;

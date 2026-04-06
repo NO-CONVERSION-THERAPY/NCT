@@ -237,7 +237,9 @@ function collectNodeText(node) {
 function buildValidSubmissionBody(overrides = {}) {
   const basePayload = {
     identity: '受害者本人',
-    age: '18',
+    birth_year: '2008',
+    birth_month: '5',
+    birth_day: '20',
     sex: '男',
     sex_other: '',
     provinceCode: '110000',
@@ -299,6 +301,10 @@ test('form page includes school name and address autocomplete hooks', async () =
   const response = await requestPath(app, '/form');
 
   assert.equal(response.statusCode, 200);
+  assert.match(response.body, /出生年月日/);
+  assert.match(response.body, /name="birth_year"/);
+  assert.match(response.body, /name="birth_month"/);
+  assert.match(response.body, /name="birth_day"/);
   assert.match(response.body, /机构所在省份/);
   assert.match(response.body, /机构所在城市 \/ 区县/);
   assert.match(response.body, /机构所在县区（可选）/);
@@ -1056,6 +1062,44 @@ test('submit route still accepts a valid protected form in dry run mode', async 
   assert.equal(response.statusCode, 200);
   assert.match(response.body, /entry\.5034928/);
   assert.match(response.body, /测试学校/);
+  assert.match(response.body, /entry\.842223433_year/);
+  assert.match(response.body, /entry\.842223433_month/);
+  assert.match(response.body, /entry\.842223433_day/);
+  assert.match(response.body, />2008</);
+  assert.match(response.body, />5</);
+  assert.match(response.body, />20</);
+  assert.doesNotMatch(response.body, /entry\.842223433<\/code>/);
+  clearProjectModules();
+});
+
+test('submit route rejects invalid birth date combinations', async () => {
+  clearProjectModules();
+  const { issueFormProtectionToken } = require(path.join(projectRoot, 'app/services/formProtectionService'));
+  const app = loadApp({
+    DEBUG_MOD: 'false',
+    FORM_DRY_RUN: 'true',
+    FORM_PROTECTION_SECRET: 'test-form-protection-secret',
+    FORM_PROTECTION_MIN_FILL_MS: '3000'
+  });
+  const response = await requestApp(app, {
+    path: '/submit',
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: buildValidSubmissionBody({
+      birth_year: '2024',
+      birth_month: '2',
+      birth_day: '31',
+      form_token: issueFormProtectionToken({
+        secret: 'test-form-protection-secret',
+        issuedAt: Date.now() - 5000
+      })
+    })
+  });
+
+  assert.equal(response.statusCode, 400);
+  assert.match(response.body, /有效的出生年月日/);
   clearProjectModules();
 });
 
