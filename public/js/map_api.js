@@ -25,6 +25,8 @@ const themeMediaQuery = typeof window.matchMedia === 'function'
 let mapTileLayer = null;
 let provinceLayer = null;
 let provinceFillLayer = null;
+let provinceFillRenderer = null;
+let provinceBorderRenderer = null;
 const chartInstances = [];
 const TILE_ERROR_THRESHOLD = 6;
 const BASE_TILE_PROVIDERS = {
@@ -488,7 +490,6 @@ const map = L.map('map', {
     // 这里优先使用 Canvas 渲染，并继续保留后面的尺寸重算兜底。
     preferCanvas: true
 }).setView([37.5, 109], 4); // 預設視角
-const provinceLayerRenderer = L.canvas({ padding: 0.5 });
 const CNprov = window.ASSET_VERSION
     ? `/cn.json?v=${encodeURIComponent(window.ASSET_VERSION)}`
     : '/cn.json';
@@ -507,6 +508,21 @@ function ensureProvincePanes() {
     map.getPane('provinceFillPane').style.pointerEvents = 'none';
     map.getPane('provinceBorderPane').style.zIndex = '640';
     map.getPane('provinceBorderPane').style.pointerEvents = 'none';
+}
+
+function ensureProvinceRenderers() {
+    if (!provinceFillRenderer) {
+        provinceFillRenderer = L.canvas({
+            padding: 0.5,
+            pane: 'provinceFillPane'
+        });
+    }
+
+    if (!provinceBorderRenderer) {
+        provinceBorderRenderer = L.svg({
+            pane: 'provinceBorderPane'
+        });
+    }
 }
 
 function getProvinceFillOpacity(count) {
@@ -533,6 +549,7 @@ function scheduleMapLayoutRefresh(delayMs = 0) {
 }
 
 ensureProvincePanes();
+ensureProvinceRenderers();
 mountBaseTileLayer(map, 4);
 map.whenReady(() => {
     scheduleMapLayoutRefresh();
@@ -586,8 +603,7 @@ window.getSharedMapData()
             })
             .then(dataP => {
                 provinceFillLayer = L.geoJSON(dataP, {
-                    pane: 'provinceFillPane',
-                    renderer: provinceLayerRenderer,
+                    renderer: provinceFillRenderer,
                     interactive: false,
                     style: function(feature) {
                         const provinceCode = typeof getProvinceCodeFromFeature === 'function'
@@ -606,8 +622,7 @@ window.getSharedMapData()
                 }).addTo(map);
 
                 provinceLayer = L.geoJSON(dataP, {
-                    pane: 'provinceBorderPane',
-                    renderer: provinceLayerRenderer,
+                    renderer: provinceBorderRenderer,
                     interactive: false,
                     style: function(feature) {
                         return {
