@@ -11,7 +11,7 @@ on:
 
 env:
   TARGET_DIR: "blog/"
-  WEBHOOK_URL: "http://victimsunion.org/api/webhook"
+  WEBHOOK_URL: "http://subscribe.victimsunion.org/api/webhook"
 
 jobs:
   notify:
