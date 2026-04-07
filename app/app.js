@@ -12,6 +12,9 @@ const {
   formProtectionSecret,
   googleFormUrl,
   googleScriptUrl,
+  maintenanceMode,
+  maintenanceNotice,
+  maintenanceRetryAfterSeconds,
   mapReadRateLimitMax,
   pageReadRateLimitMax,
   publicMapDataUrl,
@@ -24,6 +27,7 @@ const {
 const { paths } = require('../config/fileConfig');
 const { helmetConfig, requestBodyLimits } = require('../config/security');
 const { createI18nMiddleware } = require('./middleware/i18n');
+const { createMaintenanceMiddleware } = require('./middleware/maintenance');
 const createApiRoutes = require('./routes/apiRoutes');
 const createFormRoutes = require('./routes/formRoutes');
 const createPageRoutes = require('./routes/pageRoutes');
@@ -66,6 +70,12 @@ app.use(createI18nMiddleware());
 // 模板与静态资源根目录。
 app.set('views', paths.views);
 app.use(express.static(paths.public));
+app.use(createMaintenanceMiddleware({
+  maintenanceMode,
+  maintenanceNotice,
+  maintenanceRetryAfterSeconds,
+  title
+}));
 app.engine('ejs', (filePath, data, callback) => ejs.renderFile(filePath, data, {
   cache: true,
   views: [paths.views]

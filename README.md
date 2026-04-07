@@ -119,6 +119,9 @@ npm test
 | --- | --- | --- | --- |
 | `TITLE` | 非必要 | `N·C·T` | 站點標題 |
 | `DEBUG_MOD` | 非必要 | `true` | 是否開啓調試頁 |
+| `MAINTENANCE_MODE` | 非必要 | `false` | 是否啓用全站維護模式；開啓後所有動態請求統一返回 `503` 維護頁 |
+| `MAINTENANCE_NOTICE` | 非必要 | 空 | 維護頁中 `Service state / 服務狀態` 區塊顯示的通知內容；英文與繁中頁面會在翻譯服務可用時自動翻譯，失敗時回退原文 |
+| `MAINTENANCE_RETRY_AFTER_SECONDS` | 非必要 | `1800` | 維護模式返回的 `Retry-After` 秒數 |
 | `FORM_DRY_RUN` | 非必要 | `true` | 是否只預覽提交、不真正送出 |
 | `SITE_URL` | 非必要 | `https://www.victimsunion.org/` | 站點正式網址，用於 `sitemap.xml`、`robots.txt` 等 |
 | `PORT` | 非必要 | `3000` | 本地 Node 啓動端口 |
@@ -151,6 +154,8 @@ npm test
 
 - 本地開發：`DEBUG_MOD="true"`、`FORM_DRY_RUN="true"`。
 - 正式部署：`DEBUG_MOD="false"`、`FORM_DRY_RUN="false"`。
+- 臨時維護：`MAINTENANCE_MODE="true"`；如需在頁面上展示公告，可再設 `MAINTENANCE_NOTICE="站點正在更新資料，請稍後再試。"`，並可用 `MAINTENANCE_RETRY_AFTER_SECONDS="1800"` 提示客戶端稍後重試。
+- `MAINTENANCE_NOTICE` 建議用原文填寫；英文與繁中介面會嘗試透過正式翻譯服務自動翻譯。
 - 若你希望公開內容可被搜索引擎正常收錄，但仍限制高頻抓取，建議保留 `PAGE_READ_RATE_LIMIT_MAX` 與 `MAP_READ_RATE_LIMIT_MAX`，並按實際流量調整。
 - 翻譯功能現在只走**正式翻譯後端**，不再使用 `translate.googleapis.com` 這類非正式接口。
 - 啓用翻譯時只需要配置 `GOOGLE_CLOUD_TRANSLATION_API_KEY`。
@@ -184,6 +189,12 @@ TRANSLATION_PROVIDER_TIMEOUT_MS="10000"
 - Cloudflare Dashboard 的 `Variables and Secrets`
 - 本地 Workers 調試使用的 `.dev.vars`
 
+如果你要臨時打開維護頁，也是在這兩個地方設置：
+
+- `MAINTENANCE_MODE="true"`
+- `MAINTENANCE_NOTICE="站點正在更新資料，請稍後再試。"`
+- `MAINTENANCE_RETRY_AFTER_SECONDS="1800"`
+
 ### 0. 前置條件
 
 你需要準備：
@@ -214,6 +225,14 @@ Workers 本地開發時，建議把變數放進 `.dev.vars`。最小示例：
 SITE_URL="http://127.0.0.1:8787"
 PAGE_READ_RATE_LIMIT_MAX="180"
 MAP_READ_RATE_LIMIT_MAX="60"
+```
+
+如果你需要在 Workers 上臨時開站點維護模式，可以再加上：
+
+```bash
+MAINTENANCE_MODE="true"
+MAINTENANCE_NOTICE="We are currently rolling out an update. Please check back shortly."
+MAINTENANCE_RETRY_AFTER_SECONDS="1800"
 ```
 
 如果你還想在本地測翻譯功能，再額外加上：
@@ -272,6 +291,9 @@ GOOGLE_CLOUD_TRANSLATION_API_KEY="換成你自己的正式 API Key"
 | --- | --- | --- |
 | `TITLE` | Text | `N·C·T` |
 | `DEBUG_MOD` | Text | 正式環境填 `false` |
+| `MAINTENANCE_MODE` | Text | 需要全站維護時填 `true` |
+| `MAINTENANCE_NOTICE` | Text | 顯示在維護頁通知卡片中的公告文字；英文與繁中頁面會嘗試自動翻譯 |
+| `MAINTENANCE_RETRY_AFTER_SECONDS` | Text | 預設 `1800` |
 | `FORM_DRY_RUN` | Text | 正式環境填 `false` |
 | `SITE_URL` | Text | 你的正式網址 |
 | `PAGE_READ_RATE_LIMIT_MAX` | Text | 視站點流量調整；預設 `180` |

@@ -5,6 +5,7 @@ const {
   debugMod,
   formProtectionSecretConfigured,
   googleScriptUrl,
+  maintenanceMode,
   rateLimitRedisUrl,
   translationProviderConfigured
 } = require('../config/appConfig');
@@ -16,6 +17,9 @@ if (require.main === module) {
   app.listen(appPort, () => {
     if (debugMod === 'true') {
       console.warn('警告！你現在在調試模式', debugMod, 'api获取位置：', apiUrl);
+    }
+    if (maintenanceMode) {
+      console.warn('警告！MAINTENANCE_MODE=true，所有動態請求都會返回 503 維護頁。');
     }
     if (!googleScriptUrl) {
       console.warn('警告！未設置 GOOGLE_SCRIPT_URL，地圖頁將直接使用公開 API：', apiUrl);

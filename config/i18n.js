@@ -179,7 +179,8 @@ const messages = {
       submitPreview: '提交预览|{title}',
       blog: '文库|{title}',
       article: '{articleTitle}|{title}',
-      debug: '调试|{title}'
+      debug: '调试|{title}',
+      maintenance: '站点维护|{title}'
     },
     navigation: {
       home: '返回首页',
@@ -433,6 +434,15 @@ const messages = {
       payload: 'URL Encoded Payload',
       backForm: '返回表单'
     },
+    maintenance: {
+      badge: '站点维护中',
+      title: '网站正在维护中',
+      description: '为了带来更稳定的体验，站点正在升级与校验。页面、表单与 API 暂时不可用。',
+      siteLabel: '站点',
+      modeLabel: '服务状态',
+      defaultNotice: '维护模式已开启',
+      refresh: '重新尝试'
+    },
     fields: {
       birthDate: '出生年月日',
       birthYear: '出生年份',
@@ -488,6 +498,7 @@ const messages = {
       submitFailedPrefix: '提交失败：',
       submitFailed: '提交失败',
       invalidFormSubmission: '提交已失效或异常，请刷新页面后重试。',
+      maintenanceActive: '站点正在维护中，请稍后再试。',
       tooManyRequests: '请求过于频繁，请稍后再试。',
       mapDataUnavailable: '无法取得地图数据',
       areaOptionsUnavailable: '无法取得地区选项'
@@ -533,7 +544,8 @@ const messages = {
       submitPreview: '提交預覽|{title}',
       blog: '文庫|{title}',
       article: '{articleTitle}|{title}',
-      debug: '調試|{title}'
+      debug: '調試|{title}',
+      maintenance: '站點維護|{title}'
     },
     navigation: {
       home: '返回首頁',
@@ -787,6 +799,15 @@ const messages = {
       payload: 'URL Encoded Payload',
       backForm: '返回表單'
     },
+    maintenance: {
+      badge: '站點維護中',
+      title: '網站正在維護中',
+      description: '為了帶來更穩定的體驗，站點正在升級與校驗。頁面、表單與 API 暫時不可用。',
+      siteLabel: '站點',
+      modeLabel: '服務狀態',
+      defaultNotice: '維護模式已開啟',
+      refresh: '重新嘗試'
+    },
     fields: {
       birthDate: '出生年月日',
       birthYear: '出生年份',
@@ -842,6 +863,7 @@ const messages = {
       submitFailedPrefix: '提交失敗：',
       submitFailed: '提交失敗',
       invalidFormSubmission: '提交已失效或異常，請重新整理頁面後再試。',
+      maintenanceActive: '站點正在維護中，請稍後再試。',
       tooManyRequests: '請求過於頻繁，請稍後再試。',
       mapDataUnavailable: '無法取得地圖數據',
       areaOptionsUnavailable: '無法取得地區選項'
@@ -887,7 +909,8 @@ const messages = {
       submitPreview: 'Submission Preview | {title}',
       blog: 'Library | {title}',
       article: '{articleTitle} | {title}',
-      debug: 'Debug | {title}'
+      debug: 'Debug | {title}',
+      maintenance: 'Maintenance | {title}'
     },
     navigation: {
       home: 'Back to Home',
@@ -1141,6 +1164,15 @@ const messages = {
       payload: 'URL Encoded Payload',
       backForm: 'Back to Form'
     },
+    maintenance: {
+      badge: 'Site Maintenance',
+      title: 'We are performing a short maintenance',
+      description: 'We are upgrading and checking the site for a more stable experience. Pages, forms, and APIs are temporarily unavailable.',
+      siteLabel: 'Site',
+      modeLabel: 'Service state',
+      defaultNotice: 'Maintenance mode is active',
+      refresh: 'Try again'
+    },
     fields: {
       birthDate: 'Date of Birth',
       birthYear: 'Birth Year',
@@ -1196,6 +1228,7 @@ const messages = {
       submitFailedPrefix: 'Submission failed: ',
       submitFailed: 'Submission failed',
       invalidFormSubmission: 'This submission has expired or looks invalid. Please refresh the form and try again.',
+      maintenanceActive: 'Site maintenance is in progress. Please try again later.',
       tooManyRequests: 'Too many requests. Please try again later.',
       mapDataUnavailable: 'Unable to fetch map data',
       areaOptionsUnavailable: 'Unable to load area options'

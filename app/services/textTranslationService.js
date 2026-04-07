@@ -224,6 +224,23 @@ async function translateDetailItems({ items, targetLanguage }) {
   }));
 }
 
+async function translateInterfaceText({ text, targetLanguage }) {
+  const normalizedText = String(text || '').trim();
+
+  if (!normalizedText) {
+    return '';
+  }
+
+  const [translatedItem] = await translateDetailItems({
+    items: [{ fieldKey: 'interface', text: normalizedText }],
+    targetLanguage
+  });
+
+  return translatedItem && translatedItem.translatedText
+    ? translatedItem.translatedText
+    : normalizedText;
+}
+
 module.exports = {
   getTranslationCacheSize() {
     pruneExpiredTranslations();
@@ -236,6 +253,7 @@ module.exports = {
     translationCache.clear();
     resetTranslationFailureCooldown();
   },
+  translateInterfaceText,
   translateDetailItems,
   translationCacheMaxEntries
 };

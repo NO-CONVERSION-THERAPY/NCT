@@ -77,6 +77,9 @@ function resolveFormProtectionSecret({ explicitSecret, formId, siteUrl, title })
 
 // 所有运行时环境变量统一从这里读，避免业务代码四处直接碰 process.env。
 const debugMod = process.env.DEBUG_MOD || 'true';
+const maintenanceMode = parseBooleanEnv(process.env.MAINTENANCE_MODE, false);
+const maintenanceNotice = readTrimmedEnvValue(process.env.MAINTENANCE_NOTICE);
+const maintenanceRetryAfterSeconds = parsePositiveInteger(process.env.MAINTENANCE_RETRY_AFTER_SECONDS, 1800);
 const title = process.env.TITLE || 'N·C·T';
 const formDryRun = parseBooleanEnv(process.env.FORM_DRY_RUN, true);
 const pageReadRateLimitMax = parsePositiveInteger(process.env.PAGE_READ_RATE_LIMIT_MAX, 180);
@@ -120,6 +123,9 @@ module.exports = {
   googleCloudTranslationApiKey,
   googleFormUrl,
   googleScriptUrl,
+  maintenanceMode,
+  maintenanceNotice,
+  maintenanceRetryAfterSeconds,
   mapReadRateLimitMax,
   pageReadRateLimitMax,
   publicMapDataUrl,

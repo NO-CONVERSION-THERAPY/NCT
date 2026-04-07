@@ -15,11 +15,17 @@ function clearProjectModules() {
 }
 
 function loadApp(envOverrides = {}) {
+  const effectiveEnvOverrides = {
+    MAINTENANCE_MODE: 'false',
+    MAINTENANCE_NOTICE: '',
+    ...envOverrides
+  };
+
   const originalValues = Object.fromEntries(
-    Object.keys(envOverrides).map((key) => [key, process.env[key]])
+    Object.keys(effectiveEnvOverrides).map((key) => [key, process.env[key]])
   );
 
-  Object.entries(envOverrides).forEach(([key, value]) => {
+  Object.entries(effectiveEnvOverrides).forEach(([key, value]) => {
     process.env[key] = value;
   });
 
@@ -303,6 +309,80 @@ test('root page renders successfully', async () => {
   assert.match(response.body, /window\.API_URL = "/);
   assert.match(response.body, /\/js\/map_data_store\.js/);
   assert.match(response.body, /\/js\/map_preload\.js/);
+});
+
+test('maintenance mode serves a 503 maintenance page for HTML requests', async () => {
+  const app = loadApp({
+    DEBUG_MOD: 'false',
+    MAINTENANCE_MODE: 'true',
+    MAINTENANCE_NOTICE: '站点资料正在同步，请稍后再试。',
+    MAINTENANCE_RETRY_AFTER_SECONDS: '900'
+  });
+  const response = await requestPath(app, '/');
+
+  assert.equal(response.statusCode, 503);
+  assert.equal(response.headers['retry-after'], '900');
+  assert.equal(response.headers['x-robots-tag'], 'noindex, nofollow, noarchive, nosnippet');
+  assert.match(response.headers['cache-control'], /no-store/);
+  assert.match(response.body, /网站正在维护中/);
+  assert.match(response.body, /站点资料正在同步，请稍后再试。/);
+  assert.match(response.body, /data-language-switcher/);
+  assert.match(response.body, /\/js\/language_switcher\.js/);
+  assert.match(response.body, /backdrop-filter: blur\(28px\)/);
+  assert.match(response.body, /@media \(prefers-color-scheme: dark\)/);
+  assert.doesNotMatch(response.body, /Suggested retry/);
+  assert.doesNotMatch(response.body, /503 Service Unavailable/);
+  assert.doesNotMatch(response.body, /The server is returning a standard 503 response/);
+});
+
+test('maintenance page translates MAINTENANCE_NOTICE for english mode when the translation service is configured', async () => {
+  const restoreFetch = installTranslationFetchStub();
+
+  try {
+    const app = loadApp({
+      DEBUG_MOD: 'false',
+      MAINTENANCE_MODE: 'true',
+      MAINTENANCE_NOTICE: '站点正在更新资料，请稍后再试。',
+      ...getGoogleTranslationTestEnv()
+    });
+    const response = await requestPath(app, '/?lang=en');
+
+    assert.equal(response.statusCode, 503);
+    assert.match(response.body, /EN:站点正在更新资料，请稍后再试。/);
+  } finally {
+    restoreFetch();
+    clearProjectModules();
+  }
+});
+
+test('maintenance mode keeps static assets reachable for the maintenance page', async () => {
+  const app = loadApp({
+    DEBUG_MOD: 'false',
+    MAINTENANCE_MODE: 'true'
+  });
+  const response = await requestPath(app, '/favicon.svg');
+
+  assert.equal(response.statusCode, 200);
+  assert.match(response.headers['content-type'], /image\/svg\+xml/);
+});
+
+test('maintenance mode returns JSON errors for API requests', async () => {
+  const app = loadApp({
+    DEBUG_MOD: 'false',
+    MAINTENANCE_MODE: 'true'
+  });
+  const response = await requestApp(app, {
+    path: '/api/map-data?lang=en',
+    headers: {
+      Accept: 'application/json'
+    }
+  });
+
+  assert.equal(response.statusCode, 503);
+  assert.match(response.headers['content-type'], /application\/json/);
+  assert.deepEqual(JSON.parse(response.body), {
+    error: 'Site maintenance is in progress. Please try again later.'
+  });
 });
 
 test('map page renders the record container and lazy-load sentinel', async () => {
