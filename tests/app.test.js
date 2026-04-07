@@ -1587,11 +1587,15 @@ test('map data service uses proxy agent when proxy env is configured', async () 
     };
 
     try {
-      const result = await mapDataService.getMapData({ publicMapDataUrl: 'https://example.com/api/map-data' });
+      const result = await mapDataService.getMapData({
+        publicMapDataUrl: 'https://example.com/api/map-data',
+        upstreamTimeoutMs: 23456
+      });
 
       assert.equal(result.schoolNum, 2);
       assert.equal(axiosCalls.length, 1);
       assert.equal(axiosCalls[0].proxy, false);
+      assert.equal(axiosCalls[0].timeout, 23456);
       assert.ok(axiosCalls[0].httpAgent instanceof FakeProxyAgent);
       assert.ok(axiosCalls[0].httpsAgent instanceof FakeProxyAgent);
     } finally {
@@ -1641,16 +1645,69 @@ test('map data service uses direct IPv4 requests when MAP_DATA_FORCE_IPV4 is ena
     try {
       const result = await mapDataService.getMapData({
         publicMapDataUrl: 'https://example.com/api/map-data',
-        mapDataForceIpv4: true
+        mapDataForceIpv4: true,
+        upstreamTimeoutMs: 23456
       });
 
       assert.equal(result.schoolNum, 3);
       assert.equal(axiosCalls.length, 1);
       assert.equal(axiosCalls[0].proxy, false);
+      assert.equal(axiosCalls[0].timeout, 23456);
       assert.equal(axiosCalls[0].httpAgent.options.family, 4);
       assert.equal(axiosCalls[0].httpsAgent.options.family, 4);
     } finally {
       axios.get = originalGet;
+      global.fetch = originalFetch;
+      mapDataService.resetMapDataCache();
+    }
+  });
+});
+
+test('map data service forwards the configured upstream timeout to fetch requests', async () => {
+  await withEnvOverrides({
+    ...getNoProxyEnv(),
+    RUNTIME_TARGET: 'workers'
+  }, async () => {
+    clearProjectModules();
+    const mapDataService = require(path.join(projectRoot, 'app/services/mapDataService'));
+    const originalFetch = global.fetch;
+    const originalAbortSignalTimeout = AbortSignal.timeout;
+    let capturedTimeoutMs = null;
+
+    mapDataService.resetMapDataCache();
+    AbortSignal.timeout = (timeoutMs) => {
+      capturedTimeoutMs = timeoutMs;
+      return {
+        aborted: false,
+        addEventListener() {},
+        removeEventListener() {}
+      };
+    };
+    global.fetch = async () => ({
+      ok: true,
+      async json() {
+        return {
+          avg_age: 18,
+          last_synced: 1000,
+          schoolNum: 3,
+          formNum: 2,
+          statistics: [],
+          statisticsForm: [],
+          data: []
+        };
+      }
+    });
+
+    try {
+      const result = await mapDataService.getMapData({
+        publicMapDataUrl: 'https://example.com/api/map-data',
+        upstreamTimeoutMs: 23456
+      });
+
+      assert.equal(result.schoolNum, 3);
+      assert.equal(capturedTimeoutMs, 23456);
+    } finally {
+      AbortSignal.timeout = originalAbortSignalTimeout;
       global.fetch = originalFetch;
       mapDataService.resetMapDataCache();
     }

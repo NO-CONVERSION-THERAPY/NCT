@@ -91,6 +91,7 @@ const googleScriptUrl = process.env.GOOGLE_SCRIPT_URL;
 const appPort = parsePositiveInteger(process.env.PORT, 3000);
 const publicMapDataUrl = process.env.PUBLIC_MAP_DATA_URL || 'https://nct.hosinoeiji.workers.dev/api/map-data';
 const mapDataForceIpv4 = parseBooleanEnv(process.env.MAP_DATA_FORCE_IPV4, false);
+const mapDataUpstreamTimeoutMs = parsePositiveInteger(process.env.MAP_DATA_UPSTREAM_TIMEOUT_MS, 25000);
 const siteUrl = String(process.env.SITE_URL || 'https://www.victimsunion.org/').replace(/\/+$/, '');
 const apiUrl = '/api/map-data';
 const trustProxy = resolveTrustProxy(process.env.TRUST_PROXY || '1');
@@ -128,6 +129,7 @@ module.exports = {
   maintenanceNotice,
   maintenanceRetryAfterSeconds,
   mapDataForceIpv4,
+  mapDataUpstreamTimeoutMs,
   mapReadRateLimitMax,
   pageReadRateLimitMax,
   publicMapDataUrl,

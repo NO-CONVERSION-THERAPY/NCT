@@ -13,6 +13,7 @@ const { translateDetailItems } = require('../services/textTranslationService');
 function createApiRoutes({
   googleScriptUrl,
   mapDataForceIpv4,
+  mapDataUpstreamTimeoutMs,
   mapReadRateLimitMax,
   publicMapDataUrl,
   rateLimitRedisUrl
@@ -105,6 +106,7 @@ function createApiRoutes({
         forceRefresh: shouldForceRefresh(req),
         googleScriptUrl,
         mapDataForceIpv4,
+        upstreamTimeoutMs: mapDataUpstreamTimeoutMs,
         publicMapDataUrl
       });
       return res.json(mapData);

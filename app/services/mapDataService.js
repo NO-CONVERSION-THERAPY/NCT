@@ -12,7 +12,7 @@ let lastForceRefreshTime = 0;
 const cacheDurationMs = 300000;
 // 即使用户手动点刷新，也给上游 Apps Script 一个冷却时间，避免被连续击穿。
 const forceRefreshCooldownMs = 30000;
-const upstreamRequestTimeoutMs = 10000;
+const defaultUpstreamRequestTimeoutMs = 25000;
 const simplifiedProvinceLabels = getProvinceCodeLabels('zh-CN');
 const legacyProvinceLabels = getProvinceCodeLabels('zh-TW');
 const provinceAliasToLegacyName = buildProvinceAliasToLegacyNameMap();
@@ -185,9 +185,9 @@ function getRequestErrorDiagnostics(error) {
   return [...new Set(details)].join(', ');
 }
 
-async function fetchJsonDirect(dataSourceUrl) {
+async function fetchJsonDirect(dataSourceUrl, upstreamTimeoutMs = defaultUpstreamRequestTimeoutMs) {
   const response = await fetch(dataSourceUrl, {
-    signal: AbortSignal.timeout(upstreamRequestTimeoutMs)
+    signal: AbortSignal.timeout(upstreamTimeoutMs)
   });
 
   if (!response.ok) {
@@ -197,9 +197,9 @@ async function fetchJsonDirect(dataSourceUrl) {
   return response.json();
 }
 
-async function fetchJsonWithAxios(dataSourceUrl, config) {
+async function fetchJsonWithAxios(dataSourceUrl, config, upstreamTimeoutMs = defaultUpstreamRequestTimeoutMs) {
   const response = await axios.get(dataSourceUrl, {
-    timeout: upstreamRequestTimeoutMs,
+    timeout: upstreamTimeoutMs,
     responseType: 'json',
     validateStatus: () => true,
     ...config
@@ -212,25 +212,28 @@ async function fetchJsonWithAxios(dataSourceUrl, config) {
   return response.data;
 }
 
-async function fetchJsonThroughProxy(dataSourceUrl) {
+async function fetchJsonThroughProxy(dataSourceUrl, upstreamTimeoutMs = defaultUpstreamRequestTimeoutMs) {
   const proxyAgent = getProxyAgent();
 
   return fetchJsonWithAxios(dataSourceUrl, {
     proxy: false,
     httpAgent: proxyAgent,
     httpsAgent: proxyAgent
-  });
+  }, upstreamTimeoutMs);
 }
 
-async function fetchJsonDirectIpv4(dataSourceUrl) {
+async function fetchJsonDirectIpv4(dataSourceUrl, upstreamTimeoutMs = defaultUpstreamRequestTimeoutMs) {
   return fetchJsonWithAxios(dataSourceUrl, {
     proxy: false,
     httpAgent: getIpv4HttpAgent(),
     httpsAgent: getIpv4HttpsAgent()
-  });
+  }, upstreamTimeoutMs);
 }
 
-async function fetchMapPayloadFromSource(dataSourceUrl, { mapDataForceIpv4 = false } = {}) {
+async function fetchMapPayloadFromSource(dataSourceUrl, {
+  mapDataForceIpv4 = false,
+  upstreamTimeoutMs = defaultUpstreamRequestTimeoutMs
+} = {}) {
   const strategies = [];
   let lastError = null;
   const workersRuntime = isWorkersRuntime();
@@ -239,26 +242,26 @@ async function fetchMapPayloadFromSource(dataSourceUrl, { mapDataForceIpv4 = fal
   if (!workersRuntime && hasProxyConfiguration()) {
     strategies.push({
       name: 'proxy-agent',
-      request: () => fetchJsonThroughProxy(dataSourceUrl)
+      request: () => fetchJsonThroughProxy(dataSourceUrl, upstreamTimeoutMs)
     });
   }
 
   if (shouldUseDirectIpv4) {
     strategies.push({
       name: 'direct-ipv4',
-      request: () => fetchJsonDirectIpv4(dataSourceUrl)
+      request: () => fetchJsonDirectIpv4(dataSourceUrl, upstreamTimeoutMs)
     });
   } else {
     strategies.push({
       name: 'direct-fetch',
-      request: () => fetchJsonDirect(dataSourceUrl)
+      request: () => fetchJsonDirect(dataSourceUrl, upstreamTimeoutMs)
     });
   }
 
   if (workersRuntime) {
     strategies.push({
       name: 'direct-fetch-retry',
-      request: () => fetchJsonDirect(dataSourceUrl)
+      request: () => fetchJsonDirect(dataSourceUrl, upstreamTimeoutMs)
     });
   }
 
@@ -318,7 +321,13 @@ function cleanMapData(rawData) {
 }
 
 // 公开地图接口的主逻辑：读取远端数据、清洗、缓存、失败时尽量回退到缓存。
-async function getMapData({ forceRefresh = false, googleScriptUrl, mapDataForceIpv4 = false, publicMapDataUrl }) {
+async function getMapData({
+  forceRefresh = false,
+  googleScriptUrl,
+  mapDataForceIpv4 = false,
+  publicMapDataUrl,
+  upstreamTimeoutMs = defaultUpstreamRequestTimeoutMs
+}) {
   const now = Date.now();
 
   // 常规请求优先命中缓存，避免每次页面访问都走网络。
@@ -344,7 +353,8 @@ async function getMapData({ forceRefresh = false, googleScriptUrl, mapDataForceI
     try {
       const dataSourceUrl = resolveMapDataSource({ googleScriptUrl, publicMapDataUrl });
       const responseBody = await fetchMapPayloadFromSource(dataSourceUrl, {
-        mapDataForceIpv4
+        mapDataForceIpv4,
+        upstreamTimeoutMs
       });
       const rawData = normalizeRawData(responseBody.data);
       const avgAge = resolveNumericValue(responseBody.avg_age);
