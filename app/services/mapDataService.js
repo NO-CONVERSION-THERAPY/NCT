@@ -1,3 +1,6 @@
+const axios = require('axios');
+const http = require('http');
+const https = require('https');
 const { getProvinceCodeLabels } = require('../../config/i18n');
 
 // 地图数据缓存放在 service 层，避免每次请求都直打 Apps Script。
@@ -8,9 +11,14 @@ let lastForceRefreshTime = 0;
 const cacheDurationMs = 300000;
 // 即使用户手动点刷新，也给上游 Apps Script 一个冷却时间，避免被连续击穿。
 const forceRefreshCooldownMs = 30000;
+const upstreamRequestTimeoutMs = 10000;
 const simplifiedProvinceLabels = getProvinceCodeLabels('zh-CN');
 const legacyProvinceLabels = getProvinceCodeLabels('zh-TW');
 const provinceAliasToLegacyName = buildProvinceAliasToLegacyNameMap();
+let ProxyAgentConstructor = null;
+let cachedProxyAgent = null;
+let cachedIpv4HttpAgent = null;
+let cachedIpv4HttpsAgent = null;
 
 function buildProvinceAliasToLegacyNameMap() {
   const aliasMap = new Map();
@@ -92,6 +100,176 @@ function resolveMapDataSource({ googleScriptUrl, publicMapDataUrl }) {
   return dataSourceUrl;
 }
 
+function hasProxyConfiguration() {
+  return [
+    process.env.HTTPS_PROXY,
+    process.env.https_proxy,
+    process.env.HTTP_PROXY,
+    process.env.http_proxy,
+    process.env.ALL_PROXY,
+    process.env.all_proxy
+  ].some((value) => typeof value === 'string' && value.trim());
+}
+
+function getProxyAgent() {
+  if (!cachedProxyAgent) {
+    if (!ProxyAgentConstructor) {
+      ({ ProxyAgent: ProxyAgentConstructor } = require('proxy-agent'));
+    }
+
+    cachedProxyAgent = new ProxyAgentConstructor();
+  }
+
+  return cachedProxyAgent;
+}
+
+function getIpv4HttpAgent() {
+  if (!cachedIpv4HttpAgent) {
+    cachedIpv4HttpAgent = new http.Agent({ family: 4 });
+  }
+
+  return cachedIpv4HttpAgent;
+}
+
+function getIpv4HttpsAgent() {
+  if (!cachedIpv4HttpsAgent) {
+    cachedIpv4HttpsAgent = new https.Agent({ family: 4 });
+  }
+
+  return cachedIpv4HttpsAgent;
+}
+
+function createUpstreamStatusError(statusCode) {
+  const error = new Error(`地圖數據源返回 ${statusCode}`);
+  error.isUpstreamStatusError = true;
+  error.statusCode = statusCode;
+  return error;
+}
+
+function getRequestErrorDiagnostics(error) {
+  const details = [];
+
+  function collectDiagnostics(currentError) {
+    if (!currentError || typeof currentError !== 'object') {
+      return;
+    }
+
+    if (currentError.name) {
+      details.push(`name=${currentError.name}`);
+    }
+
+    if (currentError.code) {
+      details.push(`code=${currentError.code}`);
+    }
+
+    if (currentError.statusCode) {
+      details.push(`status=${currentError.statusCode}`);
+    }
+
+    if (currentError.message) {
+      details.push(`message=${currentError.message}`);
+    }
+
+    if (Array.isArray(currentError.errors)) {
+      currentError.errors.forEach(collectDiagnostics);
+    }
+
+    if (currentError.cause && currentError.cause !== currentError) {
+      collectDiagnostics(currentError.cause);
+    }
+  }
+
+  collectDiagnostics(error);
+
+  return [...new Set(details)].join(', ');
+}
+
+async function fetchJsonDirect(dataSourceUrl) {
+  const response = await fetch(dataSourceUrl, {
+    signal: AbortSignal.timeout(upstreamRequestTimeoutMs)
+  });
+
+  if (!response.ok) {
+    throw createUpstreamStatusError(response.status);
+  }
+
+  return response.json();
+}
+
+async function fetchJsonWithAxios(dataSourceUrl, config) {
+  const response = await axios.get(dataSourceUrl, {
+    timeout: upstreamRequestTimeoutMs,
+    responseType: 'json',
+    validateStatus: () => true,
+    ...config
+  });
+
+  if (response.status < 200 || response.status >= 300) {
+    throw createUpstreamStatusError(response.status);
+  }
+
+  return response.data;
+}
+
+async function fetchJsonThroughProxy(dataSourceUrl) {
+  const proxyAgent = getProxyAgent();
+
+  return fetchJsonWithAxios(dataSourceUrl, {
+    proxy: false,
+    httpAgent: proxyAgent,
+    httpsAgent: proxyAgent
+  });
+}
+
+async function fetchJsonDirectIpv4(dataSourceUrl) {
+  return fetchJsonWithAxios(dataSourceUrl, {
+    proxy: false,
+    httpAgent: getIpv4HttpAgent(),
+    httpsAgent: getIpv4HttpsAgent()
+  });
+}
+
+async function fetchMapPayloadFromSource(dataSourceUrl) {
+  const strategies = [];
+  let lastError = null;
+
+  if (hasProxyConfiguration()) {
+    strategies.push({
+      name: 'proxy-agent',
+      request: () => fetchJsonThroughProxy(dataSourceUrl)
+    });
+  }
+
+  strategies.push({
+    name: 'direct-fetch',
+    request: () => fetchJsonDirect(dataSourceUrl)
+  });
+  strategies.push({
+    name: 'direct-ipv4',
+    request: () => fetchJsonDirectIpv4(dataSourceUrl)
+  });
+
+  const attemptDiagnostics = [];
+
+  for (const strategy of strategies) {
+    try {
+      return await strategy.request();
+    } catch (error) {
+      lastError = error;
+
+      if (error && error.isUpstreamStatusError) {
+        throw error;
+      }
+
+      attemptDiagnostics.push(`${strategy.name}: ${getRequestErrorDiagnostics(error) || 'unknown error'}`);
+    }
+  }
+
+  const finalError = new Error(`地圖數據源請求失敗：${attemptDiagnostics.join(' | ')}`);
+  finalError.cause = lastError;
+  throw finalError;
+}
+
 // Apps Script 可能返回数组，也可能返回 JSON 字符串，这里统一兜底。
 function normalizeRawData(rawData) {
   if (Array.isArray(rawData)) {
@@ -152,15 +330,7 @@ async function getMapData({ forceRefresh = false, googleScriptUrl, publicMapData
   const request = (async () => {
     try {
       const dataSourceUrl = resolveMapDataSource({ googleScriptUrl, publicMapDataUrl });
-      const response = await fetch(dataSourceUrl, {
-        signal: AbortSignal.timeout(10000)
-      });
-
-      if (!response.ok) {
-        throw new Error(`地圖數據源返回 ${response.status}`);
-      }
-
-      const responseBody = await response.json();
+      const responseBody = await fetchMapPayloadFromSource(dataSourceUrl);
       const rawData = normalizeRawData(responseBody.data);
       const avgAge = resolveNumericValue(responseBody.avg_age);
       const schoolNum = resolveNumericValue(responseBody.schoolNum, responseBody.SchoolNum);
@@ -213,5 +383,11 @@ module.exports = {
     inFlightRequest = null;
     lastFetchTime = 0;
     lastForceRefreshTime = 0;
-  }
+    cachedProxyAgent = null;
+    cachedIpv4HttpAgent = null;
+    cachedIpv4HttpsAgent = null;
+  },
+  getRequestErrorDiagnostics,
+  hasProxyConfiguration,
+  fetchMapPayloadFromSource
 };

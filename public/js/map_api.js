@@ -14,6 +14,10 @@ const i18n = window.I18N;
 const MAP_DATA_REFRESH_INTERVAL_SECONDS = 300;
 const { getElapsedSeconds, renderLastSyncedValue } = window.MapTimeUtils;
 const { getSchoolStatsKey, groupSchoolRecords } = window.MapRecordStats;
+const {
+    buildProvinceCountMap,
+    getProvinceCodeFromFeature
+} = window.MapProvinceUtils || {};
 const themeMediaQuery = typeof window.matchMedia === 'function'
     ? window.matchMedia('(prefers-color-scheme: dark)')
     : null;
@@ -532,13 +536,12 @@ let provList = Array.from({ length: 40 }, () => Array(2).fill());
 window.getSharedMapData()
     .then(jsonResponse => {
         const data = jsonResponse.data;
-        const provinceMap = {};
-
-        // 将学校数量聚合到省级，用于绘制着色地图。
-        data.forEach(item => {
-            const prov = (item.province || "").replace(/(省|市|自治区|特别行政区)/g, "");
-            provinceMap[prov] = (provinceMap[prov] || 0) + 1;
-        });
+        const provinceCountSource = Array.isArray(jsonResponse.statistics) && jsonResponse.statistics.length > 0
+            ? jsonResponse.statistics
+            : data;
+        const provinceCountMap = typeof buildProvinceCountMap === 'function'
+            ? buildProvinceCountMap(provinceCountSource)
+            : new Map();
 
         
         
@@ -554,10 +557,12 @@ window.getSharedMapData()
                 provinceLayer = L.geoJSON(dataP, {
                     renderer: provinceLayerRenderer,
                     style: function(feature) {
-                        let name = feature.properties.name || feature.properties.province || "";
+                        const provinceCode = typeof getProvinceCodeFromFeature === 'function'
+                            ? getProvinceCodeFromFeature(feature)
+                            : '';
                         
-                        // 省份 GeoJSON 名称与业务数据做一次映射后再上色。
-                        const count = provinceMap[name] || 0;
+                        // 使用稳定的省份 code 做匹配，避免繁简、全称和 GeoJSON 异名导致着色失效。
+                        const count = provinceCountMap.get(provinceCode) || 0;
                         return {
                             fillColor: getColor(count),
                             weight: 2,

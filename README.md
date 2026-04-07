@@ -136,7 +136,7 @@ npm test
 | `PUBLIC_MAP_DATA_URL` | 非必要 | `https://nct.hosinoneko.me/api/map-data` | 公開地圖 API 地址 |
 | `GOOGLE_CLOUD_TRANSLATION_API_KEY` | 按需 | 空 | Google Cloud Translation API Key；啓用翻譯功能時必填 |
 | `TRANSLATION_PROVIDER_TIMEOUT_MS` | 非必要 | `10000` | 翻譯請求超時，單位毫秒 |
-| `TRUST_PROXY` | 非必要 | `true` | 是否信任反向代理；Workers / 代理環境建議設為 `1` 或 `true` |
+| `TRUST_PROXY` | 非必要 | `1` | 是否信任反向代理；預設信任一層代理 |
 | `RATE_LIMIT_REDIS_URL` | 非必要 | 空 | 共享限流存儲；留空時退回單實例記憶體限流 |
 
 ### 翻譯服務配置
@@ -307,7 +307,7 @@ GOOGLE_CLOUD_TRANSLATION_API_KEY="換成你自己的正式 API Key"
 | `PUBLIC_MAP_DATA_URL` | Text | 沒有私有資料源時配置成你的公開地圖 API |
 | `GOOGLE_CLOUD_TRANSLATION_API_KEY` | Secret | 啓用翻譯功能時必填 |
 | `TRANSLATION_PROVIDER_TIMEOUT_MS` | Text | 預設 `10000` |
-| `TRUST_PROXY` | Text | Workers / 代理環境建議 `1` 或 `true` |
+| `TRUST_PROXY` | Text | 預設 `1`；通常表示信任一層代理 |
 | `RATE_LIMIT_REDIS_URL` | Secret | 多實例部署建議配置共享限流存儲 |
 
 補完變數後，重新觸發一次部署。
