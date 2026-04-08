@@ -45,6 +45,48 @@ function loadApp(envOverrides = {}) {
   return app;
 }
 
+function loadAppWithPatchedFormService(envOverrides = {}, patchFormService) {
+  const effectiveEnvOverrides = {
+    MAINTENANCE_MODE: 'false',
+    MAINTENANCE_NOTICE: '',
+    MAP_DATA_NODE_TRANSPORT_OVERRIDES: 'false',
+    ...envOverrides
+  };
+
+  const originalValues = Object.fromEntries(
+    Object.keys(effectiveEnvOverrides).map((key) => [key, process.env[key]])
+  );
+
+  Object.entries(effectiveEnvOverrides).forEach(([key, value]) => {
+    process.env[key] = value;
+  });
+
+  clearProjectModules();
+  const formService = require(path.join(projectRoot, 'app/services/formService'));
+  const restorePatch = typeof patchFormService === 'function'
+    ? patchFormService(formService)
+    : null;
+  const app = require(path.join(projectRoot, 'app/server'));
+
+  Object.entries(originalValues).forEach(([key, value]) => {
+    if (typeof value === 'undefined') {
+      delete process.env[key];
+      return;
+    }
+
+    process.env[key] = value;
+  });
+
+  return {
+    app,
+    restore() {
+      if (typeof restorePatch === 'function') {
+        restorePatch();
+      }
+    }
+  };
+}
+
 function withEnvOverrides(envOverrides, callback) {
   const originalValues = Object.fromEntries(
     Object.keys(envOverrides).map((key) => [key, process.env[key]])
@@ -284,16 +326,23 @@ function collectNodeText(node) {
   return [node.textContent, ...node.children.map((child) => collectNodeText(child))].join('');
 }
 
+function responseBodyMatch(body, pattern) {
+  const match = String(body || '').match(pattern);
+  assert.ok(match, `Expected response body to match ${pattern}`);
+  return match;
+}
+
 function buildValidSubmissionBody(overrides = {}) {
   const basePayload = {
     identity: '受害者本人',
     birth_year: '2008',
-    sex: '男',
+    sex: '男性',
+    sex_other_type: '',
     sex_other: '',
     provinceCode: '110000',
     cityCode: '110101',
     countyCode: '',
-    school_name: '测试学校',
+    school_name: '测试机构',
     school_address: '北京市东城区测试路 1 号',
     date_start: '2024-01-01',
     date_end: '',
@@ -507,13 +556,36 @@ test('form page includes school name and address autocomplete hooks', async () =
   const response = await requestPath(app, '/form');
 
   assert.equal(response.statusCode, 200);
+  assert.match(response.body, /隐私说明：本问卷中个人基本信息将被严格保密/);
+  assert.match(response.body, /个人基本信息/);
+  assert.match(response.body, /相关经历/);
+  assert.match(response.body, /机构曝光信息/);
   assert.match(response.body, /出生年份/);
+  assert.match(response.body, /受害者出生年份/);
+  assert.match(response.body, /受害者性别/);
+  assert.match(response.body, /受害人经历/);
   assert.match(response.body, /name="birth_year"/);
   assert.doesNotMatch(response.body, /name="birth_month"/);
   assert.doesNotMatch(response.body, /name="birth_day"/);
+  assert.match(response.body, /机构名称/);
   assert.match(response.body, /机构所在省份/);
   assert.match(response.body, /机构所在城市 \/ 区县/);
-  assert.match(response.body, /机构所在县区（可选）/);
+  assert.match(response.body, /机构所在县区/);
+  assert.match(response.body, /机构地址/);
+  assert.match(response.body, /机构联系方式/);
+  assert.match(response.body, /丑闻及暴力行为详细描述/);
+  assert.match(response.body, /首次被送入日期/);
+  assert.match(response.body, /假如有多次被送入经历，可在经历描述中说明情况/);
+  assert.match(response.body, /个人在校经历描述/);
+  assert.match(response.body, /若描述别人经历请在“其他补充”中填写/);
+  assert.match(response.body, /注：选择性别认同/);
+  assert.match(response.body, /name="sex_other_type"/);
+  assert.match(response.body, /<select id="otherSexTypeSelect" name="sex_other_type" class="other-input" disabled>\s*<option value="" selected>请选择<\/option>/);
+  assert.match(response.body, /MtF/);
+  assert.match(response.body, /FtM/);
+  assert.doesNotMatch(response.body, /学校名称/);
+  assert.match(response.body, /机构曝光信息[\s\S]*?机构名称[\s\S]*?机构所在省份/);
+  assert.match(response.body, /机构地址[\s\S]*?机构联系方式[\s\S]*?负责人\/校长姓名/);
   assert.match(response.body, /id="school_results_list"/);
   assert.match(response.body, /id="address_results_list"/);
   assert.match(response.body, /name="website"/);
@@ -1386,7 +1458,7 @@ test('submit route still accepts a valid protected form in dry run mode', async 
   assert.match(response.headers['cache-control'], /no-store/);
   assert.match(response.body, /<meta name="robots" content="noindex, nofollow, noarchive, nosnippet">/);
   assert.match(response.body, /entry\.5034928/);
-  assert.match(response.body, /测试学校/);
+  assert.match(response.body, /测试机构/);
   assert.match(response.body, /entry\.842223433_year/);
   assert.match(response.body, /entry\.842223433_month/);
   assert.match(response.body, /entry\.842223433_day/);
@@ -1394,6 +1466,199 @@ test('submit route still accepts a valid protected form in dry run mode', async 
   assert.match(response.body, /entry\.842223433_month<\/code><\/td>\s*<td>出生月份<\/td>\s*<td>1<\/td>/);
   assert.match(response.body, /entry\.842223433_day<\/code><\/td>\s*<td>出生日期<\/td>\s*<td>1<\/td>/);
   assert.doesNotMatch(response.body, /entry\.842223433<\/code>/);
+  clearProjectModules();
+});
+
+test('submit route accepts agent submissions with enrollment age and other gender details in dry run mode', async () => {
+  clearProjectModules();
+  const { issueFormProtectionToken } = require(path.join(projectRoot, 'app/services/formProtectionService'));
+  const app = loadApp({
+    DEBUG_MOD: 'false',
+    FORM_DRY_RUN: 'true',
+    FORM_PROTECTION_SECRET: 'test-form-protection-secret',
+    FORM_PROTECTION_MIN_FILL_MS: '3000'
+  });
+  const response = await requestApp(app, {
+    path: '/submit',
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: buildValidSubmissionBody({
+      identity: '受害者的代理人',
+      birth_year: '2008',
+      sex: '__other_option__',
+      sex_other_type: 'MtF',
+      sex_other: '非二元',
+      form_token: issueFormProtectionToken({
+        secret: 'test-form-protection-secret',
+        issuedAt: Date.now() - 5000
+      })
+    })
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.match(response.body, /entry\.842223433_year<\/code><\/td>\s*<td>受害者出生年份<\/td>\s*<td>2008<\/td>/);
+  assert.match(response.body, /entry\.1422578992<\/code><\/td>\s*<td>受害者性别<\/td>\s*<td>MtF \/ 非二元<\/td>/);
+  clearProjectModules();
+});
+
+test('submit route renders a confirmation page before sending to Google Form in normal mode', { concurrency: false }, async () => {
+  clearProjectModules();
+  let submitCallCount = 0;
+
+  try {
+    const { issueFormProtectionToken } = require(path.join(projectRoot, 'app/services/formProtectionService'));
+    const { app, restore } = loadAppWithPatchedFormService({
+      DEBUG_MOD: 'false',
+      FORM_DRY_RUN: 'false',
+      FORM_PROTECTION_SECRET: 'test-form-protection-secret',
+      FORM_PROTECTION_MIN_FILL_MS: '3000'
+    }, (formService) => {
+      const originalSubmitToGoogleForm = formService.submitToGoogleForm;
+      formService.submitToGoogleForm = async () => {
+        submitCallCount += 1;
+      };
+
+      return () => {
+        formService.submitToGoogleForm = originalSubmitToGoogleForm;
+      };
+    });
+    const response = await requestApp(app, {
+      path: '/submit',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: buildValidSubmissionBody({
+        form_token: issueFormProtectionToken({
+          secret: 'test-form-protection-secret',
+          issuedAt: Date.now() - 5000
+        })
+      })
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(submitCallCount, 0);
+    assert.equal(response.headers['x-robots-tag'], 'noindex, nofollow, noarchive, nosnippet');
+    assert.match(response.body, /提交确认/);
+    assert.match(response.body, /这一步还没有发送到 Google Form/);
+    assert.match(response.body, /name="confirmation_token"/);
+    assert.match(response.body, /<textarea name="confirmation_payload" hidden>/);
+    assert.match(response.body, /确认并提交/);
+    assert.doesNotMatch(response.body, /<strong>\s*目标网址：\s*<\/strong>/);
+    assert.doesNotMatch(response.body, /<th>\s*Google Form Entry\s*<\/th>/);
+    assert.doesNotMatch(response.body, /<td><code>entry\./);
+    assert.match(
+      response.body,
+      /请问您是作为什么身份来填写本表单？[\s\S]*?出生年份[\s\S]*?性别[\s\S]*?首次被送入日期[\s\S]*?离开日期[\s\S]*?个人在校经历描述[\s\S]*?机构名称[\s\S]*?机构所在省份[\s\S]*?机构所在城市 \/ 区县[\s\S]*?机构所在县区[\s\S]*?机构地址[\s\S]*?机构联系方式[\s\S]*?负责人\/校长姓名[\s\S]*?丑闻及暴力行为详细描述[\s\S]*?其他补充/
+    );
+    restore();
+  } finally {
+    clearProjectModules();
+  }
+});
+
+test('submit confirm route sends the reviewed payload to Google Form in normal mode', { concurrency: false }, async () => {
+  clearProjectModules();
+  const capturedCalls = [];
+
+  try {
+    const { issueFormProtectionToken } = require(path.join(projectRoot, 'app/services/formProtectionService'));
+    const { app, restore } = loadAppWithPatchedFormService({
+      DEBUG_MOD: 'false',
+      FORM_DRY_RUN: 'false',
+      FORM_PROTECTION_SECRET: 'test-form-protection-secret',
+      FORM_PROTECTION_MIN_FILL_MS: '3000'
+    }, (formService) => {
+      const originalSubmitToGoogleForm = formService.submitToGoogleForm;
+      formService.submitToGoogleForm = async (...args) => {
+        capturedCalls.push(args);
+      };
+
+      return () => {
+        formService.submitToGoogleForm = originalSubmitToGoogleForm;
+      };
+    });
+    const reviewResponse = await requestApp(app, {
+      path: '/submit',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: buildValidSubmissionBody({
+        form_token: issueFormProtectionToken({
+          secret: 'test-form-protection-secret',
+          issuedAt: Date.now() - 5000
+        })
+      })
+    });
+
+    const confirmationTokenMatch = responseBodyMatch(reviewResponse.body, /name="confirmation_token" value="([^"]+)"/);
+    const confirmationPayloadMatch = responseBodyMatch(reviewResponse.body, /<textarea name="confirmation_payload" hidden>([^<]*)<\/textarea>/);
+    const confirmResponse = await requestApp(app, {
+      path: '/submit/confirm',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: new URLSearchParams({
+        confirmation_token: confirmationTokenMatch[1],
+        confirmation_payload: confirmationPayloadMatch[1]
+      }).toString()
+    });
+
+    assert.equal(confirmResponse.statusCode, 200);
+    assert.equal(capturedCalls.length, 1);
+    assert.match(capturedCalls[0][0], /https:\/\/docs\.google\.com\/forms\/d\/e\//);
+    assert.match(capturedCalls[0][1], /entry\.5034928=/);
+    assert.match(decodeURIComponent(capturedCalls[0][1]), /测试机构/);
+    assert.match(confirmResponse.body, /提交成功/);
+    restore();
+  } finally {
+    clearProjectModules();
+  }
+});
+
+test('submit confirm route rejects tampered confirmation payloads', async () => {
+  clearProjectModules();
+  const { issueFormProtectionToken } = require(path.join(projectRoot, 'app/services/formProtectionService'));
+  const app = loadApp({
+    DEBUG_MOD: 'false',
+    FORM_DRY_RUN: 'false',
+    FORM_PROTECTION_SECRET: 'test-form-protection-secret',
+    FORM_PROTECTION_MIN_FILL_MS: '3000'
+  });
+  const reviewResponse = await requestApp(app, {
+    path: '/submit',
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: buildValidSubmissionBody({
+      form_token: issueFormProtectionToken({
+        secret: 'test-form-protection-secret',
+        issuedAt: Date.now() - 5000
+      })
+    })
+  });
+
+  const confirmationTokenMatch = responseBodyMatch(reviewResponse.body, /name="confirmation_token" value="([^"]+)"/);
+  const confirmationPayloadMatch = responseBodyMatch(reviewResponse.body, /<textarea name="confirmation_payload" hidden>([^<]*)<\/textarea>/);
+  const confirmResponse = await requestApp(app, {
+    path: '/submit/confirm',
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: new URLSearchParams({
+      confirmation_token: confirmationTokenMatch[1],
+      confirmation_payload: `${confirmationPayloadMatch[1]}tampered`
+    }).toString()
+  });
+
+  assert.equal(confirmResponse.statusCode, 400);
+  assert.match(confirmResponse.body, /提交已失效或异常/);
   clearProjectModules();
 });
 
@@ -1426,7 +1691,37 @@ test('submit route rejects invalid birth year values', async () => {
   clearProjectModules();
 });
 
-test('submitToGoogleForm stops at redirect responses instead of following them', async () => {
+test('submit route rejects invalid victim birth year values for agent submissions', async () => {
+  clearProjectModules();
+  const { issueFormProtectionToken } = require(path.join(projectRoot, 'app/services/formProtectionService'));
+  const app = loadApp({
+    DEBUG_MOD: 'false',
+    FORM_DRY_RUN: 'true',
+    FORM_PROTECTION_SECRET: 'test-form-protection-secret',
+    FORM_PROTECTION_MIN_FILL_MS: '3000'
+  });
+  const response = await requestApp(app, {
+    path: '/submit',
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: buildValidSubmissionBody({
+      identity: '受害者的代理人',
+      birth_year: '121',
+      form_token: issueFormProtectionToken({
+        secret: 'test-form-protection-secret',
+        issuedAt: Date.now() - 5000
+      })
+    })
+  });
+
+  assert.equal(response.statusCode, 400);
+  assert.match(response.body, /有效的受害者出生年份/);
+  clearProjectModules();
+});
+
+test('submitToGoogleForm stops at redirect responses instead of following them', { concurrency: false }, async () => {
   clearProjectModules();
   const axios = require('axios');
   const originalPost = axios.post;
