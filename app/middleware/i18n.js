@@ -8,6 +8,13 @@ const {
   translate
 } = require('../../config/i18n');
 
+function resolveAssetVersion(value) {
+  const normalizedValue = String(value || '').trim();
+  return normalizedValue && normalizedValue !== '0'
+    ? normalizedValue
+    : String(Date.now());
+}
+
 function createI18nMiddleware() {
   return function i18nMiddleware(req, res, next) {
     const cookies = parseCookieHeader(req.headers.cookie);
@@ -24,6 +31,9 @@ function createI18nMiddleware() {
 
     res.locals.lang = language;
     res.locals.t = req.t;
+    res.locals.assetVersion = resolveAssetVersion(
+      req.app && req.app.locals ? req.app.locals.assetVersion : ''
+    );
     res.locals.clientMessages = getMessages(language);
     res.locals.languageOptions = getLanguageOptions(language);
 
@@ -32,5 +42,6 @@ function createI18nMiddleware() {
 }
 
 module.exports = {
-  createI18nMiddleware
+  createI18nMiddleware,
+  resolveAssetVersion
 };

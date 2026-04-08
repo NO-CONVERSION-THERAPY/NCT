@@ -126,6 +126,9 @@ npm test
 | --- | --- | --- | --- |
 | `TITLE` | 非必要 | `N·C·T` | 站點標題 |
 | `DEBUG_MOD` | 非必要 | `true` | 是否開啓調試頁 |
+| `MAINTENANCE_MODE` | 非必要 | `false` | 是否啓用全站維護模式；開啓後所有動態請求統一返回 `503` 維護頁 |
+| `MAINTENANCE_NOTICE` | 非必要 | 空 | 維護頁中 `Service state / 服務狀態` 區塊顯示的通知內容；英文與繁中頁面會在翻譯服務可用時自動翻譯，失敗時回退原文 |
+| `MAINTENANCE_RETRY_AFTER_SECONDS` | 非必要 | `1800` | 維護模式返回的 `Retry-After` 秒數 |
 | `FORM_DRY_RUN` | 非必要 | `true` | 是否只預覽提交、不真正送出 |
 | `SITE_URL` | 非必要 | `https://www.victimsunion.org/` | 站點正式網址，用於 `sitemap.xml`、`robots.txt` 等 |
 | `PORT` | 非必要 | `3000` | 本地 Node 啓動端口 |
@@ -137,10 +140,12 @@ npm test
 | `FORM_PROTECTION_MAX_AGE_MS` | 非必要 | `86400000` | 表單 token 最長有效期 |
 | `FORM_ID` | 非必要 | `1FAIpQLScggjQgYutXQrjQDrutyxL0eLaFMktTMRKsFWPffQGavUFspA` | Google Form ID |
 | `GOOGLE_SCRIPT_URL` | 非必要 | 空 | 私有 Google Apps Script 資料源；留空時回退公開資料源 |
-| `PUBLIC_MAP_DATA_URL` | 非必要 | `https://nct.hosinoneko.me/api/map-data` | 公開地圖 API 地址 |
+| `PUBLIC_MAP_DATA_URL` | 非必要 | `https://nct.hosinoeiji.workers.dev/api/map-data` | 公開地圖 API 地址 |
+| `MAP_DATA_NODE_TRANSPORT_OVERRIDES` | 非必要 | `false` | Node 運行時的地圖上游網路策略總開關；`true` 時才會啓用代理 agent 與 IPv4 直連，預設兩者都關閉；Workers 運行時會忽略 |
+| `MAP_DATA_UPSTREAM_TIMEOUT_MS` | 非必要 | `25000` | 地圖上游請求超時，單位毫秒 |
 | `GOOGLE_CLOUD_TRANSLATION_API_KEY` | 按需 | 空 | Google Cloud Translation API Key；啓用翻譯功能時必填 |
 | `TRANSLATION_PROVIDER_TIMEOUT_MS` | 非必要 | `10000` | 翻譯請求超時，單位毫秒 |
-| `TRUST_PROXY` | 非必要 | `true` | 是否信任反向代理；Workers / 代理環境建議設為 `1` 或 `true` |
+| `TRUST_PROXY` | 非必要 | `1` | 是否信任反向代理；預設信任一層代理 |
 | `RATE_LIMIT_REDIS_URL` | 非必要 | 空 | 共享限流存儲；留空時退回單實例記憶體限流 |
 
 ### 翻譯服務配置
@@ -158,11 +163,14 @@ npm test
 
 - 本地開發：`DEBUG_MOD="true"`、`FORM_DRY_RUN="true"`。
 - 正式部署：`DEBUG_MOD="false"`、`FORM_DRY_RUN="false"`。
+- 臨時維護：`MAINTENANCE_MODE="true"`；如需在頁面上展示公告，可再設 `MAINTENANCE_NOTICE="站點正在更新資料，請稍後再試。"`，並可用 `MAINTENANCE_RETRY_AFTER_SECONDS="1800"` 提示客戶端稍後重試。
+- `MAINTENANCE_NOTICE` 建議用原文填寫；英文與繁中介面會嘗試透過正式翻譯服務自動翻譯。
 - 若你希望公開內容可被搜索引擎正常收錄，但仍限制高頻抓取，建議保留 `PAGE_READ_RATE_LIMIT_MAX` 與 `MAP_READ_RATE_LIMIT_MAX`，並按實際流量調整。
 - 翻譯功能現在只走**正式翻譯後端**，不再使用 `translate.googleapis.com` 這類非正式接口。
 - 啓用翻譯時只需要配置 `GOOGLE_CLOUD_TRANSLATION_API_KEY`。
 - `FORM_PROTECTION_SECRET` 屬於服務端敏感資訊，不要提交到版本庫。
 - 若未配置 `GOOGLE_SCRIPT_URL`，地圖頁會退回使用 `PUBLIC_MAP_DATA_URL`。
+- 若你的公開地圖資料源偶發超時，可適度調大 `MAP_DATA_UPSTREAM_TIMEOUT_MS`；預設 `25000` 毫秒。
 - 若未配置 `RATE_LIMIT_REDIS_URL`，限流會退回單實例記憶體模式。
 
 ### 翻譯服務示例
@@ -190,6 +198,12 @@ TRANSLATION_PROVIDER_TIMEOUT_MS="10000"
 
 - Cloudflare Dashboard 的 `Variables and Secrets`
 - 本地 Workers 調試使用的 `.dev.vars`
+
+如果你要臨時打開維護頁，也是在這兩個地方設置：
+
+- `MAINTENANCE_MODE="true"`
+- `MAINTENANCE_NOTICE="站點正在更新資料，請稍後再試。"`
+- `MAINTENANCE_RETRY_AFTER_SECONDS="1800"`
 
 ### 0. 前置條件
 
@@ -221,6 +235,14 @@ Workers 本地開發時，建議把變數放進 `.dev.vars`。最小示例：
 SITE_URL="http://127.0.0.1:8787"
 PAGE_READ_RATE_LIMIT_MAX="180"
 MAP_READ_RATE_LIMIT_MAX="60"
+```
+
+如果你需要在 Workers 上臨時開站點維護模式，可以再加上：
+
+```bash
+MAINTENANCE_MODE="true"
+MAINTENANCE_NOTICE="We are currently rolling out an update. Please check back shortly."
+MAINTENANCE_RETRY_AFTER_SECONDS="1800"
 ```
 
 如果你還想在本地測翻譯功能，再額外加上：
@@ -279,6 +301,9 @@ GOOGLE_CLOUD_TRANSLATION_API_KEY="換成你自己的正式 API Key"
 | --- | --- | --- |
 | `TITLE` | Text | `N·C·T` |
 | `DEBUG_MOD` | Text | 正式環境填 `false` |
+| `MAINTENANCE_MODE` | Text | 需要全站維護時填 `true` |
+| `MAINTENANCE_NOTICE` | Text | 顯示在維護頁通知卡片中的公告文字；英文與繁中頁面會嘗試自動翻譯 |
+| `MAINTENANCE_RETRY_AFTER_SECONDS` | Text | 預設 `1800` |
 | `FORM_DRY_RUN` | Text | 正式環境填 `false` |
 | `SITE_URL` | Text | 你的正式網址 |
 | `PAGE_READ_RATE_LIMIT_MAX` | Text | 視站點流量調整；預設 `180` |
@@ -290,9 +315,11 @@ GOOGLE_CLOUD_TRANSLATION_API_KEY="換成你自己的正式 API Key"
 | `FORM_PROTECTION_MAX_AGE_MS` | Text | 預設 `86400000` |
 | `GOOGLE_SCRIPT_URL` | Text 或 Secret | 有私有資料源時填 |
 | `PUBLIC_MAP_DATA_URL` | Text | 沒有私有資料源時配置成你的公開地圖 API |
+| `MAP_DATA_NODE_TRANSPORT_OVERRIDES` | Text | 可選；Node 運行時的地圖上游網路策略總開關，`true` 時才啓用代理 agent 與 IPv4 直連 |
+| `MAP_DATA_UPSTREAM_TIMEOUT_MS` | Text | 預設 `25000` |
 | `GOOGLE_CLOUD_TRANSLATION_API_KEY` | Secret | 啓用翻譯功能時必填 |
 | `TRANSLATION_PROVIDER_TIMEOUT_MS` | Text | 預設 `10000` |
-| `TRUST_PROXY` | Text | Workers / 代理環境建議 `1` 或 `true` |
+| `TRUST_PROXY` | Text | 預設 `1`；通常表示信任一層代理 |
 | `RATE_LIMIT_REDIS_URL` | Secret | 多實例部署建議配置共享限流存儲 |
 
 補完變數後，重新觸發一次部署。

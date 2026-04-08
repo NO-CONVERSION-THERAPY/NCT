@@ -15,11 +15,18 @@ function clearProjectModules() {
 }
 
 function loadApp(envOverrides = {}) {
+  const effectiveEnvOverrides = {
+    MAINTENANCE_MODE: 'false',
+    MAINTENANCE_NOTICE: '',
+    MAP_DATA_NODE_TRANSPORT_OVERRIDES: 'false',
+    ...envOverrides
+  };
+
   const originalValues = Object.fromEntries(
-    Object.keys(envOverrides).map((key) => [key, process.env[key]])
+    Object.keys(effectiveEnvOverrides).map((key) => [key, process.env[key]])
   );
 
-  Object.entries(envOverrides).forEach(([key, value]) => {
+  Object.entries(effectiveEnvOverrides).forEach(([key, value]) => {
     process.env[key] = value;
   });
 
@@ -59,6 +66,17 @@ function withEnvOverrides(envOverrides, callback) {
       process.env[key] = value;
     });
   }
+}
+
+function getNoProxyEnv() {
+  return {
+    HTTP_PROXY: '',
+    HTTPS_PROXY: '',
+    ALL_PROXY: '',
+    http_proxy: '',
+    https_proxy: '',
+    all_proxy: ''
+  };
 }
 
 function getGoogleTranslationTestEnv(overrides = {}) {
@@ -270,8 +288,6 @@ function buildValidSubmissionBody(overrides = {}) {
   const basePayload = {
     identity: '受害者本人',
     birth_year: '2008',
-    birth_month: '5',
-    birth_day: '20',
     sex: '男',
     sex_other: '',
     provinceCode: '110000',
@@ -307,6 +323,80 @@ test('root page renders successfully', async () => {
   assert.match(response.body, /\/js\/map_preload\.js/);
 });
 
+test('maintenance mode serves a 503 maintenance page for HTML requests', async () => {
+  const app = loadApp({
+    DEBUG_MOD: 'false',
+    MAINTENANCE_MODE: 'true',
+    MAINTENANCE_NOTICE: '站点资料正在同步，请稍后再试。',
+    MAINTENANCE_RETRY_AFTER_SECONDS: '900'
+  });
+  const response = await requestPath(app, '/');
+
+  assert.equal(response.statusCode, 503);
+  assert.equal(response.headers['retry-after'], '900');
+  assert.equal(response.headers['x-robots-tag'], 'noindex, nofollow, noarchive, nosnippet');
+  assert.match(response.headers['cache-control'], /no-store/);
+  assert.match(response.body, /网站正在维护中/);
+  assert.match(response.body, /站点资料正在同步，请稍后再试。/);
+  assert.match(response.body, /data-language-switcher/);
+  assert.match(response.body, /\/js\/language_switcher\.js/);
+  assert.match(response.body, /backdrop-filter: blur\(28px\)/);
+  assert.match(response.body, /@media \(prefers-color-scheme: dark\)/);
+  assert.doesNotMatch(response.body, /Suggested retry/);
+  assert.doesNotMatch(response.body, /503 Service Unavailable/);
+  assert.doesNotMatch(response.body, /The server is returning a standard 503 response/);
+});
+
+test('maintenance page translates MAINTENANCE_NOTICE for english mode when the translation service is configured', async () => {
+  const restoreFetch = installTranslationFetchStub();
+
+  try {
+    const app = loadApp({
+      DEBUG_MOD: 'false',
+      MAINTENANCE_MODE: 'true',
+      MAINTENANCE_NOTICE: '站点正在更新资料，请稍后再试。',
+      ...getGoogleTranslationTestEnv()
+    });
+    const response = await requestPath(app, '/?lang=en');
+
+    assert.equal(response.statusCode, 503);
+    assert.match(response.body, /EN:站点正在更新资料，请稍后再试。/);
+  } finally {
+    restoreFetch();
+    clearProjectModules();
+  }
+});
+
+test('maintenance mode keeps static assets reachable for the maintenance page', async () => {
+  const app = loadApp({
+    DEBUG_MOD: 'false',
+    MAINTENANCE_MODE: 'true'
+  });
+  const response = await requestPath(app, '/favicon.svg');
+
+  assert.equal(response.statusCode, 200);
+  assert.match(response.headers['content-type'], /image\/svg\+xml/);
+});
+
+test('maintenance mode returns JSON errors for API requests', async () => {
+  const app = loadApp({
+    DEBUG_MOD: 'false',
+    MAINTENANCE_MODE: 'true'
+  });
+  const response = await requestApp(app, {
+    path: '/api/map-data?lang=en',
+    headers: {
+      Accept: 'application/json'
+    }
+  });
+
+  assert.equal(response.statusCode, 503);
+  assert.match(response.headers['content-type'], /application\/json/);
+  assert.deepEqual(JSON.parse(response.body), {
+    error: 'Site maintenance is in progress. Please try again later.'
+  });
+});
+
 test('map page renders the record container and lazy-load sentinel', async () => {
   const app = loadApp({ DEBUG_MOD: 'false' });
   const response = await requestPath(app, '/map');
@@ -315,11 +405,55 @@ test('map page renders the record container and lazy-load sentinel', async () =>
   assert.match(response.body, /id="data-container"/);
   assert.match(response.body, /id="data-container-sentinel"/);
   assert.match(response.body, /\/js\/map_record_stats\.js/);
+  assert.match(response.body, /\/js\/map_province_utils\.js/);
   assert.match(response.body, /\/js\/map_backTop\.js/);
   assert.match(response.body, /\/js\/queryUpd\.js/);
   assert.match(response.body, /cdn\.jsdelivr\.net\/npm\/chart\.js/);
   assert.match(response.body, /sha256-p4NxAoJBhIIN\+hmNHrzRCf9tD\/miZyoHS5obTRR9BMY=/);
   assert.match(response.body, /sha256-20nQCchB9co0qIjJZRGuk2\/Z9VM\+kNiyxNV1lvTlZBo=/);
+});
+
+test('map page ignores ASSET_VERSION=0 and falls back to a real cache-busting version', async () => {
+  await withMockedDate('2026-04-07T12:45:00.000Z', async () => {
+    const app = loadApp({
+      DEBUG_MOD: 'false',
+      ASSET_VERSION: '0'
+    });
+    const response = await requestPath(app, '/map');
+
+    assert.equal(response.statusCode, 200);
+    assert.doesNotMatch(response.body, /window\.ASSET_VERSION = "0"/);
+    assert.match(response.body, /window\.ASSET_VERSION = "1775565900000"/);
+    assert.match(response.body, /\/js\/map_api\.js\?v=1775565900000/);
+    assert.match(response.body, /\/js\/map_province_utils\.js\?v=1775565900000/);
+  });
+});
+
+test('map page ignores app locals assetVersion=0 and rewrites it before rendering', async () => {
+  await withMockedDate('2026-04-07T12:46:00.000Z', async () => {
+    const app = loadApp({ DEBUG_MOD: 'false' });
+    app.locals.assetVersion = '0';
+
+    const response = await requestPath(app, '/map');
+
+    assert.equal(response.statusCode, 200);
+    assert.doesNotMatch(response.body, /window\.ASSET_VERSION = "0"/);
+    assert.match(response.body, /window\.ASSET_VERSION = "1775565960000"/);
+    assert.match(response.body, /\/js\/map_api\.js\?v=1775565960000/);
+    assert.match(response.body, /\/js\/map_province_utils\.js\?v=1775565960000/);
+  });
+});
+
+test('cn.json endpoint returns the complete GeoJSON payload', async () => {
+  const app = loadApp({ DEBUG_MOD: 'false' });
+  const response = await requestPath(app, '/cn.json');
+  const expectedPayload = fs.readFileSync(path.join(projectRoot, 'public/cn.json'), 'utf8');
+
+  assert.equal(response.statusCode, 200);
+  assert.match(response.headers['content-type'], /application\/json/);
+  assert.equal(response.body.length, expectedPayload.length);
+  assert.equal(response.body, expectedPayload);
+  assert.equal(JSON.parse(response.body).type, 'FeatureCollection');
 });
 
 test('map page keeps an OSM-compatible referrer policy for tile requests', async () => {
@@ -345,6 +479,24 @@ test('map frontend keeps a renderer and layout fallback for province overlays', 
   const mainStylesheet = fs.readFileSync(path.join(projectRoot, 'public/css/main.css'), 'utf8');
 
   assert.match(mapScript, /preferCanvas:\s*true/);
+  assert.match(mapScript, /provinceFillPane/);
+  assert.match(mapScript, /schoolMarkerPane/);
+  assert.match(mapScript, /schoolTooltipPane/);
+  assert.match(mapScript, /shadowPane:\s*'schoolShadowPane'/);
+  assert.match(mapScript, /pane:\s*'schoolTooltipPane'/);
+  assert.match(mapScript, /const SCHOOL_MARKER_SCALE = 0\.75/);
+  assert.match(mapScript, /const SCHOOL_MARKER_DEFAULT_OPACITY = 0\.75/);
+  assert.match(mapScript, /const SCHOOL_MARKER_MAX_OPACITY = 1/);
+  assert.match(mapScript, /buildSchoolReportStats/);
+  assert.match(mapScript, /function getSchoolMarkerReportCount/);
+  assert.match(mapScript, /function getSchoolMarkerReportRatio/);
+  assert.match(mapScript, /SCHOOL_MARKER_DEFAULT_COLOR = '#36a2eb'/);
+  assert.match(mapScript, /interpolateHexColor\(\s*SCHOOL_MARKER_REPORT_MIN_COLOR,\s*SCHOOL_MARKER_REPORT_MAX_COLOR,\s*reportRatio\s*\)/);
+  assert.match(mapScript, /icon:\s*getSchoolMarkerIcon\(schoolMarkerColor\)/);
+  assert.match(mapScript, /opacity:\s*getSchoolMarkerOpacity\(schoolReportStats, maxReportedMarkerCount\)/);
+  assert.match(mapScript, /const densityRatio = density \/ maxDensity/);
+  assert.match(mapScript, /interpolateHexColor\('#FED976', '#800026', densityRatio\)/);
+  assert.match(mapScript, /getProvinceFillOpacity/);
   assert.match(mapScript, /scheduleMapLayoutRefresh/);
   assert.match(mapScript, /map\.invalidateSize\(\{ pan: false, animate: false \}\)/);
   assert.match(mainStylesheet, /#map \.leaflet-pane > svg,\s*#map \.leaflet-pane > canvas/);
@@ -355,10 +507,10 @@ test('form page includes school name and address autocomplete hooks', async () =
   const response = await requestPath(app, '/form');
 
   assert.equal(response.statusCode, 200);
-  assert.match(response.body, /出生年月日/);
+  assert.match(response.body, /出生年份/);
   assert.match(response.body, /name="birth_year"/);
-  assert.match(response.body, /name="birth_month"/);
-  assert.match(response.body, /name="birth_day"/);
+  assert.doesNotMatch(response.body, /name="birth_month"/);
+  assert.doesNotMatch(response.body, /name="birth_day"/);
   assert.match(response.body, /机构所在省份/);
   assert.match(response.body, /机构所在城市 \/ 区县/);
   assert.match(response.body, /机构所在县区（可选）/);
@@ -1030,6 +1182,63 @@ test('map record stats count self and agent reports per school', () => {
   assert.equal(groupedRecords[0].pages.length, 2);
 });
 
+test('map province utils normalize workers GeoJSON names and province aliases to stable codes', () => {
+  clearProjectModules();
+  const {
+    buildProvinceCountMap,
+    buildProvinceDensityMap,
+    getProvinceAreaSquareKilometers,
+    getProvinceCodeFromFeature,
+    resolveProvinceCode
+  } = require(path.join(projectRoot, 'public/js/map_province_utils'));
+
+  assert.equal(resolveProvinceCode('內蒙古自治區'), '150000');
+  assert.equal(resolveProvinceCode('澳门特别行政区'), '820000');
+  assert.equal(resolveProvinceCode('臺灣（ROC）'), '710000');
+  assert.equal(resolveProvinceCode('新疆维吾尔自治区'), '650000');
+  assert.equal(getProvinceAreaSquareKilometers('北京'), 16410.54);
+  assert.equal(getProvinceAreaSquareKilometers('香港'), 1113.76);
+  assert.equal(getProvinceAreaSquareKilometers('不存在的省份'), 0);
+
+  assert.equal(getProvinceCodeFromFeature({
+    properties: {
+      code: '820000',
+      name: '澳门'
+    }
+  }), '820000');
+  assert.equal(getProvinceCodeFromFeature({
+    properties: {
+      name: '臺灣（ROC）',
+      fullname: '台湾'
+    }
+  }), '710000');
+
+  assert.deepEqual(
+    [...buildProvinceCountMap([
+      { province: '內蒙古自治區', count: 2 },
+      { province: '内蒙古', count: 3 },
+      { province: '臺灣（ROC）', count: 4 },
+      { province: '澳门特别行政区' }
+    ]).entries()],
+    [
+      ['150000', 5],
+      ['710000', 4],
+      ['820000', 1]
+    ]
+  );
+
+  const densityMap = buildProvinceDensityMap([
+    { province: '北京', count: 4 },
+    { province: '北京市', count: 1 },
+    { province: '內蒙古自治區', count: 6 },
+    { province: '不存在的省份', count: 100 }
+  ]);
+
+  assert.ok(Math.abs((densityMap.get('110000') || 0) - (5 / 16410.54)) < 1e-12);
+  assert.ok(Math.abs((densityMap.get('150000') || 0) - (6 / 1183000)) < 1e-12);
+  assert.equal(densityMap.has('不存在的省份'), false);
+});
+
 test('form protection tokens reject honeypot, tampering, and overly fast submissions', () => {
   clearProjectModules();
   const {
@@ -1182,13 +1391,13 @@ test('submit route still accepts a valid protected form in dry run mode', async 
   assert.match(response.body, /entry\.842223433_month/);
   assert.match(response.body, /entry\.842223433_day/);
   assert.match(response.body, />2008</);
-  assert.match(response.body, />5</);
-  assert.match(response.body, />20</);
+  assert.match(response.body, /entry\.842223433_month<\/code><\/td>\s*<td>出生月份<\/td>\s*<td>1<\/td>/);
+  assert.match(response.body, /entry\.842223433_day<\/code><\/td>\s*<td>出生日期<\/td>\s*<td>1<\/td>/);
   assert.doesNotMatch(response.body, /entry\.842223433<\/code>/);
   clearProjectModules();
 });
 
-test('submit route rejects invalid birth date combinations', async () => {
+test('submit route rejects invalid birth year values', async () => {
   clearProjectModules();
   const { issueFormProtectionToken } = require(path.join(projectRoot, 'app/services/formProtectionService'));
   const app = loadApp({
@@ -1204,9 +1413,7 @@ test('submit route rejects invalid birth date combinations', async () => {
       'Content-Type': 'application/x-www-form-urlencoded'
     },
     body: buildValidSubmissionBody({
-      birth_year: '2024',
-      birth_month: '2',
-      birth_day: '31',
+      birth_year: '1899',
       form_token: issueFormProtectionToken({
         secret: 'test-form-protection-secret',
         issuedAt: Date.now() - 5000
@@ -1215,7 +1422,7 @@ test('submit route rejects invalid birth date combinations', async () => {
   });
 
   assert.equal(response.statusCode, 400);
-  assert.match(response.body, /有效的出生年月日/);
+  assert.match(response.body, /有效的出生年份/);
   clearProjectModules();
 });
 
@@ -1245,210 +1452,508 @@ test('submitToGoogleForm stops at redirect responses instead of following them',
 });
 
 test('map data service can bypass in-memory cache on force refresh', async () => {
-  clearProjectModules();
-  const mapDataService = require(path.join(projectRoot, 'app/services/mapDataService'));
-  const originalFetch = global.fetch;
-  let fetchCount = 0;
+  await withEnvOverrides(getNoProxyEnv(), async () => {
+    clearProjectModules();
+    const mapDataService = require(path.join(projectRoot, 'app/services/mapDataService'));
+    const originalFetch = global.fetch;
+    let fetchCount = 0;
 
-  mapDataService.resetMapDataCache();
-  global.fetch = async () => {
-    fetchCount += 1;
+    mapDataService.resetMapDataCache();
+    global.fetch = async () => {
+      fetchCount += 1;
 
-    return {
+      return {
+        ok: true,
+        async json() {
+          return {
+            avg_age: 18,
+            last_synced: 1000 + fetchCount,
+            statistics: [],
+            data: []
+          };
+        }
+      };
+    };
+
+    try {
+      await mapDataService.getMapData({ publicMapDataUrl: 'https://example.com/api/map-data' });
+      await mapDataService.getMapData({ publicMapDataUrl: 'https://example.com/api/map-data' });
+      await mapDataService.getMapData({ forceRefresh: true, publicMapDataUrl: 'https://example.com/api/map-data' });
+    } finally {
+      global.fetch = originalFetch;
+      mapDataService.resetMapDataCache();
+    }
+
+    assert.equal(fetchCount, 2);
+  });
+});
+
+test('map data service merges province statistics that differ only by script', async () => {
+  await withEnvOverrides(getNoProxyEnv(), async () => {
+    clearProjectModules();
+    const mapDataService = require(path.join(projectRoot, 'app/services/mapDataService'));
+    const originalFetch = global.fetch;
+
+    mapDataService.resetMapDataCache();
+    global.fetch = async () => ({
       ok: true,
       async json() {
         return {
           avg_age: 18,
-          last_synced: 1000 + fetchCount,
+          last_synced: 1000,
+          SchoolNum: 133,
+          formNum: 4,
+          statistics: [
+            { province: '重庆', count: 120 },
+            { province: '重慶', count: 2 }
+          ],
+          statisticsForm: [
+            { province: '重庆', count: 1 },
+            { province: '重慶', count: 3 }
+          ],
+          data: [
+            { province: '重庆', lat: 29.5, lng: 106.5 },
+            { province: '重慶', lat: 29.6, lng: 106.6 }
+          ]
+        };
+      }
+    });
+
+    try {
+      const result = await mapDataService.getMapData({ publicMapDataUrl: 'https://example.com/api/map-data' });
+
+      assert.deepEqual(result.statistics, [
+        { province: '重慶', count: 122 }
+      ]);
+      assert.deepEqual(result.statisticsForm, [
+        { province: '重慶', count: 4 }
+      ]);
+      assert.deepEqual(result.data.map((item) => item.province), ['重慶', '重慶']);
+    } finally {
+      global.fetch = originalFetch;
+      mapDataService.resetMapDataCache();
+    }
+  });
+});
+
+test('map data service accepts lowercase schoolNum from upstream payloads', async () => {
+  await withEnvOverrides(getNoProxyEnv(), async () => {
+    clearProjectModules();
+    const mapDataService = require(path.join(projectRoot, 'app/services/mapDataService'));
+    const originalFetch = global.fetch;
+
+    mapDataService.resetMapDataCache();
+    global.fetch = async () => ({
+      ok: true,
+      async json() {
+        return {
+          avg_age: 18,
+          last_synced: 1000,
+          schoolNum: 497,
+          formNum: 18,
+          statistics: [],
+          statisticsForm: [],
+          data: [
+            { province: '北京', lat: 39.9, lng: 116.4 }
+          ]
+        };
+      }
+    });
+
+    try {
+      const result = await mapDataService.getMapData({ publicMapDataUrl: 'https://example.com/api/map-data' });
+
+      assert.equal(result.schoolNum, 497);
+      assert.equal(result.formNum, 18);
+    } finally {
+      global.fetch = originalFetch;
+      mapDataService.resetMapDataCache();
+    }
+  });
+});
+
+test('map data service uses proxy agent when MAP_DATA_NODE_TRANSPORT_OVERRIDES is enabled and proxy env is configured', async () => {
+  await withEnvOverrides({
+    ...getNoProxyEnv(),
+    HTTPS_PROXY: 'http://proxy.example:1080'
+  }, async () => {
+    clearProjectModules();
+    const axios = require('axios');
+    const proxyAgentModulePath = require.resolve('proxy-agent');
+    const originalProxyAgentModule = require.cache[proxyAgentModulePath];
+    class FakeProxyAgent {}
+    require.cache[proxyAgentModulePath] = {
+      id: proxyAgentModulePath,
+      filename: proxyAgentModulePath,
+      loaded: true,
+      exports: {
+        ProxyAgent: FakeProxyAgent
+      }
+    };
+    const mapDataService = require(path.join(projectRoot, 'app/services/mapDataService'));
+    const originalGet = axios.get;
+    const originalFetch = global.fetch;
+    const axiosCalls = [];
+
+    mapDataService.resetMapDataCache();
+    axios.get = async (_url, config = {}) => {
+      axiosCalls.push(config);
+
+      return {
+        status: 200,
+        data: {
+          avg_age: 18,
+          last_synced: 1000,
+          schoolNum: 2,
+          formNum: 1,
+          statistics: [],
+          statisticsForm: [],
+          data: []
+        }
+      };
+    };
+    global.fetch = async () => {
+      throw new Error('fetch should not be called when proxy request succeeds');
+    };
+
+    try {
+      const result = await mapDataService.getMapData({
+        publicMapDataUrl: 'https://example.com/api/map-data',
+        mapDataNodeTransportOverrides: true,
+        upstreamTimeoutMs: 23456
+      });
+
+      assert.equal(result.schoolNum, 2);
+      assert.equal(axiosCalls.length, 1);
+      assert.equal(axiosCalls[0].proxy, false);
+      assert.equal(axiosCalls[0].timeout, 23456);
+      assert.ok(axiosCalls[0].httpAgent instanceof FakeProxyAgent);
+      assert.ok(axiosCalls[0].httpsAgent instanceof FakeProxyAgent);
+    } finally {
+      axios.get = originalGet;
+      global.fetch = originalFetch;
+      mapDataService.resetMapDataCache();
+
+      if (originalProxyAgentModule) {
+        require.cache[proxyAgentModulePath] = originalProxyAgentModule;
+      } else {
+        delete require.cache[proxyAgentModulePath];
+      }
+    }
+  });
+});
+
+test('map data service ignores proxy env when MAP_DATA_NODE_TRANSPORT_OVERRIDES is disabled', async () => {
+  await withEnvOverrides({
+    ...getNoProxyEnv(),
+    HTTPS_PROXY: 'http://proxy.example:1080'
+  }, async () => {
+    clearProjectModules();
+    const axios = require('axios');
+    const mapDataService = require(path.join(projectRoot, 'app/services/mapDataService'));
+    const originalGet = axios.get;
+    const originalFetch = global.fetch;
+    let fetchCount = 0;
+    let axiosCount = 0;
+
+    mapDataService.resetMapDataCache();
+    global.fetch = async () => {
+      fetchCount += 1;
+
+      return {
+        ok: true,
+        async json() {
+          return {
+            avg_age: 18,
+            last_synced: 1000,
+            schoolNum: 2,
+            formNum: 1,
+            statistics: [],
+            statisticsForm: [],
+            data: []
+          };
+        }
+      };
+    };
+    axios.get = async () => {
+      axiosCount += 1;
+      throw new Error('axios should not be called when MAP_DATA_NODE_TRANSPORT_OVERRIDES is disabled');
+    };
+
+    try {
+      const result = await mapDataService.getMapData({
+        publicMapDataUrl: 'https://example.com/api/map-data',
+        upstreamTimeoutMs: 23456
+      });
+
+      assert.equal(result.schoolNum, 2);
+      assert.equal(fetchCount, 1);
+      assert.equal(axiosCount, 0);
+    } finally {
+      axios.get = originalGet;
+      global.fetch = originalFetch;
+      mapDataService.resetMapDataCache();
+    }
+  });
+});
+
+test('map data service uses direct IPv4 requests when MAP_DATA_NODE_TRANSPORT_OVERRIDES is enabled', async () => {
+  await withEnvOverrides(getNoProxyEnv(), async () => {
+    clearProjectModules();
+    const axios = require('axios');
+    const mapDataService = require(path.join(projectRoot, 'app/services/mapDataService'));
+    const originalGet = axios.get;
+    const originalFetch = global.fetch;
+    const axiosCalls = [];
+
+    mapDataService.resetMapDataCache();
+    global.fetch = async () => {
+      throw new Error('fetch should not be called when MAP_DATA_NODE_TRANSPORT_OVERRIDES is enabled');
+    };
+    axios.get = async (_url, config = {}) => {
+      axiosCalls.push(config);
+
+      return {
+        status: 200,
+        data: {
+          avg_age: 18,
+          last_synced: 1000,
+          schoolNum: 3,
+          formNum: 2,
+          statistics: [],
+          statisticsForm: [],
+          data: []
+        }
+      };
+    };
+
+    try {
+      const result = await mapDataService.getMapData({
+        publicMapDataUrl: 'https://example.com/api/map-data',
+        mapDataNodeTransportOverrides: true,
+        upstreamTimeoutMs: 23456
+      });
+
+      assert.equal(result.schoolNum, 3);
+      assert.equal(axiosCalls.length, 1);
+      assert.equal(axiosCalls[0].proxy, false);
+      assert.equal(axiosCalls[0].timeout, 23456);
+      assert.equal(axiosCalls[0].httpAgent.options.family, 4);
+      assert.equal(axiosCalls[0].httpsAgent.options.family, 4);
+    } finally {
+      axios.get = originalGet;
+      global.fetch = originalFetch;
+      mapDataService.resetMapDataCache();
+    }
+  });
+});
+
+test('map data service forwards the configured upstream timeout to fetch requests', async () => {
+  await withEnvOverrides({
+    ...getNoProxyEnv(),
+    RUNTIME_TARGET: 'workers'
+  }, async () => {
+    clearProjectModules();
+    const mapDataService = require(path.join(projectRoot, 'app/services/mapDataService'));
+    const originalFetch = global.fetch;
+    const originalAbortSignalTimeout = AbortSignal.timeout;
+    let capturedTimeoutMs = null;
+
+    mapDataService.resetMapDataCache();
+    AbortSignal.timeout = (timeoutMs) => {
+      capturedTimeoutMs = timeoutMs;
+      return {
+        aborted: false,
+        addEventListener() {},
+        removeEventListener() {}
+      };
+    };
+    global.fetch = async () => ({
+      ok: true,
+      async json() {
+        return {
+          avg_age: 18,
+          last_synced: 1000,
+          schoolNum: 3,
+          formNum: 2,
+          statistics: [],
+          statisticsForm: [],
+          data: []
+        };
+      }
+    });
+
+    try {
+      const result = await mapDataService.getMapData({
+        publicMapDataUrl: 'https://example.com/api/map-data',
+        upstreamTimeoutMs: 23456
+      });
+
+      assert.equal(result.schoolNum, 3);
+      assert.equal(capturedTimeoutMs, 23456);
+    } finally {
+      AbortSignal.timeout = originalAbortSignalTimeout;
+      global.fetch = originalFetch;
+      mapDataService.resetMapDataCache();
+    }
+  });
+});
+
+test('map data service retries with fetch and skips Node-only transport fallbacks in workers runtime', async () => {
+  await withEnvOverrides({
+    ...getNoProxyEnv(),
+    RUNTIME_TARGET: 'workers'
+  }, async () => {
+    clearProjectModules();
+    const axios = require('axios');
+    const mapDataService = require(path.join(projectRoot, 'app/services/mapDataService'));
+    const originalGet = axios.get;
+    const originalFetch = global.fetch;
+    let fetchCount = 0;
+    let axiosCount = 0;
+
+    mapDataService.resetMapDataCache();
+    global.fetch = async () => {
+      fetchCount += 1;
+
+      if (fetchCount === 1) {
+        const error = new TypeError('fetch failed');
+        error.cause = {
+          name: 'TimeoutError',
+          code: 23,
+          message: 'The operation was aborted due to timeout'
+        };
+        throw error;
+      }
+
+      return {
+        ok: true,
+        async json() {
+          return {
+            avg_age: 18,
+            last_synced: 1000,
+            schoolNum: 4,
+            formNum: 2,
+            statistics: [],
+            statisticsForm: [],
+            data: []
+          };
+        }
+      };
+    };
+    axios.get = async () => {
+      axiosCount += 1;
+      throw new Error('axios fallback should not be used in workers runtime');
+    };
+
+    try {
+      const result = await mapDataService.getMapData({ publicMapDataUrl: 'https://example.com/api/map-data' });
+
+      assert.equal(result.schoolNum, 4);
+      assert.equal(fetchCount, 2);
+      assert.equal(axiosCount, 0);
+    } finally {
+      axios.get = originalGet;
+      global.fetch = originalFetch;
+      mapDataService.resetMapDataCache();
+    }
+  });
+});
+
+test('public map API keeps CORS enabled while translate API stays same-origin only', async () => {
+  await withEnvOverrides(getNoProxyEnv(), async () => {
+    const originalFetch = global.fetch;
+    global.fetch = async () => ({
+      ok: true,
+      async json() {
+        return {
+          avg_age: 18,
+          last_synced: 1000,
           statistics: [],
           data: []
         };
       }
-    };
-  };
-
-  try {
-    await mapDataService.getMapData({ publicMapDataUrl: 'https://example.com/api/map-data' });
-    await mapDataService.getMapData({ publicMapDataUrl: 'https://example.com/api/map-data' });
-    await mapDataService.getMapData({ forceRefresh: true, publicMapDataUrl: 'https://example.com/api/map-data' });
-  } finally {
-    global.fetch = originalFetch;
-    mapDataService.resetMapDataCache();
-  }
-
-  assert.equal(fetchCount, 2);
-});
-
-test('map data service merges province statistics that differ only by script', async () => {
-  clearProjectModules();
-  const mapDataService = require(path.join(projectRoot, 'app/services/mapDataService'));
-  const originalFetch = global.fetch;
-
-  mapDataService.resetMapDataCache();
-  global.fetch = async () => ({
-    ok: true,
-    async json() {
-      return {
-        avg_age: 18,
-        last_synced: 1000,
-        SchoolNum: 133,
-        formNum: 4,
-        statistics: [
-          { province: '重庆', count: 120 },
-          { province: '重慶', count: 2 }
-        ],
-        statisticsForm: [
-          { province: '重庆', count: 1 },
-          { province: '重慶', count: 3 }
-        ],
-        data: [
-          { province: '重庆', lat: 29.5, lng: 106.5 },
-          { province: '重慶', lat: 29.6, lng: 106.6 }
-        ]
-      };
-    }
-  });
-
-  try {
-    const result = await mapDataService.getMapData({ publicMapDataUrl: 'https://example.com/api/map-data' });
-
-    assert.deepEqual(result.statistics, [
-      { province: '重慶', count: 122 }
-    ]);
-    assert.deepEqual(result.statisticsForm, [
-      { province: '重慶', count: 4 }
-    ]);
-    assert.deepEqual(result.data.map((item) => item.province), ['重慶', '重慶']);
-  } finally {
-    global.fetch = originalFetch;
-    mapDataService.resetMapDataCache();
-  }
-});
-
-test('map data service accepts lowercase schoolNum from upstream payloads', async () => {
-  clearProjectModules();
-  const mapDataService = require(path.join(projectRoot, 'app/services/mapDataService'));
-  const originalFetch = global.fetch;
-
-  mapDataService.resetMapDataCache();
-  global.fetch = async () => ({
-    ok: true,
-    async json() {
-      return {
-        avg_age: 18,
-        last_synced: 1000,
-        schoolNum: 497,
-        formNum: 18,
-        statistics: [],
-        statisticsForm: [],
-        data: [
-          { province: '北京', lat: 39.9, lng: 116.4 }
-        ]
-      };
-    }
-  });
-
-  try {
-    const result = await mapDataService.getMapData({ publicMapDataUrl: 'https://example.com/api/map-data' });
-
-    assert.equal(result.schoolNum, 497);
-    assert.equal(result.formNum, 18);
-  } finally {
-    global.fetch = originalFetch;
-    mapDataService.resetMapDataCache();
-  }
-});
-
-test('public map API keeps CORS enabled while translate API stays same-origin only', async () => {
-  const originalFetch = global.fetch;
-  global.fetch = async () => ({
-    ok: true,
-    async json() {
-      return {
-        avg_age: 18,
-        last_synced: 1000,
-        statistics: [],
-        data: []
-      };
-    }
-  });
-
-  try {
-    const app = loadApp({ DEBUG_MOD: 'false' });
-    const mapResponse = await requestApp(app, {
-      path: '/api/map-data',
-      headers: {
-        Origin: 'https://evil.example'
-      }
-    });
-    const translateResponse = await requestApp(app, {
-      path: '/api/translate-text',
-      method: 'POST',
-      headers: {
-        Origin: 'https://evil.example',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        items: [],
-        targetLanguage: 'en'
-      })
     });
 
-    assert.equal(mapResponse.statusCode, 200);
-    assert.equal(mapResponse.headers['access-control-allow-origin'], '*');
-    assert.equal(translateResponse.statusCode, 200);
-    assert.equal(translateResponse.headers['access-control-allow-origin'], undefined);
-  } finally {
-    global.fetch = originalFetch;
-    clearProjectModules();
-  }
+    try {
+      const app = loadApp({ DEBUG_MOD: 'false' });
+      const mapResponse = await requestApp(app, {
+        path: '/api/map-data',
+        headers: {
+          Origin: 'https://evil.example'
+        }
+      });
+      const translateResponse = await requestApp(app, {
+        path: '/api/translate-text',
+        method: 'POST',
+        headers: {
+          Origin: 'https://evil.example',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          items: [],
+          targetLanguage: 'en'
+        })
+      });
+
+      assert.equal(mapResponse.statusCode, 200);
+      assert.equal(mapResponse.headers['access-control-allow-origin'], '*');
+      assert.equal(translateResponse.statusCode, 200);
+      assert.equal(translateResponse.headers['access-control-allow-origin'], undefined);
+    } finally {
+      global.fetch = originalFetch;
+      clearProjectModules();
+    }
+  });
 });
 
 test('public map API throttles repeated read scraping without disabling cross-origin reads', async () => {
-  clearProjectModules();
-  const originalFetch = global.fetch;
-  const mapDataService = require(path.join(projectRoot, 'app/services/mapDataService'));
+  await withEnvOverrides(getNoProxyEnv(), async () => {
+    clearProjectModules();
+    const originalFetch = global.fetch;
+    const mapDataService = require(path.join(projectRoot, 'app/services/mapDataService'));
 
-  mapDataService.resetMapDataCache();
-  global.fetch = async () => ({
-    ok: true,
-    async json() {
-      return {
-        avg_age: 18,
-        last_synced: 1000,
-        statistics: [],
-        data: []
-      };
+    mapDataService.resetMapDataCache();
+    global.fetch = async () => ({
+      ok: true,
+      async json() {
+        return {
+          avg_age: 18,
+          last_synced: 1000,
+          statistics: [],
+          data: []
+        };
+      }
+    });
+
+    try {
+      const app = loadApp({
+        DEBUG_MOD: 'false',
+        MAP_READ_RATE_LIMIT_MAX: '1'
+      });
+      const firstResponse = await requestApp(app, {
+        path: '/api/map-data',
+        headers: {
+          Origin: 'https://crawler.example'
+        }
+      });
+      const secondResponse = await requestApp(app, {
+        path: '/api/map-data',
+        headers: {
+          Origin: 'https://crawler.example'
+        }
+      });
+
+      assert.equal(firstResponse.statusCode, 200);
+      assert.equal(firstResponse.headers['access-control-allow-origin'], '*');
+      assert.equal(secondResponse.statusCode, 429);
+      assert.equal(secondResponse.headers['access-control-allow-origin'], '*');
+    } finally {
+      global.fetch = originalFetch;
+      mapDataService.resetMapDataCache();
+      clearProjectModules();
     }
   });
-
-  try {
-    const app = loadApp({
-      DEBUG_MOD: 'false',
-      MAP_READ_RATE_LIMIT_MAX: '1'
-    });
-    const firstResponse = await requestApp(app, {
-      path: '/api/map-data',
-      headers: {
-        Origin: 'https://crawler.example'
-      }
-    });
-    const secondResponse = await requestApp(app, {
-      path: '/api/map-data',
-      headers: {
-        Origin: 'https://crawler.example'
-      }
-    });
-
-    assert.equal(firstResponse.statusCode, 200);
-    assert.equal(firstResponse.headers['access-control-allow-origin'], '*');
-    assert.equal(secondResponse.statusCode, 429);
-    assert.equal(secondResponse.headers['access-control-allow-origin'], '*');
-  } finally {
-    global.fetch = originalFetch;
-    mapDataService.resetMapDataCache();
-    clearProjectModules();
-  }
 });
 
 test('translate API returns 500 when upstream translation fails', async () => {
@@ -1487,48 +1992,50 @@ test('translate API returns 500 when upstream translation fails', async () => {
 });
 
 test('map refresh requests are rate limited even when callers force refresh', async () => {
-  clearProjectModules();
-  const originalFetch = global.fetch;
-  const mapDataService = require(path.join(projectRoot, 'app/services/mapDataService'));
-  let fetchCount = 0;
-
-  mapDataService.resetMapDataCache();
-  global.fetch = async () => {
-    fetchCount += 1;
-
-    return {
-      ok: true,
-      async json() {
-        return {
-          avg_age: 19,
-          last_synced: 1000 + fetchCount,
-          statistics: [],
-          data: []
-        };
-      }
-    };
-  };
-
-  try {
-    const app = loadApp({ DEBUG_MOD: 'false' });
-    const responses = [];
-
-    for (let index = 0; index < 4; index += 1) {
-      responses.push(await requestApp(app, {
-        path: '/api/map-data?refresh=1'
-      }));
-    }
-
-    assert.deepEqual(
-      responses.map((response) => response.statusCode),
-      [200, 200, 200, 429]
-    );
-    assert.equal(fetchCount, 1);
-  } finally {
-    global.fetch = originalFetch;
-    mapDataService.resetMapDataCache();
+  await withEnvOverrides(getNoProxyEnv(), async () => {
     clearProjectModules();
-  }
+    const originalFetch = global.fetch;
+    const mapDataService = require(path.join(projectRoot, 'app/services/mapDataService'));
+    let fetchCount = 0;
+
+    mapDataService.resetMapDataCache();
+    global.fetch = async () => {
+      fetchCount += 1;
+
+      return {
+        ok: true,
+        async json() {
+          return {
+            avg_age: 19,
+            last_synced: 1000 + fetchCount,
+            statistics: [],
+            data: []
+          };
+        }
+      };
+    };
+
+    try {
+      const app = loadApp({ DEBUG_MOD: 'false' });
+      const responses = [];
+
+      for (let index = 0; index < 4; index += 1) {
+        responses.push(await requestApp(app, {
+          path: '/api/map-data?refresh=1'
+        }));
+      }
+
+      assert.deepEqual(
+        responses.map((response) => response.statusCode),
+        [200, 200, 200, 429]
+      );
+      assert.equal(fetchCount, 1);
+    } finally {
+      global.fetch = originalFetch;
+      mapDataService.resetMapDataCache();
+      clearProjectModules();
+    }
+  });
 });
 
 test('translation service bounds in-memory cache growth', async () => {

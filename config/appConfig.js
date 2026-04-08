@@ -77,6 +77,9 @@ function resolveFormProtectionSecret({ explicitSecret, formId, siteUrl, title })
 
 // 所有运行时环境变量统一从这里读，避免业务代码四处直接碰 process.env。
 const debugMod = process.env.DEBUG_MOD || 'true';
+const maintenanceMode = parseBooleanEnv(process.env.MAINTENANCE_MODE, false);
+const maintenanceNotice = readTrimmedEnvValue(process.env.MAINTENANCE_NOTICE);
+const maintenanceRetryAfterSeconds = parsePositiveInteger(process.env.MAINTENANCE_RETRY_AFTER_SECONDS, 1800);
 const title = process.env.TITLE || 'N·C·T';
 const formDryRun = parseBooleanEnv(process.env.FORM_DRY_RUN, true);
 const pageReadRateLimitMax = parsePositiveInteger(process.env.PAGE_READ_RATE_LIMIT_MAX, 180);
@@ -86,10 +89,12 @@ const formId = process.env.FORM_ID || '1FAIpQLScggjQgYutXQrjQDrutyxL0eLaFMktTMRK
 const googleFormUrl = `https://docs.google.com/forms/d/e/${formId}/formResponse`;
 const googleScriptUrl = process.env.GOOGLE_SCRIPT_URL;
 const appPort = parsePositiveInteger(process.env.PORT, 3000);
-const publicMapDataUrl = process.env.PUBLIC_MAP_DATA_URL || 'https://nct.hosinoneko.me/api/map-data';
+const publicMapDataUrl = process.env.PUBLIC_MAP_DATA_URL || 'https://nct.hosinoeiji.workers.dev/api/map-data';
+const mapDataNodeTransportOverrides = parseBooleanEnv(process.env.MAP_DATA_NODE_TRANSPORT_OVERRIDES, false);
+const mapDataUpstreamTimeoutMs = parsePositiveInteger(process.env.MAP_DATA_UPSTREAM_TIMEOUT_MS, 25000);
 const siteUrl = String(process.env.SITE_URL || 'https://www.victimsunion.org/').replace(/\/+$/, '');
 const apiUrl = '/api/map-data';
-const trustProxy = resolveTrustProxy(process.env.TRUST_PROXY || (process.env.VERCEL ? '1' : 'true'));
+const trustProxy = resolveTrustProxy(process.env.TRUST_PROXY || '1');
 const formProtectionMinFillMs = parsePositiveInteger(process.env.FORM_PROTECTION_MIN_FILL_MS, 3000);
 const formProtectionMaxAgeMs = parsePositiveInteger(process.env.FORM_PROTECTION_MAX_AGE_MS, 24 * 60 * 60 * 1000);
 const formProtectionSecretConfigured = Boolean(process.env.FORM_PROTECTION_SECRET && process.env.FORM_PROTECTION_SECRET.trim());
@@ -120,6 +125,11 @@ module.exports = {
   googleCloudTranslationApiKey,
   googleFormUrl,
   googleScriptUrl,
+  maintenanceMode,
+  maintenanceNotice,
+  maintenanceRetryAfterSeconds,
+  mapDataNodeTransportOverrides,
+  mapDataUpstreamTimeoutMs,
   mapReadRateLimitMax,
   pageReadRateLimitMax,
   publicMapDataUrl,

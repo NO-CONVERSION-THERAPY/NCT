@@ -79,11 +79,11 @@ function validateSubmission(body, t) {
     ])
   );
   const birthYearValue = getTrimmedString(body.birth_year);
-  const birthMonthValue = getTrimmedString(body.birth_month);
-  const birthDayValue = getTrimmedString(body.birth_day);
+  const birthMonthValue = String(formRuleDefinitions.birthMonth.min);
+  const birthDayValue = String(formRuleDefinitions.birthDay.min);
   const birthYear = parseIntegerString(body.birth_year);
-  const birthMonth = parseIntegerString(body.birth_month);
-  const birthDay = parseIntegerString(body.birth_day);
+  const birthMonth = formRuleDefinitions.birthMonth.min;
+  const birthDay = formRuleDefinitions.birthDay.min;
   const identity = getTrimmedString(body.identity);
   const sex = getTrimmedString(body.sex);
   const sexOther = validateTextField(errors, t, formRules.sexOther.label, body.sex_other, {
@@ -121,18 +121,12 @@ function validateSubmission(body, t) {
   let validatedLocation = null;
   let validatedCounty = null;
 
-  if (!birthYearValue || !birthMonthValue || !birthDayValue) {
-    errors.push(t('formErrors.required', { label: formRules.birthDate.label }));
+  if (!birthYearValue) {
+    errors.push(t('formErrors.required', { label: formRules.birthYear.label }));
   } else if (
     !Number.isInteger(birthYear)
     || birthYear < formRules.birthYear.min
     || birthYear > formRules.birthYear.max
-    || !Number.isInteger(birthMonth)
-    || birthMonth < formRules.birthMonth.min
-    || birthMonth > formRules.birthMonth.max
-    || !Number.isInteger(birthDay)
-    || birthDay < formRules.birthDay.min
-    || birthDay > formRules.birthDay.max
   ) {
     errors.push(t('formErrors.invalidBirthDate'));
   } else {
