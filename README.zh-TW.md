@@ -134,8 +134,7 @@ flowchart TD
 ├── blog/                  # Markdown 博客文章
 ├── scripts/               # 運維腳本，例如 secure-config
 ├── tests/                 # 自動化測試
-├── worker.mjs             # Cloudflare Workers 入口
-└── AppScript.js           # Google Apps Script 上游腳本示例
+└── worker.mjs             # Cloudflare Workers 入口
 ```
 
 ## 快速開始
@@ -330,6 +329,5 @@ npm test
 - [`wrangler.jsonc`](./wrangler.jsonc)：Workers 配置
 - [`scripts/secure-config.js`](./scripts/secure-config.js)：敏感配置加密工具
 - [`worker.mjs`](./worker.mjs)：Cloudflare Workers 入口
-- [`AppScript.js`](./AppScript.js)：Google Apps Script 資料上游示例
 
 如果你要調整公開欄位、提交流程或資料上游，建議連同 [`/privacy`](https://www.victimsunion.org/privacy) 與表單頁提示文案一起檢查，避免對外說明和實際行為脫節。

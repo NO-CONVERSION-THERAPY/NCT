@@ -134,8 +134,7 @@ Notes:
 ├── blog/                  # Markdown blog articles
 ├── scripts/               # utility scripts such as secure-config
 ├── tests/                 # automated tests
-├── worker.mjs             # Cloudflare Workers entry
-└── AppScript.js           # example upstream Google Apps Script
+└── worker.mjs             # Cloudflare Workers entry
 ```
 
 ## Quick Start
@@ -330,6 +329,5 @@ If you do not want to use `*.workers.dev`, add a custom domain in `Settings -> D
 - [`wrangler.jsonc`](./wrangler.jsonc): Workers configuration
 - [`scripts/secure-config.js`](./scripts/secure-config.js): encryption helper for sensitive config
 - [`worker.mjs`](./worker.mjs): Cloudflare Workers entry
-- [`AppScript.js`](./AppScript.js): example Google Apps Script upstream implementation
 
 If you change public fields, the submission flow, or upstream data sources, review this README together with [`/privacy`](https://www.victimsunion.org/privacy) and the form notice text so that public-facing documentation stays aligned with actual behavior.

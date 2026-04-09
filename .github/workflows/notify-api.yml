@@ -1,0 +1,52 @@
+name: Post File Changes to API
+
+on:
+  push:
+    # 處理在哪一個分支下的分支
+    branches:
+      - main
+    # 這個路徑下的檔案變動時，觸發 Workflow
+    paths:
+      - 'blog/**'
+
+env:
+  TARGET_DIR: "blog/"
+  WEBHOOK_URL: "http://subscribe.victimsunion.org/api/webhook"
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: files
+        run: |
+          # tr '\n' ',' 是將換行轉為逗號，方便 API 處理
+          ADDED=$(git diff --name-only --diff-filter=A ${{ github.event.before }} ${{ github.sha }} -- "$TARGET_DIR" | tr '\n' ',' | sed 's/,$//')
+          MODIFIED=$(git diff --name-only --diff-filter=M ${{ github.event.before }} ${{ github.sha }} -- "$TARGET_DIR" | tr '\n' ',' | sed 's/,$//')
+          
+          echo "added=$ADDED" >> $GITHUB_OUTPUT
+          echo "modified=$MODIFIED" >> $GITHUB_OUTPUT
+
+
+      - name: Send POST request to API
+        if: steps.files.outputs.added != '' || steps.files.outputs.modified != ''
+        run: |
+          payload=$(jq -n \
+            --arg project "${{ github.repository }}" \
+            --arg commit "${{ github.sha }}" \
+            --arg compare "https://github.com/${{ github.repository }}/compare/${{ github.event.before }}...${{ github.sha }}" \
+            --arg added "${{ steps.files.outputs.added }}" \
+            --arg modified "${{ steps.files.outputs.modified }}" \
+            '{project: $project, commit_id: $commit, compare: $compare, added_files: $added, modified_files: $modified}')
+
+          curl -X POST "${{ env.WEBHOOK_URL }}" \
+          -H "Content-Type: application/json" \
+          -H "X-Hosino-Token: ${{ secrets.WEBHOOK_SECRET }}" \
+          -d "$payload"
+
+# MY_WEBHOOK_SECRET 記得要在 GitHub Repo 的 Settings > Secrets and variables > Actions 裡面設定好。

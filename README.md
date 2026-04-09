@@ -2,7 +2,7 @@
 
 <div align="center">
   <p><strong>NO CONVERSION THERAPY</strong></p>
-  <p>用于记录、整理与公开展示“扭转治疗”相关机构与经历信息的多语言站点。</p>
+  <p>用于记录、整理与公开展示“扭转治疗”相关机构与经历信息的多语言站点。by: VICTIMS UNION</p>
   <p>
     <a href="./README.md"><strong>简体中文</strong></a> ·
     <a href="./README.zh-TW.md">繁體中文</a> ·
@@ -32,10 +32,26 @@
 - [表单隐私说明](#表单隐私说明)
 - [部署到 Cloudflare Workers](#部署到-cloudflare-workers)
 - [相关文件](#相关文件)
+- [公开 API](#公开-api)
+- [贡献](#贡献)
+- [授权](#授权)
 
 ## 项目简介
 
 N·C·T 是一个用来记录、整理、公开展示“扭转治疗”相关机构与经历信息的站点。它提供匿名表单、公开地图、博客文章、多语言界面，以及 Node.js 与 Cloudflare Workers 双运行时部署能力，方便在不同环境下持续运行。
+
+- 站点首页：https://victimsunion.org
+- 匿名表单：https://victimsunion.org/form
+- 公开地图：https://victimsunion.org/map
+- 原始 Google Form：https://forms.gle/eHwkmNCZtmZhLjzh7
+
+**历史曾用名和域名**
+
+- NO TORSION
+- https://no-torsion.hosinoneko.me
+- https://nct.hosinoneko.me
+
+> 我们承诺不以任何理由主动收集不必要的个人信息。
 
 ## 线上入口
 
@@ -134,8 +150,7 @@ flowchart TD
 ├── blog/                  # Markdown 博客文章
 ├── scripts/               # 运维脚本，例如 secure-config
 ├── tests/                 # 自动化测试
-├── worker.mjs             # Cloudflare Workers 入口
-└── AppScript.js           # Google Apps Script 上游脚本示例
+└── worker.mjs             # Cloudflare Workers 入口
 ```
 
 ## 快速开始
@@ -143,8 +158,8 @@ flowchart TD
 ### 1. 安装依赖
 
 ```bash
-git clone https://github.com/HosinoEJ/No-Torsion.git
-cd No-Torsion
+git clone https://github.com/NO-CONVERSION-THERAPY/NCT.git
+cd NCT
 npm install
 ```
 
@@ -229,6 +244,8 @@ Workers 本地调试时，也可以改读 `.dev.vars`：
 ```bash
 npm run secure-config -- bootstrap-env --env-file ".dev.vars"
 ```
+
+> 提示：本地运行环境在中国大陆地区时，表单实际提交到 Google Form 可能受到网络环境影响。开发时建议先使用 `FORM_DRY_RUN="true"`。
 
 如果你只想分步操作，也可以先生成 secret，再分别加密：
 
@@ -323,6 +340,38 @@ npm test
 - `SITE_URL`
 - `PUBLIC_MAP_DATA_URL`
 
+### 6. 上线后检查清单
+
+正式部署完成后，建议至少手动验证以下路径：
+
+- `/`
+- `/map`
+- `/form`
+- `/blog`
+- `/api/map-data`
+- `/sitemap.xml`
+- `/robots.txt`
+
+如果 `FORM_DRY_RUN="false"`，也要实测表单是否能成功送到 Google Form。
+
+### 7. Workers 上的已知差异
+
+- 模板、博客 Markdown 与 JSON 文件会从 Workers 的 `/bundle` 读取。
+- 翻译服务已移除 `curl` 子进程兜底，现在固定使用 Google Cloud Translation API。
+- `sitemap.xml` 在 Workers 上会优先使用文章元数据中的 `CreationDate` 作为 `lastmod`。
+- 若未配置共享 Redis，限流会退回单实例内存模式，跨实例一致性较弱。
+
+### 8. 常见问题
+
+**Q: 本地 `npm start` 和 Workers 版本会冲突吗？**<br>
+A: 不会。两者只是不同的本地运行入口。
+
+**Q: 这个项目要不要额外跑前端 build？**<br>
+A: 目前不需要。Workers Builds 的 `Build command` 一般留空即可。
+
+**Q: 为什么 `Deploy command` 用的是 `npm run deploy:workers`？**<br>
+A: 因为它会调用 `npx wrangler deploy`，并且与本仓库的 `package.json` 保持一致。
+
 ## 相关文件
 
 - [`.env.example`](./.env.example)：Node 模式环境变量示例
@@ -330,6 +379,97 @@ npm test
 - [`wrangler.jsonc`](./wrangler.jsonc)：Workers 配置
 - [`scripts/secure-config.js`](./scripts/secure-config.js)：敏感配置加密工具
 - [`worker.mjs`](./worker.mjs)：Cloudflare Workers 入口
-- [`AppScript.js`](./AppScript.js)：Google Apps Script 数据上游示例
 
 如果你要调整公开字段、提交流程或数据上游，建议连同 [`/privacy`](https://www.victimsunion.org/privacy) 与表单页提示文案一起检查，避免对外说明和实际行为脱节。
+
+---
+
+## 公开 API
+
+### `GET /api/map-data`
+
+公开接口：
+
+```text
+https://nct.hosinoeiji.workers.dev/api/map-data
+```
+
+如果你是自行部署，则改用你自己的域名，例如：
+
+```text
+https://你的域名/api/map-data
+```
+
+返回值示例：
+
+```json
+{
+  "avg_age": 17,
+  "last_synced": 1774925078387,
+  "statistics": [
+    { "province": "河南", "count": 12 },
+    { "province": "湖北", "count": 66 }
+  ],
+  "data": [
+    {
+      "name": "学校名称",
+      "addr": "学校地址",
+      "province": "省份",
+      "prov": "区、县",
+      "else": "其他补充内容",
+      "lat": 36.62728,
+      "lng": 118.58882,
+      "experience": "经历描述",
+      "HMaster": "负责人/校长姓名",
+      "scandal": "已知丑闻",
+      "contact": "学校联系方式",
+      "inputType": "受害者本人"
+    }
+  ]
+}
+```
+
+字段说明：
+
+- `lat` / `lng`：经纬度
+- `last_synced`：毫秒级 Unix 时间戳
+- 真正的机构列表位于 `data` 字段
+
+### 最简单的调用示例
+
+```html
+<script>
+  fetch('https://nct.hosinoeiji.workers.dev/api/map-data')
+    .then((res) => res.json())
+    .then((payload) => {
+      console.log(payload.data);
+    });
+</script>
+```
+
+如果你想把数据做成地图，可直接配合 [Leaflet](https://leafletjs.com) 等前端地图库使用；本项目自己的 `/map` 页面就是一个完整示例。
+
+---
+
+## 贡献
+
+欢迎提交 issue、PR，或 fork 后自行部署。
+
+在提交前建议至少确认：
+
+```bash
+npm test
+```
+
+若你是针对部署、环境变量或表单流程做修改，也建议一并验证：
+
+- `/form`
+- `/submit`
+- `/api/map-data`
+- `/blog`
+
+---
+
+## 授权
+
+本项目授权信息请参见 [LICENSE](./LICENSE)。

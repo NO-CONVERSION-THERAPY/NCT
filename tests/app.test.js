@@ -1163,9 +1163,20 @@ test('sitemap service falls back to article metadata timestamps in workers mode'
       siteUrl: 'https://example.com'
     });
 
-    assert.equal(entries.length, 2);
-    assert.equal(entries[0].lastmod, '2026-03-13T00:00:00.000Z');
-    assert.equal(entries[1].lastmod, '2026-04-03T00:00:00.000Z');
+    const lastmodByLoc = new Map(entries.map((entry) => [entry.loc, entry.lastmod]));
+
+    assert.equal(
+      lastmodByLoc.get('https://example.com/port/%E9%97%9C%E6%96%BC%E5%BF%83%E7%A8%AE%E5%AD%90%E6%95%99%E8%82%B2%E9%81%95%E6%B3%95%E8%BE%A6%E5%AD%B8%E7%9A%84%E6%8E%A7%E5%91%8A'),
+      '2026-03-13T00:00:00.000Z'
+    );
+    assert.equal(
+      lastmodByLoc.get('https://example.com/port/%E9%80%83%E8%B7%91%E6%8C%87%E5%8D%97'),
+      '2026-03-13T00:00:00.000Z'
+    );
+    assert.equal(
+      lastmodByLoc.get('https://example.com/port/NCT%E5%9B%BE%E6%A0%87%E8%AE%BE%E8%AE%A1%E5%A4%A7%E8%B5%9B'),
+      '2026-04-03T00:00:00.000Z'
+    );
   });
 
   clearProjectModules();
