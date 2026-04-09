@@ -1,10 +1,10 @@
 <%- include('partials/head') %>
 <body class="form-page">
-<a href="/" class="page-back-link">← <%= t('navigation.home') %></a>
+<a href="/" class="page-back-link">← <%= t('navigation.home') %></a><!--返回首頁-->
 
 <div class="container">
-    <h1><%= t('form.title') %></h1>
-    <p class="form-subtitle"><%= t('form.subtitle') %></p>
+    <h1><%= t('form.title') %></h1><!--TITLE：NO CONVERSION THERAPY FORM-->
+    <p class="form-subtitle"><%= t('form.subtitle') %></p><!--记录黑暗，是为了迎接光明-->
 
     <form action="/submit" method="POST" id="mainForm">
         <div class="form-honeypot" aria-hidden="true">
@@ -13,11 +13,12 @@
         </div>
         <input type="hidden" name="form_token" value="<%= formProtectionToken %>">
 
-        <p class="form-privacy-note"><%= t('form.privacyNotice') %></p>
+        <p class="form-privacy-note"><%= t('form.privacyNotice') %></p><!--隐私说明：本问卷中个人基本信息将被严格保密，个人在校经
+                                                                        历与机构曝光信息将被公开展示-->
 
-        <h3><%= t('form.sections.basic') %></h3>
+        <h3><%= t('form.sections.basic') %></h3><!--个人基本信息-->
         
-        <div class="form-group">
+        <div class="form-group"><!--填表人身份-->
             <label class="required"><%= t('form.fields.identity') %></label>
             <select name="identity" id="identitySelect" required>
                 <% identityOptions.forEach((option) => { %>
@@ -26,7 +27,7 @@
             </select>
         </div>
 
-        <div class="form-group">
+        <div class="form-group"><!--出生年份-->
             <label class="required" id="birthFieldLabel" for="birthYearSelect"><%= t('form.fields.birthYear') %></label>
             <div class="birth-date-group birth-date-group--single" id="birthYearSelectWrap" role="group" aria-labelledby="birthFieldLabel">
                 <select name="birth_year" id="birthYearSelect" required>
@@ -38,7 +39,7 @@
             </div>
         </div>
 
-        <div class="form-group">
+        <div class="form-group"><!--性別 sex-->
             <label class="required" id="sexLabel" for="sexSelect"><%= t('form.fields.sex') %></label>
             <select name="sex" id="sexSelect" required>
                 <option value="" disabled selected><%= t('form.sexOptions.placeholder') %></option>
@@ -71,29 +72,29 @@
             </div>
         </div>
 
-        <h3 id="experienceSectionHeading"><%= t('form.sections.experience') %></h3>
+        <h3 id="experienceSectionHeading"><%= t('form.sections.experience') %></h3><!--相關經歷 欄目標題-->
 
-        <div class="form-group">
+        <div class="form-group"><!--首次被送進去的日期-->
             <label class="required"><%= t('form.fields.dateStart') %></label>
             <input type="date" name="date_start" id="date_start" required>
             <div class="hint"><%= t('form.hints.dateStart') %></div>
         </div>
 
-        <div class="form-group">
+        <div class="form-group"><!--逃出來的日記-->
             <label><%= t('form.fields.dateEnd') %></label>
             <input type="date" name="date_end" id="date_end">
             <div class="hint"><%= t('form.hints.dateEnd') %></div>
         </div>
 
-        <div class="form-group">
+        <div class="form-group"><!--個人在校經歷-->
             <label><%= t('form.fields.experience') %></label>
             <textarea name="experience" id="experienceInput" rows="4" placeholder="<%= t('form.placeholders.experience') %>" maxlength="<%= formRules.experience.maxLength %>"></textarea>
             <div class="hint"><%= t('form.hints.experience') %></div>
         </div>
 
-        <h3><%= t('form.sections.exposure') %></h3>
+        <h3><%= t('form.sections.exposure') %></h3><!--機構曝光信息-->
 
-        <div class="form-group">
+        <div class="form-group"><!--機構名稱-->
             <label class="required"><%= t('form.fields.schoolName') %></label>
             <div class="autocomplete-field">
                 <input type="text" name="school_name" id="school_input" placeholder="<%= t('form.placeholders.schoolName') %>" maxlength="<%= formRules.schoolName.maxLength %>" autocomplete="off" required>
@@ -101,28 +102,28 @@
             </div>
         </div>
 
-        <div class="form-group">
+        <div class="form-group"><!--機構所在省份-->
             <label class="required"><%= t('form.fields.province') %></label>
             <select name="provinceCode" id="provinceSelect" required>
                 <option value="" selected><%= t('form.placeholders.province') %></option>
             </select>
         </div>
 
-        <div class="form-group">
+        <div class="form-group"><!--市-->
             <label class="required"><%= t('form.fields.city') %></label>
             <select name="cityCode" id="citySelect" required disabled>
                 <option value="" selected><%= t('form.placeholders.city') %></option>
             </select>
         </div>
 
-        <div class="form-group">
+        <div class="form-group"><!--縣-->
             <label><%= t('form.fields.county') %></label>
             <select name="countyCode" id="countySelect" disabled>
                 <option value="" selected><%= t('form.placeholders.countyInitial') %></option>
             </select>
         </div>
 
-        <div class="form-group">
+        <div class="form-group"><!--學校地址-->
             <label><%= t('form.fields.schoolAddress') %></label>
             <div class="autocomplete-field">
                 <input type="text" name="school_address" placeholder="<%= t('form.placeholders.schoolAddress') %>" id="addr" maxlength="<%= formRules.schoolAddress.maxLength %>" autocomplete="off">
@@ -132,27 +133,27 @@
             <div id="map" style="display: none; width: 100%; height: 20em;"></div>
         </div>
 
-        <div class="form-group">
+        <div class="form-group"><!--機構聯係方式-->
             <label class="required"><%= t('form.fields.contactInformation') %></label>
             <input type="text" rows="3" id="contactInformationInput" name="contact_information" placeholder="<%= t('form.placeholders.contactInformation') %>" maxlength="<%= formRules.contactInformation.maxLength %>" required>
         </div>
 
-        <div class="form-group">
+        <div class="form-group"><!--校長名字-->
             <label><%= t('form.fields.headmasterName') %></label>
             <input type="text" name="headmaster_name" placeholder="<%= t('form.placeholders.headmasterName') %>" maxlength="<%= formRules.headmasterName.maxLength %>">
         </div>
 
-        <div class="form-group">
+        <div class="form-group"><!--學校醜聞-->
             <label><%= t('form.fields.scandal') %></label>
             <textarea name="scandal" rows="3" placeholder="<%= t('form.placeholders.scandal') %>" maxlength="<%= formRules.scandal.maxLength %>"></textarea>
         </div>
 
-        <div class="form-group">
+        <div class="form-group"><!--其他 Other-->
             <label><%= t('form.fields.other') %></label>
             <input type="text" rows="3" name="other" placeholder="<%= t('form.placeholders.other') %>" maxlength="<%= formRules.other.maxLength %>">
         </div>
 
-        <button type="submit"><%= t('form.buttons.submit') %></button>
+        <button type="submit"><%= t('form.buttons.submit') %></button><!--提交-->
     </form>
 </div>
 

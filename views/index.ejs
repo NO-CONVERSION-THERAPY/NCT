@@ -12,9 +12,55 @@
             window.APP_LANG = "<%= lang %>";
             window.I18N = <%- JSON.stringify(clientMessages) %>;
         </script>
+        <script type="application/ld+json">
+            {
+            /* 1. 协议声明：必须固定为 https://schema.org，这相当于告诉爬虫“我要开始按标准说话了” */
+            "@context": "https://schema.org",
+
+            /* 2. 类型声明：这里用 Organization（组织） */
+            "@type": "Organization", 
+
+            /* 3. 页面唯一标识：告诉爬虫这个数据描述的具体是哪个网址 */
+            "mainEntityOfPage": {
+                "@type": "WebPage",
+                "@id": "https://www.victimsunion.org" 
+            },
+
+            /* 4. SEO 标题：这是爬虫最看重的关键词权重区，建议包含核心词 */
+            "name": "Victims Union",
+            "headline": "终结扭转治疗：NCT 揭露戒网瘾学校真相",
+
+            /* 5. 摘要描述：在搜索结果预览中可能会显示这段话，一定要顺畅地埋入“扭转机构”等词 */
+            "description": "Victims Union 是由扭转治疗幸存者组成的独立组织，致力于曝光戒网瘾学校及扭转机构的身心折磨。我们坚信每个声音都不该被沉默。",
+
+            /* 6. 封面图：有图片的文章更容易在搜索结果里展示大图，增加点击率 */
+            "image": "https://www.victimsunion.org/favicon.svg", 
+
+            /* 7. 作者信息：建立你的组织公信力（EEAT） */
+            "author": {
+                "@type": "Person",
+                "name": "HosinoNeko",
+                "url": "https://hosinoneko.me"
+            },
+
+            /* 8. 发布者信息：这里定义你的“Victims Union”组织身份 */
+            "publisher": {
+                "@type": "Organization",
+                "name": "Victims Union",
+                "url": "https://victimsunion.org",
+                "logo": {
+                    "@type": "ImageObject",
+                    "url": "https://www.victimsunion.org/favicon.svg"
+                }
+            },
+
+            /* 9. 核心关键词：虽然不直接显示，但有助于爬虫进行分类索引 */
+            "keywords": "CONVERSION THERAPY, 戒网瘾学校, 扭转机构, LGBTQIA"
+            }
+        </script>
     </head>
     <body>
-        <%- include('partials/language_switcher') %>
+        <%- include('partials/language_switcher') %><!--語言轉換器-->
 
         <div class="hero">
             <h1><%= t('common.siteName') %></h1>
