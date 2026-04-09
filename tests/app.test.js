@@ -558,7 +558,7 @@ test('form page includes school name and address autocomplete hooks', async () =
   const response = await requestPath(app, '/form');
 
   assert.equal(response.statusCode, 200);
-  assert.match(response.body, /隐私说明：本问卷中个人基本信息将被严格保密/);
+  assert.match(response.body, /隐私说明：本问卷中填写的出生年份、性别等个人基本信息将被严格保密/);
   assert.match(response.body, /个人基本信息/);
   assert.match(response.body, /相关经历/);
   assert.match(response.body, /机构曝光信息/);
@@ -762,7 +762,7 @@ test('about page renders localized friend descriptions in english mode', async (
   assert.match(response.body, /Domain contributor/);
 });
 
-test('privacy page documents the language cookie and footer exposes the link', async () => {
+test('privacy page documents the language cookie, form-disclosure flow, and footer exposes the link', async () => {
   const app = loadApp({ DEBUG_MOD: 'false' });
   const rootResponse = await requestPath(app, '/');
   const privacyResponse = await requestPath(app, '/privacy?lang=en');
@@ -772,6 +772,9 @@ test('privacy page documents the language cookie and footer exposes the link', a
 
   assert.equal(privacyResponse.statusCode, 200);
   assert.match(privacyResponse.body, /Privacy &amp; Cookie Notice|Privacy & Cookie Notice/);
+  assert.match(privacyResponse.body, /Form Submission And Public Display/);
+  assert.match(privacyResponse.body, /Third-Party Services/);
+  assert.match(privacyResponse.body, /Retention And Removal/);
   assert.match(privacyResponse.body, /<code>lang<\/code>/);
   assert.match(privacyResponse.body, /2592000/);
   assert.match(privacyResponse.body, /SameSite=Lax/);

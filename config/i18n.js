@@ -85,7 +85,7 @@ const messages = {
     form: {
       title: 'NO CONVERSION THERAPY FORM',
       subtitle: '记录黑暗，是为了迎接光明',
-      privacyNotice: '隐私说明：本问卷中个人基本信息将被严格保密，个人在校经历与机构曝光信息将被公开展示',
+      privacyNotice: '隐私说明：本问卷中填写的出生年份、性别等个人基本信息将被严格保密，相关经历、机构曝光信息可能在本站公开页面展示。提交内容会通过 Google Form / Google 表格保存和整理；请勿在可能公开的字段中填写身份证号、私人电话、家庭住址等您的个人敏感信息。',
       sections: {
         basic: '个人基本信息',
         experience: '相关经历',
@@ -266,14 +266,46 @@ const messages = {
     },
     privacy: {
       title: '隐私政策与 Cookie 说明',
-      intro: '本页面说明本站如何处理与您访问有关的基础信息，以及本站当前使用的 Cookie。',
+      intro: '本页面说明本站在页面访问、表单提交与公开展示过程中会如何处理相关信息。',
+      meta: {
+        effectiveDateLabel: '生效日期',
+        effectiveDateValue: '2026年4月9日',
+        updatedLabel: '最近更新',
+        updatedValue: '2026年4月9日',
+        scopeLabel: '适用范围',
+        scopeValue: '本站页面、表单提交流程与相关公开展示内容'
+      },
+      tocLabel: '隐私说明目录',
+      highlights: {
+        submissionTitle: '表单提交',
+        submissionBody: '表单内容由本站接收后，交由 Google Form / Google 表格保存与整理。',
+        publicTitle: '公开展示',
+        publicBody: '与机构曝光相关的内容可能整理后在本站公开页面展示。',
+        cookieTitle: '站内 Cookie',
+        cookieBody: '当前仅使用一个语言偏好 Cookie，不用于广告、跨站跟踪或画像分析。'
+      },
       sections: {
-        summary: '我们处理什么',
+        summary: '概览',
+        formSubmission: '表单填写与公开展示',
+        thirdParty: '第三方服务',
+        retention: '保存期限与删除',
+        security: '安全措施',
         cookie: '当前使用的 Cookie',
-        manage: '如何管理',
+        manage: '您的选择',
         contact: '联系我们'
       },
       summary: '本站当前仅在您主动切换语言时，使用一个站内 Cookie 来记住您的语言偏好。我们不会将该 Cookie 用于广告投放、跨站跟踪或画像分析。',
+      overviewItems: [
+        '当您浏览本站时，我们目前只会在您主动切换语言时写入一个语言偏好 Cookie。',
+        '当您填写表单时，出生年份、性别等个人基本信息主要用于内部整理、核验与统计，不在本站公开页面直接展示。',
+        '与机构曝光相关的内容在整理后，可能出现在本站公开页面、地图或相关展示模块中。'
+      ],
+      formLead: '表单提交通常会同时涉及内部处理信息和可能公开展示的信息。',
+      formItems: [
+        '内部处理信息通常包括出生年份、性别等个人基本信息，用于内部整理、核验与统计。',
+        '可能公开展示的信息通常包括相关经历、机构名称、所在地区、机构地址、机构联系方式、负责人/校长姓名、丑闻及暴力行为描述和其他补充内容。',
+        '请不要在可能公开的字段中填写身份证号、私人电话、家庭住址、即时通讯账号或其他不适合公开的个人敏感信息。'
+      ],
       cookieIntro: '当前网站使用的 Cookie 如下：',
       cookieFields: {
         name: '名称',
@@ -290,9 +322,28 @@ const messages = {
         scope: '本站根路径 / 下的页面。',
         attributes: 'SameSite=Lax。'
       },
-      manageBody: '您可以随时通过浏览器设置删除或拦截该 Cookie。删除后，网站会恢复为默认语言，直到您再次主动切换语言。',
-      manageNote: '如果您继续使用本站但不触发语言切换，本站不会额外写入新的语言偏好 Cookie。',
-      contactBody: '如果您对本站的隐私说明有疑问，可以通过以下方式联系项目维护者：'
+      thirdPartyLead: '为完成表单保存与部分功能展示，本站可能使用以下第三方服务：',
+      thirdPartyItems: [
+        'Google Form / Google 表格：用于保存和整理表单提交内容。',
+        'Google Cloud Translation（启用时）：当站内翻译功能开启时，部分公开展示文本可能发送至翻译服务处理。',
+        '地图底图与静态资源 CDN：地图页面可能向相应服务加载公开底图或前端依赖资源。'
+      ],
+      retentionItems: [
+        '语言偏好 Cookie 最长保存 30 天，或直到您主动删除。',
+        '表单提交内容会按照项目运营、核验、统计、公开展示与后续整理需要保留；如需沟通更正或删除，请通过本页联系方式联系维护者。',
+        '服务器侧运行日志与限流记录仅保留排查与安全防护所需的最小元信息，不会主动在审计日志中记录整份表单正文。'
+      ],
+      securityItems: [
+        '本站对表单提交流程使用服务端校验、限流、防刷 token、蜜罐字段和敏感页面禁缓存等措施。',
+        '我们会尽量减少在日志与公开接口中暴露不必要的信息，并对公开展示数据进行字段级筛选。',
+        '但任何联网传输或第三方服务都无法承诺绝对安全；请在提交时自行避免填写不必要的个人敏感信息。'
+      ],
+      manageItems: [
+        '您可以选择不提交表单，或仅填写您愿意提供的必要信息。',
+        '您可以随时通过浏览器设置删除或拦截语言偏好 Cookie；删除后，网站会恢复为默认语言。',
+        '如果您希望沟通更正、删除或下架与您相关的内容，请通过下方邮箱联系项目维护者。'
+      ],
+      contactBody: '如果您对本站隐私说明、表单公开范围或内容处理方式有疑问，可以通过以下方式联系项目维护者：'
     },
     submitSuccess: {
       title: '提交成功！感谢你的参与。',
@@ -481,7 +532,7 @@ const messages = {
     form: {
       title: 'NO CONVERSION THERAPY FORM',
       subtitle: '記錄黑暗，是為了迎接光明',
-      privacyNotice: '隱私說明：本問卷中的個人基本資訊將被嚴格保密，個人在校經歷與機構曝光資訊將被公開展示',
+      privacyNotice: '隱私說明：本問卷中填寫的出生年份、性別等個人基本資訊將被嚴格保密，相關經歷、機構曝光資訊可能在本站公開頁面展示。提交內容會透過 Google Form / Google 試算表保存和整理；請勿在可能公開的欄位中填寫身分證號、私人電話、家庭住址等您的個人敏感資訊。',
       sections: {
         basic: '個人基本資訊',
         experience: '相關經歷',
@@ -662,14 +713,46 @@ const messages = {
     },
     privacy: {
       title: '隱私政策與 Cookie 說明',
-      intro: '本頁面說明本站如何處理與您造訪有關的基礎資訊，以及本站目前使用的 Cookie。',
+      intro: '本頁面說明本站在頁面造訪、表單提交與公開展示過程中會如何處理相關資訊。',
+      meta: {
+        effectiveDateLabel: '生效日期',
+        effectiveDateValue: '2026年4月9日',
+        updatedLabel: '最近更新',
+        updatedValue: '2026年4月9日',
+        scopeLabel: '適用範圍',
+        scopeValue: '本站頁面、表單提交流程與相關公開展示內容'
+      },
+      tocLabel: '隱私說明目錄',
+      highlights: {
+        submissionTitle: '表單提交',
+        submissionBody: '表單內容由本站接收後，交由 Google Form / Google 試算表保存與整理。',
+        publicTitle: '公開展示',
+        publicBody: '與機構曝光相關的內容可能整理後在本站公開頁面展示。',
+        cookieTitle: '站內 Cookie',
+        cookieBody: '目前僅使用一個語言偏好 Cookie，不用於廣告、跨站追蹤或人物畫像分析。'
+      },
       sections: {
-        summary: '我們處理什麼',
+        summary: '概覽',
+        formSubmission: '表單填寫與公開展示',
+        thirdParty: '第三方服務',
+        retention: '保存期限與刪除',
+        security: '安全措施',
         cookie: '目前使用的 Cookie',
-        manage: '如何管理',
+        manage: '您的選擇',
         contact: '聯絡我們'
       },
       summary: '本站目前僅在您主動切換語言時，使用一個站內 Cookie 來記住您的語言偏好。我們不會將該 Cookie 用於廣告投放、跨站追蹤或人物畫像分析。',
+      overviewItems: [
+        '當您瀏覽本站時，我們目前只會在您主動切換語言時寫入一個語言偏好 Cookie。',
+        '當您填寫表單時，出生年份、性別等個人基本資訊主要用於內部整理、核驗與統計，不在本站公開頁面直接展示。',
+        '與機構曝光相關的內容在整理後，可能出現在本站公開頁面、地圖或相關展示模組中。'
+      ],
+      formLead: '表單提交通常會同時涉及內部處理資訊與可能公開展示的資訊。',
+      formItems: [
+        '內部處理資訊通常包括出生年份、性別等個人基本資訊，用於內部整理、核驗與統計。',
+        '可能公開展示的資訊通常包括相關經歷、機構名稱、所在地區、機構地址、機構聯繫方式、負責人／校長姓名、醜聞及暴力行為描述和其他補充內容。',
+        '請不要在可能公開的欄位中填寫身分證號、私人電話、家庭住址、即時通訊帳號或其他不適合公開的個人敏感資訊。'
+      ],
       cookieIntro: '本站目前使用的 Cookie 如下：',
       cookieFields: {
         name: '名稱',
@@ -686,9 +769,28 @@ const messages = {
         scope: '本站根路徑 / 下的頁面。',
         attributes: 'SameSite=Lax。'
       },
-      manageBody: '您可以隨時透過瀏覽器設定刪除或封鎖該 Cookie。刪除後，網站會恢復為預設語言，直到您再次主動切換語言。',
-      manageNote: '如果您繼續使用本站但不觸發語言切換，本站不會額外寫入新的語言偏好 Cookie。',
-      contactBody: '如果您對本站的隱私說明有疑問，可以透過以下方式聯絡項目維護者：'
+      thirdPartyLead: '為完成表單保存與部分功能展示，本站可能使用以下第三方服務：',
+      thirdPartyItems: [
+        'Google Form / Google 試算表：用於保存和整理表單提交內容。',
+        'Google Cloud Translation（啟用時）：當站內翻譯功能開啟時，部分公開展示文本可能送至翻譯服務處理。',
+        '地圖底圖與靜態資源 CDN：地圖頁面可能向相應服務載入公開底圖或前端依賴資源。'
+      ],
+      retentionItems: [
+        '語言偏好 Cookie 最長保存 30 天，或直到您主動刪除。',
+        '表單提交內容會按照項目營運、核驗、統計、公開展示與後續整理需要保留；如需溝通更正或刪除，請透過本頁聯絡方式聯絡維護者。',
+        '伺服器側運行日誌與限流記錄僅保留排查與安全防護所需的最小元資訊，不會主動在審計日誌中記錄整份表單正文。'
+      ],
+      securityItems: [
+        '本站對表單提交流程使用服務端校驗、限流、防刷 token、蜜罐欄位和敏感頁面禁快取等措施。',
+        '我們會盡量減少在日誌與公開接口中暴露不必要的資訊，並對公開展示資料進行欄位級篩選。',
+        '但任何聯網傳輸或第三方服務都無法承諾絕對安全；請在提交時自行避免填寫不必要的個人敏感資訊。'
+      ],
+      manageItems: [
+        '您可以選擇不提交表單，或僅填寫您願意提供的必要資訊。',
+        '您可以隨時透過瀏覽器設定刪除或封鎖語言偏好 Cookie；刪除後，網站會恢復為預設語言。',
+        '如果您希望溝通更正、刪除或下架與您相關的內容，請透過下方電子郵件聯絡項目維護者。'
+      ],
+      contactBody: '如果您對本站隱私說明、表單公開範圍或內容處理方式有疑問，可以透過以下方式聯絡項目維護者：'
     },
     submitSuccess: {
       title: '提交成功！感謝您的參與。',
@@ -877,7 +979,7 @@ const messages = {
     form: {
       title: 'NO CONVERSION THERAPY FORM',
       subtitle: 'We document the darkness in order to welcome the light.',
-      privacyNotice: 'Privacy notice: personal basic information in this questionnaire will be kept strictly confidential, while personal institutional experience and institution exposure information will be publicly displayed.',
+      privacyNotice: 'Privacy notice: personal details such as birth year and sex provided in this questionnaire will be kept strictly confidential, while related experiences and institution exposure information may be shown on public pages of this site. Submitted content is stored and organized through Google Forms / Google Sheets. Please do not include ID numbers, private phone numbers, home addresses, or other sensitive personal information in fields that may be made public.',
       sections: {
         basic: 'Personal Information',
         experience: 'Related Experience',
@@ -1058,14 +1160,46 @@ const messages = {
     },
     privacy: {
       title: 'Privacy & Cookie Notice',
-      intro: 'This page explains what basic information this site handles during your visit and what cookie the site currently uses.',
+      intro: 'This page explains how the site handles information related to page visits, form submissions, and public display content.',
+      meta: {
+        effectiveDateLabel: 'Effective Date',
+        effectiveDateValue: 'April 9, 2026',
+        updatedLabel: 'Last Updated',
+        updatedValue: 'April 9, 2026',
+        scopeLabel: 'Scope',
+        scopeValue: 'Site pages, the form submission flow, and related public-facing display content'
+      },
+      tocLabel: 'Privacy notice contents',
+      highlights: {
+        submissionTitle: 'Form Handling',
+        submissionBody: 'Form submissions are received by this site and then stored and organized through Google Forms / Google Sheets.',
+        publicTitle: 'Public Display',
+        publicBody: 'Institution exposure content may be curated and displayed on public pages of this site.',
+        cookieTitle: 'Language Cookie',
+        cookieBody: 'The site currently uses one first-party language-preference cookie and does not use it for advertising or cross-site tracking.'
+      },
       sections: {
-        summary: 'What We Process',
+        summary: 'Overview',
+        formSubmission: 'Form Submission And Public Display',
+        thirdParty: 'Third-Party Services',
+        retention: 'Retention And Removal',
+        security: 'Security Measures',
         cookie: 'Cookie Currently In Use',
-        manage: 'How To Manage It',
+        manage: 'Your Choices',
         contact: 'Contact'
       },
       summary: 'At the moment, this site only uses one first-party cookie to remember your language preference when you actively switch languages. We do not use this cookie for advertising, cross-site tracking, or profiling.',
+      overviewItems: [
+        'When you browse the site, we currently write only one language-preference cookie if you actively switch languages.',
+        'When you submit the form, personal details such as birth year and sex are used mainly for internal review, verification, and statistics and are not directly shown on public pages of this site.',
+        'Content related to institution exposure may appear after review on public pages, maps, or related display modules of the site.'
+      ],
+      formLead: 'Form submissions may contain both internally handled information and information that may later be shown publicly.',
+      formItems: [
+        'Internally handled information typically includes personal details such as birth year and sex for internal review, verification, and statistics.',
+        'Information that may be shown publicly typically includes related experiences, institution name, region, institution address, institution contact information, principal or headmaster name, descriptions of scandals or violence, and other supplemental content.',
+        'Please do not place ID numbers, private phone numbers, home addresses, messaging account IDs, or other sensitive personal information in fields that may be made public.'
+      ],
       cookieIntro: 'The cookie currently used by this site is listed below:',
       cookieFields: {
         name: 'Name',
@@ -1082,9 +1216,28 @@ const messages = {
         scope: 'Pages under the site root path /.',
         attributes: 'SameSite=Lax.'
       },
-      manageBody: 'You can delete or block this cookie at any time in your browser settings. If you remove it, the site will fall back to the default language until you actively switch again.',
-      manageNote: 'If you continue browsing without triggering a language switch, the site will not write an additional language-preference cookie.',
-      contactBody: 'If you have questions about this privacy notice, you can contact the project maintainer here:'
+      thirdPartyLead: 'To support form storage and certain site features, the site may use the following third-party services:',
+      thirdPartyItems: [
+        'Google Forms / Google Sheets: used to store and organize submitted form content.',
+        'Google Cloud Translation (when enabled): some publicly displayed text may be sent to the translation service when the site translation feature is in use.',
+        'Map tile providers and static asset CDNs: the map page may load public basemap tiles or frontend dependencies from those services.'
+      ],
+      retentionItems: [
+        'The language-preference cookie is kept for up to 30 days unless you delete it earlier.',
+        'Submitted form content may be retained as needed for project operations, verification, statistics, public-interest display, and follow-up handling; if you need to discuss correction or removal, please contact the maintainer through the address below.',
+        'Server-side runtime logs and rate-limit records keep only the minimum metadata needed for troubleshooting and security and are not intended to store the full form body in audit logs.'
+      ],
+      securityItems: [
+        'The form flow uses server-side validation, rate limiting, anti-abuse tokens, honeypot fields, and no-store caching rules for sensitive pages.',
+        'We try to minimize unnecessary exposure in logs and public APIs and apply field-level filtering before public display.',
+        'However, no internet transmission or third-party service can guarantee absolute security; please avoid submitting unnecessary sensitive personal information.'
+      ],
+      manageItems: [
+        'You may choose not to submit the form, or submit only the information you are willing to provide.',
+        'You may delete or block the language-preference cookie in your browser settings at any time; if removed, the site falls back to the default language.',
+        'If you want to discuss correction, removal, or takedown of content related to you, please contact the project maintainer by email below.'
+      ],
+      contactBody: 'If you have questions about this privacy notice, the public-display scope of form content, or how site content is handled, you can contact the project maintainer here:'
     },
     submitSuccess: {
       title: 'Submission received. Thank you.',

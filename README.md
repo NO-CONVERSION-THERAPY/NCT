@@ -1,65 +1,36 @@
 # N·C·T
 
-## N·C·T Project
+N·C·T 是一個用來記錄、整理、公開展示「扭轉治療」相關機構與經歷資訊的站點。它提供匿名表單、公開地圖、文章頁面與多語言界面，也保留了自部署能力，方便在不同環境持續運行。
 
-[![Status](https://img.shields.io/badge/Status-Active-brightgreen)]()
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-blue.svg)]()
-
-**我們致力於記錄、曝光並抵制所有形式的「扭轉治療」機構。**  
-每一份真實的聲音，都是終結傷害的力量。
+## 線上入口
 
 - 站點首頁：https://nct.hosinoneko.me
 - 匿名表單：https://nct.hosinoneko.me/form
 - 公開地圖：https://nct.hosinoneko.me/map
-- 原始 Google Form：https://forms.gle/eHwkmNCZtmZhLjzh7
+- 隱私說明：https://nct.hosinoneko.me/privacy
 
-> 我們承諾不以任何理由主動收集不必要的個人資訊。
+## 核心能力
 
----
-
-## 項目目標
-
-1. 打破信息壟斷，讓更多人看見相關機構與風險資訊。
-2. 為受害者與知情者提供一個可匿名提交、可持續保存的經歷記錄入口。
-3. 透過地圖與公開 API 讓資料更容易被查閱、分析與再利用。
-4. 在必要時支持他人自行部署，降低單點失效與封鎖風險。
-
-## 主要功能
-
-- 匿名表單提交，支援基礎防刷、限流與審計日志。
-- 機構地圖頁與公開 `GET /api/map-data` 資料接口。
-- 博客 / 通知 / 文章頁面。
+- 匿名表單提交，包含基礎防刷、限流與審計日志。
+- 公開機構地圖與 `GET /api/map-data` 資料接口。
+- 博客、通知與一般內容頁面。
 - 多語言界面與部分內容翻譯。
-- 自動輸出 `sitemap.xml` 與 `robots.txt`。
-- 可透過 GitHub + Cloudflare Workers Builds 自動部署。
+- `sitemap.xml`、`robots.txt` 自動輸出。
+- 支援 Node.js 本地運行與 Cloudflare Workers 部署。
 
 ## 技術棧
 
-- Node.js 18+
+- Node.js 20+
 - Express 5
 - EJS
 - Cloudflare Workers
 - Google Form
 - 可選 Google Apps Script 資料源
+- 可選 Google Cloud Translation API
 
-當前代碼保留兩種本地運行方式：
+## 快速開始
 
-- 傳統 Node 啓動：`npm start`
-- Workers 本地調試：`npm run dev:workers`
-
-正式部署方式以 **GitHub + Workers Builds** 為主。
-
----
-
-## Stargazers over time
-[![Stargazers over time](https://starchart.cc/NO-CONVERSION-THERAPY/NCT.svg?variant=adaptive)](https://starchart.cc/NO-CONVERSION-THERAPY/NCT)
-
-
-
-## 開發與貢獻
-
-
-### 1. 取得專案
+### 1. 安裝
 
 ```bash
 git clone https://github.com/HosinoEJ/No-Torsion.git
@@ -67,465 +38,186 @@ cd No-Torsion
 npm install
 ```
 
-### 2. 建立環境變數
-
-建議直接從範例檔開始：
-
-```bash
-cp .env.example .env
-```
-
-然後根據你的環境修改 `.env`。
-
-如果你要用 Workers 本地調試，建議改用 `.dev.vars`，不要和 `.env` 混用。
-
-### 3. 本地啓動
+### 2. 選擇本地運行方式
 
 Node 模式：
 
 ```bash
+cp .env.example .env
 npm start
 ```
 
 Workers 模式：
 
 ```bash
+cp .dev.vars.example .dev.vars
 npm run dev:workers
 ```
 
-### 4. 跑測試
-
-```bash
-npm test
-```
-
-> 提示：本地運行時，表單實際提交到 Google Form 可能受到網絡環境影響。開發時建議先使用 `FORM_DRY_RUN="true"`。
-
----
-
-## 配置說明
-
-完整註釋版配置請直接查看 [.env.example](./.env.example)。
-
-### 常用環境變數
-
-說明：
-
-- `必要`：正式部署建議顯式配置。
-- `按需`：只在啓用對應能力時必填。
-- `非必要`：留空時會使用默認值或降級行為。
-
-| 變數 | 是否必填 | 默認值 | 用途 / 備註 |
-| --- | --- | --- | --- |
-| `TITLE` | 非必要 | `N·C·T` | 站點標題 |
-| `DEBUG_MOD` | 非必要 | `true` | 是否開啓調試頁 |
-| `MAINTENANCE_MODE` | 非必要 | `false` | 是否啓用全站維護模式；開啓後所有動態請求統一返回 `503` 維護頁 |
-| `MAINTENANCE_NOTICE` | 非必要 | 空 | 維護頁中 `Service state / 服務狀態` 區塊顯示的通知內容；英文與繁中頁面會在翻譯服務可用時自動翻譯，失敗時回退原文 |
-| `MAINTENANCE_RETRY_AFTER_SECONDS` | 非必要 | `1800` | 維護模式返回的 `Retry-After` 秒數 |
-| `FORM_DRY_RUN` | 非必要 | `true` | 是否只預覽提交、不真正送出 |
-| `SITE_URL` | 非必要 | `https://www.victimsunion.org/` | 站點正式網址，用於 `sitemap.xml`、`robots.txt` 等 |
-| `PORT` | 非必要 | `3000` | 本地 Node 啓動端口 |
-| `PAGE_READ_RATE_LIMIT_MAX` | 非必要 | `180` | 5 分鐘內單 IP 最多頁面讀取次數，用於降低過度爬站 |
-| `MAP_READ_RATE_LIMIT_MAX` | 非必要 | `60` | 5 分鐘內單 IP 最多公開地圖 API 讀取次數 |
-| `SUBMIT_RATE_LIMIT_MAX` | 非必要 | `5` | 15 分鐘內單 IP 最多提交次數 |
-| `FORM_PROTECTION_SECRET` | 非必要 | 自動派生 | 未配置時會根據 `FORM_ID`、`SITE_URL` 和 `TITLE` 派生一個值；正式環境強烈建議顯式設置高強度隨機值 |
-| `FORM_PROTECTION_MIN_FILL_MS` | 非必要 | `3000` | 最短填寫時間 |
-| `FORM_PROTECTION_MAX_AGE_MS` | 非必要 | `86400000` | 表單 token 最長有效期 |
-| `FORM_ID` | 非必要 | 空 | Google Form ID；建議放 Secret，或改用 `FORM_ID_ENCRYPTED` |
-| `FORM_ID_ENCRYPTED` | 非必要 | 空 | 用 `FORM_PROTECTION_SECRET` 派生子密鑰加密後的 Google Form ID |
-| `GOOGLE_SCRIPT_URL` | 非必要 | 空 | 私有 Google Apps Script 資料源；建議放 Secret，或改用 `GOOGLE_SCRIPT_URL_ENCRYPTED` |
-| `GOOGLE_SCRIPT_URL_ENCRYPTED` | 非必要 | 空 | 用 `FORM_PROTECTION_SECRET` 派生子密鑰加密後的 Apps Script URL |
-| `PUBLIC_MAP_DATA_URL` | 非必要 | `https://nct.hosinoeiji.workers.dev/api/map-data` | 公開地圖 API 地址 |
-| `MAP_DATA_NODE_TRANSPORT_OVERRIDES` | 非必要 | `false` | Node 運行時的地圖上游網路策略總開關；`true` 時才會啓用代理 agent 與 IPv4 直連，預設兩者都關閉；Workers 運行時會忽略 |
-| `MAP_DATA_UPSTREAM_TIMEOUT_MS` | 非必要 | `25000` | 地圖上游請求超時，單位毫秒 |
-| `GOOGLE_CLOUD_TRANSLATION_API_KEY` | 按需 | 空 | Google Cloud Translation API Key；啓用翻譯功能時必填 |
-| `TRANSLATION_PROVIDER_TIMEOUT_MS` | 非必要 | `10000` | 翻譯請求超時，單位毫秒 |
-| `TRUST_PROXY` | 非必要 | `1` | 是否信任反向代理；預設信任一層代理 |
-| `RATE_LIMIT_REDIS_URL` | 非必要 | 空 | 共享限流存儲；留空時退回單實例記憶體限流 |
-
-### 翻譯服務配置
-
-翻譯功能現在只支持 **Google Cloud Translation API**，不再保留其他翻譯 provider，也不再使用非正式公共接口。
-
 建議：
 
-- `GOOGLE_CLOUD_TRANSLATION_API_KEY` 屬於敏感資訊，應放在 Workers `Secret`，不要提交到 GitHub。
-- Google Cloud Translation 固定使用官方地址 `https://translation.googleapis.com`，不需要單獨配置 base URL。
-- `TRANSLATION_PROVIDER_TIMEOUT_MS` 控制單次翻譯請求超時，預設 `10000` 毫秒。
-- 若未配置 `GOOGLE_CLOUD_TRANSLATION_API_KEY`，`/api/translate-text` 會直接返回失敗，地圖詳情與博客雙語區塊也不會顯示翻譯結果。
+- 本地開發先保持 `FORM_DRY_RUN="true"`，避免誤提交到正式 Google Form。
+- Node 模式用 `.env`，Workers 模式用 `.dev.vars`，不要混用。
+- 完整配置註釋請直接看 [`.env.example`](./.env.example) 和 [`.dev.vars.example`](./.dev.vars.example)。
 
-### 配置建議
+### 3. 常用命令
 
-- 本地開發：`DEBUG_MOD="true"`、`FORM_DRY_RUN="true"`。
-- 正式部署：`DEBUG_MOD="false"`、`FORM_DRY_RUN="false"`。
-- 臨時維護：`MAINTENANCE_MODE="true"`；如需在頁面上展示公告，可再設 `MAINTENANCE_NOTICE="站點正在更新資料，請稍後再試。"`，並可用 `MAINTENANCE_RETRY_AFTER_SECONDS="1800"` 提示客戶端稍後重試。
-- `MAINTENANCE_NOTICE` 建議用原文填寫；英文與繁中介面會嘗試透過正式翻譯服務自動翻譯。
-- 若你希望公開內容可被搜索引擎正常收錄，但仍限制高頻抓取，建議保留 `PAGE_READ_RATE_LIMIT_MAX` 與 `MAP_READ_RATE_LIMIT_MAX`，並按實際流量調整。
-- 翻譯功能現在只走**正式翻譯後端**，不再使用 `translate.googleapis.com` 這類非正式接口。
-- 啓用翻譯時只需要配置 `GOOGLE_CLOUD_TRANSLATION_API_KEY`。
-- `FORM_PROTECTION_SECRET` 屬於服務端敏感資訊，不要提交到版本庫；正式環境建議使用至少 32 bytes 隨機值。
-- 若未配置 `GOOGLE_SCRIPT_URL`，地圖頁會退回使用 `PUBLIC_MAP_DATA_URL`。
-- 若使用 `FORM_ID_ENCRYPTED` 或 `GOOGLE_SCRIPT_URL_ENCRYPTED`，必須顯式配置 `FORM_PROTECTION_SECRET`；派生默認值不允許用來解密密文配置。
-- 若你的公開地圖資料源偶發超時，可適度調大 `MAP_DATA_UPSTREAM_TIMEOUT_MS`；預設 `25000` 毫秒。
-- 若未配置 `RATE_LIMIT_REDIS_URL`，限流會退回單實例記憶體模式。
+- `npm start`：以 Node.js 啓動應用。
+- `npm run dev:workers`：用 Wrangler 本地調試 Workers 版本。
+- `npm test`：跑測試。
+- `npm run build`：做一次啓動級別的構建檢查。
+- `npm run secure-config -- bootstrap-env --env-file ".env"`：從現有 env 檔讀取 `FORM_ID` / `GOOGLE_SCRIPT_URL`，自動生成密文。
+- `npm run secure-config -- bootstrap --form-id "..." --google-script-url "..."`：一次性生成 `FORM_PROTECTION_SECRET` 和對應密文。
+- `npm run secure-config -- generate-secret`：生成高強度 `FORM_PROTECTION_SECRET`。
 
-### 保護敏感配置
+## 重要配置
 
-如果你擔心 `FORM_ID` 被直接拿到後繞過網站校驗，或擔心 `GOOGLE_SCRIPT_URL` 以明文形式出現在普通環境變數中，可以把它們改成密文配置。
+README 只保留最常用項；完整配置請看 [`.env.example`](./.env.example)。
 
-先生成一個高強度 `FORM_PROTECTION_SECRET`：
+| 變數 | 用途 |
+| --- | --- |
+| `SITE_URL` | 站點正式網址，用於 sitemap、robots 與 canonical 等輸出 |
+| `FORM_DRY_RUN` | `true` 時只預覽提交，不真正送出 |
+| `FORM_PROTECTION_SECRET` | 表單保護與密文解密的核心 secret，正式環境務必顯式配置 |
+| `FORM_ID` / `FORM_ID_ENCRYPTED` | Google Form ID，二選一 |
+| `GOOGLE_SCRIPT_URL` / `GOOGLE_SCRIPT_URL_ENCRYPTED` | 私有 Apps Script 資料源，二選一 |
+| `PUBLIC_MAP_DATA_URL` | 沒有私有資料源時使用的公開地圖 API |
+| `GOOGLE_CLOUD_TRANSLATION_API_KEY` | 啓用翻譯功能時必填 |
+| `MAINTENANCE_MODE` | 全站維護開關 |
+| `MAINTENANCE_NOTICE` | 維護頁公告文字 |
+| `RATE_LIMIT_REDIS_URL` | 多實例部署時建議配置的共享限流存儲 |
+
+配置原則：
+
+- `FORM_ID` 和 `FORM_ID_ENCRYPTED` 只選一個。
+- `GOOGLE_SCRIPT_URL` 和 `GOOGLE_SCRIPT_URL_ENCRYPTED` 只選一個。
+- 使用密文配置時，必須顯式配置 `FORM_PROTECTION_SECRET`。
+- Workers 正式部署時，敏感值請放到 Cloudflare `Variables and Secrets`，不要寫進倉庫或 `wrangler.jsonc`。
+- 如果你暫時不使用密文配置，至少請把 `FORM_ID`、`GOOGLE_SCRIPT_URL` 和 `FORM_PROTECTION_SECRET` 都設成 `Secret`。
+- 如果你使用密文配置，推薦把 `FORM_PROTECTION_SECRET` 設成 `Secret`，`FORM_ID_ENCRYPTED` 和 `GOOGLE_SCRIPT_URL_ENCRYPTED` 可用 `Text` 或 `Secret`。
+
+## 保護敏感配置
+
+如果你不想把 `FORM_ID` 或 `GOOGLE_SCRIPT_URL` 以明文方式放在普通環境變數中，可以改用密文配置。
+
+如果你已經把 `FORM_ID` 和 `GOOGLE_SCRIPT_URL` 寫進 `.env` 或 `.dev.vars`，最省事的方式是直接從檔案讀取並生成：
+
+```bash
+npm run secure-config -- bootstrap-env --env-file ".env"
+```
+
+它會直接輸出：
+
+- `FORM_PROTECTION_SECRET`
+- `FORM_ID_ENCRYPTED`
+- `GOOGLE_SCRIPT_URL_ENCRYPTED`
+
+Workers 本地調試時，也可以改讀 `.dev.vars`：
+
+```bash
+npm run secure-config -- bootstrap-env --env-file ".dev.vars"
+```
+
+如果你只想分步操作，也可以手動先生成 secret，再分別加密：
 
 ```bash
 npm run secure-config -- generate-secret
 ```
-
-再分別加密：
 
 ```bash
 npm run secure-config -- encrypt --purpose form-id --secret "你的_FORM_PROTECTION_SECRET" --value "你的_GOOGLE_FORM_ID"
 npm run secure-config -- encrypt --purpose google-script-url --secret "你的_FORM_PROTECTION_SECRET" --value "你的_GOOGLE_SCRIPT_URL"
 ```
 
-然後把輸出的密文填到：
+需要明確的邊界：
 
-- `FORM_ID_ENCRYPTED`
-- `GOOGLE_SCRIPT_URL_ENCRYPTED`
+- 這能降低明文出現在倉庫、日誌、普通配置欄位或調試頁中的風險。
+- 這不是替代後端鑑權的方案；如果攻擊者能讀取服務端所有 secrets，密文與解密 secret 最終仍可能一起暴露。
+- 真正要防止繞過網站驗證，最可靠的方法仍然是不要把最終寫入入口設計成可匿名直打的公開 Google Form。
 
-注意：
+## 表單隱私說明
 
-- 這種做法主要防止明文被誤貼到倉庫、日誌或普通配置欄位。
-- 如果攻擊者已經能讀取服務端所有 secrets，那麼同一台服務器上的密文和解密 secret 最終都可能被拿到，這不是替代後端鑑權的方案。
-- 真正要防止繞過網站驗證，最可靠的方法仍然是不要把最終寫入入口暴露成可匿名直打的 Google Form。
+目前表單頁與 `/privacy` 頁面對外使用的說明如下：
 
-### 翻譯服務示例
+> 隐私说明：本问卷中填写的出生年份、性别等个人基本信息将被严格保密，相关经历、机构曝光信息可能在本站公开页面展示。提交内容会通过 Google Form / Google 表格保存和整理；请勿在可能公开的字段中填写身份证号、私人电话、家庭住址等您的个人敏感信息。
 
-Google Cloud Translation：
+如果你後續調整了公開字段範圍，記得同步更新：
 
-```bash
-GOOGLE_CLOUD_TRANSLATION_API_KEY="替換成你的 Google Cloud API Key"
-TRANSLATION_PROVIDER_TIMEOUT_MS="10000"
-```
-
----
+- 表單頁提示文案 `form.privacyNotice`
+- 隱私頁 `/privacy`
+- README 中這段說明
 
 ## 部署到 Cloudflare Workers
 
-倉庫根目錄已包含：
+本專案正式部署以 GitHub + Workers Builds 為主。
 
-- [worker.mjs](./worker.mjs)：Workers 入口
-- [wrangler.jsonc](./wrangler.jsonc)：Workers 配置
-
-這兩個文件會把 `views/`、`blog/`、`public/`、`data.json`、`friends.json` 一併打包進 Workers 的 `/bundle`。
-
-`wrangler.jsonc` 目前只保留必須寫死到倉庫裡的 `RUNTIME_TARGET="workers"`。
-其他環境變數不建議直接寫進 `wrangler.jsonc`，而是放到：
-
-- Cloudflare Dashboard 的 `Variables and Secrets`
-- 本地 Workers 調試使用的 `.dev.vars`
-
-如果你要臨時打開維護頁，也是在這兩個地方設置：
-
-- `MAINTENANCE_MODE="true"`
-- `MAINTENANCE_NOTICE="站點正在更新資料，請稍後再試。"`
-- `MAINTENANCE_RETRY_AFTER_SECONDS="1800"`
-
-### 0. 前置條件
-
-你需要準備：
-
-- 一個 Cloudflare 帳號
-- 一個 GitHub 倉庫
-- Node.js 18+
-- 已提交並推送的專案代碼
-
-如果你要綁定正式域名，還需要：
-
-- 網域已接入 Cloudflare
-- 你對該 zone 擁有管理權限
-
-### 1. 先做本地驗證
-
-部署前建議先在本地驗證 Workers 版本：
+### 1. 本地先驗證
 
 ```bash
 npm install
+cp .dev.vars.example .dev.vars
 npm run dev:workers
 npm test
 ```
 
-Workers 本地開發時，建議把變數放進 `.dev.vars`。最小示例：
-
-```bash
-SITE_URL="http://127.0.0.1:8787"
-PAGE_READ_RATE_LIMIT_MAX="180"
-MAP_READ_RATE_LIMIT_MAX="60"
-```
-
-如果你也想在 Workers 本地調試時測試密文配置，可以再加上：
-
-```bash
-FORM_PROTECTION_SECRET="換成你生成的高強度隨機值"
-FORM_ID_ENCRYPTED="換成 npm run secure-config 生成的密文"
-GOOGLE_SCRIPT_URL_ENCRYPTED="換成 npm run secure-config 生成的密文"
-```
-
-如果你只是本地臨時調試，也可以改用明文：
-
-```bash
-FORM_PROTECTION_SECRET="換成你生成的高強度隨機值"
-FORM_ID="你的 Google Form ID"
-GOOGLE_SCRIPT_URL="你的 Google Apps Script URL"
-```
-
-如果你需要在 Workers 上臨時開站點維護模式，可以再加上：
-
-```bash
-MAINTENANCE_MODE="true"
-MAINTENANCE_NOTICE="We are currently rolling out an update. Please check back shortly."
-MAINTENANCE_RETRY_AFTER_SECONDS="1800"
-```
-
-如果你還想在本地測翻譯功能，再額外加上：
-
-```bash
-GOOGLE_CLOUD_TRANSLATION_API_KEY="換成你自己的正式 API Key"
-```
-
 ### 2. 連接 GitHub 倉庫
 
-1. 將本專案推送到 GitHub。
-2. 打開 Cloudflare Dashboard。
-3. 進入 **Workers & Pages**。
-4. 點擊 **Create application**。
-5. 在 **Import a repository** 旁選擇 **Get started**。
-6. 授權 **Cloudflare Workers & Pages** GitHub App。
-7. 選擇本專案所在的倉庫。
+在 Cloudflare Dashboard 中：
 
-### 3. 配置 Workers Builds
+1. 進入 `Workers & Pages`
+2. 點擊 `Create application`
+3. 選擇 `Import a repository`
+4. 授權 GitHub App 並選擇本專案倉庫
 
-推薦配置：
+### 3. 建議的構建設置
 
 | 項目 | 建議值 |
 | --- | --- |
-| `Git branch` | `main` |
 | `Root directory` | `.` |
 | `Build command` | 留空 |
 | `Deploy command` | `npm run deploy:workers` |
-| `Non-production branch deploy command` | 保持預設 `npx wrangler versions upload` |
 
-完成後點擊 **Save and Deploy**。
+補充：
 
-#### Branch 切換注意事項
-
-- Workers Builds 初次建立專案時，通常會先跟隨 **GitHub 倉庫的默認分支**。如果你的 GitHub 默認分支還是 `main`，首次建立頁面裡看到 `main` 屬於正常現象。
-- 如果你之後想把正式部署分支改成別的分支，例如 `backendmodifi`，請到：
-  `Workers & Pages` -> 你的 Worker -> `Settings` -> `Build` -> `Branch control`
-- 在 `Branch control` 裡修改 `Production branch` 後，**只會影響之後的新提交**，不會把當前已上線版本立刻切到新分支。
-- 改完 `Production branch` 並點 `Save` 之後，請再向目標分支 **push 一次新 commit**，讓 Cloudflare 重新觸發正式部署。
-- 如果 Cloudflare 介面裡看起來還顯示舊分支，常見原因不是設定失敗，而是當前活動部署仍然是舊分支產生的版本。
-- 切換前請確認目標分支已經真實推送到 GitHub，不要只有本地存在。
-- `Builds for non-production branches`：
-  - 開啓後，非正式分支也會自動產生預覽構建。
-  - 關閉後，只有 `Production branch` 會自動部署。
-- 如果你希望 `main` 做正式環境、`dev` 或其他分支只做預覽，保留 `Builds for non-production branches` 即可；如果你希望別的分支成為正式環境，就必須在 `Branch control` 中把 `Production branch` 改過去。
+- 正式部署分支可在 `Settings -> Build -> Branch control` 中調整。
+- 倉庫中的 [`wrangler.jsonc`](./wrangler.jsonc) 只保留必要的 `RUNTIME_TARGET="workers"`，其他變數請放到 Dashboard 或本地 `.dev.vars`。
 
 ### 4. 補齊 Variables 和 Secrets
 
-第一次部署完成後，請到：
+至少建議配置以下項目：
 
-`Workers & Pages` -> 你的 Worker -> `Settings` -> `Variables and Secrets`
+部署建議：
 
-建議配置以下值：
+- 最簡單且正確的做法，是把 `FORM_ID`、`GOOGLE_SCRIPT_URL`、`FORM_PROTECTION_SECRET` 都設成 `Secret`。
+- 如果你要進一步降低明文誤暴露風險，再改用 `FORM_ID_ENCRYPTED`、`GOOGLE_SCRIPT_URL_ENCRYPTED`，並保留 `FORM_PROTECTION_SECRET` 為 `Secret`。
 
-| 名稱 | 類型 | 建議 |
+| 名稱 | 類型 | 說明 |
 | --- | --- | --- |
-| `TITLE` | Text | `N·C·T` |
-| `DEBUG_MOD` | Text | 正式環境填 `false` |
-| `MAINTENANCE_MODE` | Text | 需要全站維護時填 `true` |
-| `MAINTENANCE_NOTICE` | Text | 顯示在維護頁通知卡片中的公告文字；英文與繁中頁面會嘗試自動翻譯 |
-| `MAINTENANCE_RETRY_AFTER_SECONDS` | Text | 預設 `1800` |
-| `FORM_DRY_RUN` | Text | 正式環境填 `false` |
-| `SITE_URL` | Text | 你的正式網址 |
-| `PAGE_READ_RATE_LIMIT_MAX` | Text | 視站點流量調整；預設 `180` |
-| `MAP_READ_RATE_LIMIT_MAX` | Text | 視 API 開放程度調整；預設 `60` |
-| `SUBMIT_RATE_LIMIT_MAX` | Text | 視提交入口風險調整；預設 `5` |
-| `FORM_ID` | Secret | 你的 Google Form ID；或改用 `FORM_ID_ENCRYPTED` |
-| `FORM_ID_ENCRYPTED` | Text | 由 `npm run secure-config -- encrypt --purpose form-id ...` 生成 |
-| `FORM_PROTECTION_SECRET` | Secret | 正式環境強烈建議顯式配置 |
-| `FORM_PROTECTION_MIN_FILL_MS` | Text | 預設 `3000` |
-| `FORM_PROTECTION_MAX_AGE_MS` | Text | 預設 `86400000` |
-| `GOOGLE_SCRIPT_URL` | Secret | 有私有資料源時填；或改用 `GOOGLE_SCRIPT_URL_ENCRYPTED` |
-| `GOOGLE_SCRIPT_URL_ENCRYPTED` | Text | 由 `npm run secure-config -- encrypt --purpose google-script-url ...` 生成 |
-| `PUBLIC_MAP_DATA_URL` | Text | 沒有私有資料源時配置成你的公開地圖 API |
-| `MAP_DATA_NODE_TRANSPORT_OVERRIDES` | Text | 可選；Node 運行時的地圖上游網路策略總開關，`true` 時才啓用代理 agent 與 IPv4 直連 |
-| `MAP_DATA_UPSTREAM_TIMEOUT_MS` | Text | 預設 `25000` |
-| `GOOGLE_CLOUD_TRANSLATION_API_KEY` | Secret | 啓用翻譯功能時必填 |
-| `TRANSLATION_PROVIDER_TIMEOUT_MS` | Text | 預設 `10000` |
-| `TRUST_PROXY` | Text | 預設 `1`；通常表示信任一層代理 |
-| `RATE_LIMIT_REDIS_URL` | Secret | 多實例部署建議配置共享限流存儲 |
+| `SITE_URL` | Text | 正式站點網址 |
+| `FORM_DRY_RUN` | Text | 正式環境建議為 `false` |
+| `FORM_PROTECTION_SECRET` | Secret | 表單保護與密文解密所需 |
+| `FORM_ID` | Secret | 明文 Google Form ID；簡單方案推薦這樣配置 |
+| `FORM_ID_ENCRYPTED` | Text 或 Secret | 加密後的 Google Form ID；使用時留空 `FORM_ID` |
+| `GOOGLE_SCRIPT_URL` | Secret | 明文私有資料源 URL；簡單方案推薦這樣配置 |
+| `GOOGLE_SCRIPT_URL_ENCRYPTED` | Text 或 Secret | 加密後的私有資料源 URL；使用時留空 `GOOGLE_SCRIPT_URL` |
+| `PUBLIC_MAP_DATA_URL` | Text | 沒有私有資料源時的回退公開 API |
+| `GOOGLE_CLOUD_TRANSLATION_API_KEY` | Secret | 只有啓用翻譯時才需要 |
+| `MAINTENANCE_MODE` | Text | 需要全站維護時設為 `true` |
+| `MAINTENANCE_NOTICE` | Text | 維護公告文字 |
+| `RATE_LIMIT_REDIS_URL` | Secret | 多實例部署建議配置 |
 
-補完變數後，重新觸發一次部署。
+### 5. 綁定正式域名
 
-### 5. 名稱一致性
-
-如果你是先在 Cloudflare 裡建立 Worker，再去接 GitHub 倉庫，請確保：
-
-- Dashboard 中的 Worker 名稱
-- [wrangler.jsonc](./wrangler.jsonc) 裡的 `name`
-
-兩者完全一致，否則 Builds 會失敗。
-
-目前本專案的 Worker 名稱為：
-
-```text
-no-torsion
-```
-
-### 6. 綁定正式域名
-
-如果你不想使用 `*.workers.dev`，可以綁定自己的 Cloudflare 網域：
-
-1. 進入 **Workers & Pages**
-2. 選擇你的 Worker
-3. 打開 **Settings > Domains & Routes**
-4. 點 **Add > Custom Domain**
-5. 輸入你的網域或子網域，例如：
-   - `nct.example.com`
-   - `example.com`
-6. 點 **Add Custom Domain**
-
-綁定成功後，記得同步更新：
+如果你不想使用 `*.workers.dev`，可以在 `Settings -> Domains & Routes` 裡新增自定義域名。綁定完成後，記得同步更新：
 
 - `SITE_URL`
 - `PUBLIC_MAP_DATA_URL`
 
-### 7. 上線後檢查清單
+## 相關檔案
 
-正式部署完成後，建議至少手動驗證以下路徑：
+- [`.env.example`](./.env.example)：Node 模式環境變數示例
+- [`.dev.vars.example`](./.dev.vars.example)：Workers 本地調試示例
+- [`wrangler.jsonc`](./wrangler.jsonc)：Workers 配置
+- [`scripts/secure-config.js`](./scripts/secure-config.js)：敏感配置加密工具
 
-- `/`
-- `/map`
-- `/form`
-- `/blog`
-- `/api/map-data`
-- `/sitemap.xml`
-- `/robots.txt`
-
-如果 `FORM_DRY_RUN="false"`，也要實測表單是否能成功送到 Google Form。
-
-### 8. Workers 上的已知差異
-
-- 模板、博客 Markdown 與 JSON 檔案會從 Workers 的 `/bundle` 讀取。
-- 翻譯服務已移除 `curl` 子進程兜底，現在固定使用 Google Cloud Translation API。
-- `sitemap.xml` 在 Workers 上會優先使用文章元資料中的 `CreationDate` 作為 `lastmod`。
-- 若未配置共享 Redis，限流會退回單實例記憶體模式，跨實例一致性較弱。
-
-### 9. 常見問題
-
-**Q: 本地 `npm start` 和 Workers 版本會衝突嗎？**  
-A: 不會。兩者只是不同的本地運行入口。
-
-**Q: 這個專案要不要額外跑前端 build？**  
-A: 目前不需要。Workers Builds 的 `Build command` 一般留空即可。
-
-**Q: 為什麼 `Deploy command` 用的是 `npm run deploy:workers`？**  
-A: 因為它會呼叫 `npx wrangler deploy`，且與本倉庫的 `package.json` 保持一致。
-
----
-
-## 公開 API
-
-### `GET /api/map-data`
-
-公開接口：
-
-```text
-https://nct.hosinoeiji.workers.dev/api/map-data
-```
-
-如果你是自行部署，則改用你自己的域名，例如：
-
-```text
-https://你的網域/api/map-data
-```
-
-返回值示例：
-
-```json
-{
-  "avg_age": 17,
-  "last_synced": 1774925078387,
-  "statistics": [
-    { "province": "河南", "count": 12 },
-    { "province": "湖北", "count": 66 }
-  ],
-  "data": [
-    {
-      "name": "學校名稱",
-      "addr": "學校地址",
-      "province": "省份",
-      "prov": "區、縣",
-      "else": "其他補充内容",
-      "lat": 36.62728,
-      "lng": 118.58882,
-      "experience": "經歷描述",
-      "HMaster": "負責人/校長姓名",
-      "scandal": "已知醜聞",
-      "contact": "學校聯繫方式",
-      "inputType": "受害者本人"
-    }
-  ]
-}
-```
-
-字段說明：
-
-- `lat` / `lng`：經緯度
-- `last_synced`：毫秒級 Unix timestamp
-- 真正的機構列表位於 `data` 欄位
-
-### 站點還會自動輸出
-
-```text
-https://你的網域/sitemap.xml
-https://你的網域/robots.txt
-```
-
-### 最簡單的調用示例
-
-```html
-<script>
-  fetch('https://你的網域/api/map-data')
-    .then((res) => res.json())
-    .then((payload) => {
-      console.log(payload.data);
-    });
-</script>
-```
-
-如果你想把資料做成地圖，可直接配合 [Leaflet](https://leafletjs.com) 等前端地圖庫使用；本專案自己的 `/map` 頁面就是一個完整示例。
-
----
-
-## 貢獻
-
-歡迎提交 issue、PR 或 fork 自行部署。
-
-在提交前建議至少確認：
-
-```bash
-npm test
-```
-
-若你是針對部署、環境變數或表單流程做修改，也建議一併驗證：
-
-- `/form`
-- `/submit`
-- `/api/map-data`
-- `/blog`
-
----
-
-## 授權
-
-本專案授權資訊請參見 [LICENSE](./LICENSE)。
+如果你要調整公開字段、提交流程或資料上游，建議連同 [`/privacy`](https://nct.hosinoneko.me/privacy) 與表單頁提示文案一起檢查，避免對外說明和實際行為脫節。

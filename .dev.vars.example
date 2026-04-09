@@ -1,0 +1,65 @@
+# Cloudflare Workers local development variables
+# Copy this file to .dev.vars before running:
+# cp .dev.vars.example .dev.vars
+
+# Required for Workers runtime detection in local debug
+RUNTIME_TARGET="workers"
+
+# Public site URL used by sitemap/robots and canonical links
+SITE_URL="http://127.0.0.1:8787"
+
+# Default local limits
+PAGE_READ_RATE_LIMIT_MAX="180"
+MAP_READ_RATE_LIMIT_MAX="60"
+SUBMIT_RATE_LIMIT_MAX="5"
+
+# Recommended form protection secret
+# Quick start:
+# npm run secure-config -- bootstrap-env --env-file ".dev.vars"
+# npm run secure-config -- bootstrap --form-id "your-Google-Form-ID" --google-script-url "your-Google-Script-URL"
+FORM_PROTECTION_SECRET="replace-this-with-a-long-random-secret"
+
+# Choose one form config strategy:
+
+# Option A: plain Google Form ID for local debugging
+FORM_ID=""
+
+# Option B: encrypted Google Form ID
+# npm run secure-config -- bootstrap-env --env-file ".dev.vars"
+# npm run secure-config -- bootstrap --form-id "your-Google-Form-ID" --google-script-url "your-Google-Script-URL"
+# npm run secure-config -- encrypt --purpose form-id --secret "your-FORM_PROTECTION_SECRET" --value "your-Google-Form-ID"
+FORM_ID_ENCRYPTED=""
+
+# Choose one Apps Script config strategy:
+
+# Option A: plain private Apps Script URL
+GOOGLE_SCRIPT_URL=""
+
+# Option B: encrypted private Apps Script URL
+# npm run secure-config -- bootstrap-env --env-file ".dev.vars"
+# npm run secure-config -- bootstrap --form-id "your-Google-Form-ID" --google-script-url "your-Google-Script-URL"
+# npm run secure-config -- encrypt --purpose google-script-url --secret "your-FORM_PROTECTION_SECRET" --value "your-Google-Script-URL"
+GOOGLE_SCRIPT_URL_ENCRYPTED=""
+
+# Local form behavior
+FORM_DRY_RUN="true"
+FORM_PROTECTION_MIN_FILL_MS="3000"
+FORM_PROTECTION_MAX_AGE_MS="86400000"
+
+# Public map API fallback
+PUBLIC_MAP_DATA_URL="https://your-domain.example/api/map-data"
+MAP_DATA_UPSTREAM_TIMEOUT_MS="25000"
+
+# Optional translation support
+GOOGLE_CLOUD_TRANSLATION_API_KEY=""
+TRANSLATION_PROVIDER_TIMEOUT_MS="10000"
+
+# Optional maintenance mode
+MAINTENANCE_MODE="false"
+MAINTENANCE_NOTICE=""
+MAINTENANCE_RETRY_AFTER_SECONDS="1800"
+
+# Optional deployment/runtime tuning
+DEBUG_MOD="true"
+TRUST_PROXY="true"
+RATE_LIMIT_REDIS_URL=""
