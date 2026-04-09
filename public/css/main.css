@@ -24,6 +24,15 @@
     --shadow-soft: 0 10px 25px rgba(0, 0, 0, 0.05);
     --shadow-floating: 0 16px 36px rgba(82, 100, 130, 0.16);
     --button-hover: #2980b9;
+    --secondary-button-bg-start: rgba(255, 255, 255, 0.94);
+    --secondary-button-bg-end: rgba(223, 238, 251, 0.94);
+    --secondary-button-hover-bg-start: rgba(240, 248, 255, 0.98);
+    --secondary-button-hover-bg-end: rgba(203, 229, 251, 0.98);
+    --secondary-button-border: rgba(96, 146, 198, 0.28);
+    --secondary-button-hover-border: rgba(64, 129, 193, 0.4);
+    --secondary-button-text: #214766;
+    --secondary-button-shadow: rgba(86, 116, 150, 0.16);
+    --secondary-button-focus-ring: rgba(52, 152, 219, 0.22);
     --map-frame-border: rgba(255, 255, 255, 0.88);
     --details-summary: #2563eb;
     --code-bg: #111111;
@@ -80,6 +89,15 @@
         --shadow-soft: 0 14px 34px rgba(0, 0, 0, 0.3);
         --shadow-floating: 0 16px 36px rgba(0, 0, 0, 0.32);
         --button-hover: #4aa2e8;
+        --secondary-button-bg-start: rgba(15, 27, 43, 0.94);
+        --secondary-button-bg-end: rgba(24, 41, 63, 0.94);
+        --secondary-button-hover-bg-start: rgba(20, 35, 54, 0.98);
+        --secondary-button-hover-bg-end: rgba(33, 55, 84, 0.98);
+        --secondary-button-border: rgba(121, 159, 197, 0.32);
+        --secondary-button-hover-border: rgba(149, 193, 236, 0.46);
+        --secondary-button-text: #dcecff;
+        --secondary-button-shadow: rgba(0, 0, 0, 0.3);
+        --secondary-button-focus-ring: rgba(100, 181, 246, 0.26);
         --map-frame-border: rgba(148, 163, 184, 0.22);
         --details-summary: #8bc4ff;
         --code-bg: #09111a;
@@ -622,6 +640,10 @@ label.required::after { content: " *"; color: #e74c3c; }
     gap: 12px;
 }
 
+.birth-date-group--single {
+    grid-template-columns: 1fr;
+}
+
 .form-honeypot {
     position: absolute;
     left: -10000px;
@@ -636,7 +658,16 @@ label.required::after { content: " *"; color: #e74c3c; }
     color: var(--text-subtle);
 }
 
-input, select, textarea {
+.form-privacy-note {
+    margin: 0 0 1.1rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--panel-border);
+    border-radius: 14px;
+    background: linear-gradient(180deg, var(--surface-elevated), var(--surface-soft));
+    color: var(--text-muted);
+}
+
+input:not([type="radio"]):not([type="checkbox"]), select, textarea {
     width: 100%;
     padding: 12px;
     color: var(--text);
@@ -647,13 +678,13 @@ input, select, textarea {
     font-size: 14px;
 }
 
-input:focus, select:focus, textarea:focus {
+input:not([type="radio"]):not([type="checkbox"]):focus, select:focus, textarea:focus {
     outline: none;
     border-color: var(--primary);
     box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
 }
 
-input::placeholder,
+input:not([type="radio"]):not([type="checkbox"])::placeholder,
 textarea::placeholder {
     color: var(--text-subtle);
 }
@@ -663,8 +694,53 @@ textarea::placeholder {
     border-style: dashed;
 }
 
+.birth-field-input[hidden],
+.form-conditional-fields[hidden] {
+    display: none;
+}
+
+.form-conditional-fields {
+    display: grid;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.other-sex-options {
+    display: grid;
+    gap: 10px;
+}
+
+.other-sex-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px dashed var(--panel-border);
+    border-radius: 10px;
+    background: var(--surface-soft);
+}
+
+.other-sex-option--custom {
+    align-items: stretch;
+}
+
+.other-sex-radio {
+    width: auto;
+    padding: 0;
+    margin: 0;
+    flex-shrink: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
 .other-input[hidden] {
     display: none;
+}
+
+.other-input--choice {
+    width: 100%;
+    margin-top: 0;
 }
 
 .hint { font-size: 12px; color: var(--text-subtle); margin-top: 5px; }
@@ -685,9 +761,66 @@ button {
 
 button:hover { background: var(--button-hover); }
 
+#openMapButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    max-width: 100%;
+    min-height: 3rem;
+    margin-top: 0.85rem;
+    padding: 0.9rem 1.2rem;
+    border: 1px solid var(--secondary-button-border);
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--secondary-button-bg-start), var(--secondary-button-bg-end));
+    color: var(--secondary-button-text);
+    box-shadow:
+        0 12px 24px var(--secondary-button-shadow),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    font-size: 0.96rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    transition:
+        transform 0.18s ease,
+        border-color 0.18s ease,
+        box-shadow 0.18s ease,
+        background 0.18s ease,
+        color 0.18s ease;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+#openMapButton:hover {
+    background: linear-gradient(135deg, var(--secondary-button-hover-bg-start), var(--secondary-button-hover-bg-end));
+    border-color: var(--secondary-button-hover-border);
+    color: var(--text);
+    transform: translateY(-1px);
+    box-shadow:
+        0 16px 30px var(--secondary-button-shadow),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+#openMapButton:focus-visible {
+    outline: none;
+    border-color: var(--secondary-button-hover-border);
+    box-shadow:
+        0 0 0 4px var(--secondary-button-focus-ring),
+        0 16px 30px var(--secondary-button-shadow);
+}
+
+#openMapButton:disabled {
+    cursor: wait;
+    opacity: 0.78;
+    transform: none;
+}
+
 @media (max-width: 640px) {
     .birth-date-group {
         grid-template-columns: 1fr;
+    }
+
+    #openMapButton {
+        width: 100%;
     }
 }
 

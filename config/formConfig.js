@@ -1,17 +1,41 @@
 // 表單枚举值、长度规则和地区联动数据都集中在这里，前后端共用一套定义。
-const allowedIdentities = new Set(['受害者本人', '受害者的代理人']);
-const allowedSexes = new Set(['男', '女', 'MtF', 'FtM', '__other_option__']);
+const SELF_IDENTITY = '受害者本人';
+const AGENT_IDENTITY = '受害者的代理人';
+const OTHER_SEX_OPTION = '__other_option__';
+const CUSTOM_OTHER_SEX_OPTION = '__custom_other_sex__';
+const allowedIdentities = new Set([SELF_IDENTITY, AGENT_IDENTITY]);
+const allowedSexes = new Set(['女性', '男性', OTHER_SEX_OPTION]);
+const otherSexTypeOptions = [
+  { value: 'MtF', labelKey: 'form.sexIdentityOptions.mtf' },
+  { value: 'FtM', labelKey: 'form.sexIdentityOptions.ftm' },
+  { value: 'X', labelKey: 'form.sexIdentityOptions.x' },
+  { value: 'Queer', labelKey: 'form.sexIdentityOptions.queer' }
+];
+const allowedOtherSexTypes = new Set([
+  ...otherSexTypeOptions.map((option) => option.value),
+  CUSTOM_OTHER_SEX_OPTION
+]);
 const identityOptions = [
-  { value: '受害者本人', labelKey: 'form.identityOptions.self' },
-  { value: '受害者的代理人', labelKey: 'form.identityOptions.agent' }
+  { value: SELF_IDENTITY, labelKey: 'form.identityOptions.self' },
+  { value: AGENT_IDENTITY, labelKey: 'form.identityOptions.agent' }
 ];
 const sexOptions = [
-  { value: '男', labelKey: 'form.sexOptions.male' },
-  { value: '女', labelKey: 'form.sexOptions.female' },
-  { value: 'MtF', labelKey: 'form.sexOptions.mtf' },
-  { value: 'FtM', labelKey: 'form.sexOptions.ftm' },
-  { value: '__other_option__', labelKey: 'form.sexOptions.other' }
+  { value: '女性', labelKey: 'form.sexOptions.female' },
+  { value: '男性', labelKey: 'form.sexOptions.male' },
+  { value: OTHER_SEX_OPTION, labelKey: 'form.sexOptions.other' }
 ];
+
+function isAgentIdentity(identity) {
+  return identity === AGENT_IDENTITY;
+}
+
+function getBirthYearLabelKey(identity) {
+  return isAgentIdentity(identity) ? 'fields.victimBirthYear' : 'fields.birthYear';
+}
+
+function getSexLabelKey(identity) {
+  return isAgentIdentity(identity) ? 'fields.victimSex' : 'fields.sex';
+}
 
 function getFormRuleDefinitions(now = new Date()) {
   const currentYear = now.getUTCFullYear();
@@ -24,7 +48,7 @@ function getFormRuleDefinitions(now = new Date()) {
     birthDay: { labelKey: 'fields.birthDay', required: true, min: 1, max: 31 },
     identity: { labelKey: 'fields.identity', required: true },
     sex: { labelKey: 'fields.sex', required: true },
-    sexOther: { labelKey: 'fields.sexOther', maxLength: 10 },
+    sexOther: { labelKey: 'fields.sexOther', maxLength: 30 },
     provinceCode: { labelKey: 'fields.provinceCode', required: true },
     cityCode: { labelKey: 'fields.cityCode', required: true },
     countyCode: { labelKey: 'fields.countyCode', required: false },
@@ -68,13 +92,30 @@ function getLocalizedSexOptions(t) {
   }));
 }
 
+function getLocalizedOtherSexTypeOptions(t) {
+  return otherSexTypeOptions.map((option) => ({
+    value: option.value,
+    label: t(option.labelKey)
+  }));
+}
+
 module.exports = {
+  AGENT_IDENTITY,
+  CUSTOM_OTHER_SEX_OPTION,
+  OTHER_SEX_OPTION,
+  SELF_IDENTITY,
   allowedIdentities,
+  allowedOtherSexTypes,
   allowedSexes,
+  getBirthYearLabelKey,
   getFormRuleDefinitions,
   getLocalizedFormRules,
   getLocalizedIdentityOptions,
+  getLocalizedOtherSexTypeOptions,
   getLocalizedSexOptions,
+  getSexLabelKey,
   identityOptions,
+  isAgentIdentity,
+  otherSexTypeOptions,
   sexOptions
 };

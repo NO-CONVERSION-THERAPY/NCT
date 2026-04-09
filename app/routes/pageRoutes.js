@@ -2,7 +2,13 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const { getAreaOptions } = require('../../config/areaSelector');
-const { getLocalizedFormRules, getLocalizedIdentityOptions, getLocalizedSexOptions } = require('../../config/formConfig');
+const { getClientProvinceMetadata } = require('../../config/provinceMetadata');
+const {
+  getLocalizedFormRules,
+  getLocalizedIdentityOptions,
+  getLocalizedOtherSexTypeOptions,
+  getLocalizedSexOptions
+} = require('../../config/formConfig');
 const { renderBlogArticleHtml, translateBlogListEntries } = require('../services/blogTranslationService');
 const { loadFriends } = require('../services/friendsService');
 const { issueFormProtectionToken } = require('../services/formProtectionService');
@@ -161,6 +167,7 @@ function createPageRoutes({
       formProtectionToken: issueFormProtectionToken({ secret: formProtectionSecret }),
       formRules: getLocalizedFormRules(t),
       identityOptions: getLocalizedIdentityOptions(t),
+      otherSexTypeOptions: getLocalizedOtherSexTypeOptions(t),
       pageRobots: sensitiveRobotsPolicy,
       sexOptions: getLocalizedSexOptions(t)
     });
@@ -171,7 +178,8 @@ function createPageRoutes({
     res.render('map', {
       title: req.t('pageTitles.map', { title }),
       apiUrl,
-      QTag: req.query.inputType || ''
+      QTag: req.query.inputType || '',
+      provinceMetadata: getClientProvinceMetadata()
     });
   });
 
