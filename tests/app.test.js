@@ -334,6 +334,10 @@ function responseBodyMatch(body, pattern) {
   return match;
 }
 
+function countMatches(body, pattern) {
+  return (String(body || '').match(pattern) || []).length;
+}
+
 function buildValidSubmissionBody(overrides = {}) {
   const basePayload = {
     identity: '受害者本人',
@@ -463,6 +467,21 @@ test('map page renders the record container and lazy-load sentinel', async () =>
   assert.match(response.body, /cdn\.jsdelivr\.net\/npm\/chart\.js/);
   assert.match(response.body, /sha256-p4NxAoJBhIIN\+hmNHrzRCf9tD\/miZyoHS5obTRR9BMY=/);
   assert.match(response.body, /sha256-20nQCchB9co0qIjJZRGuk2\/Z9VM\+kNiyxNV1lvTlZBo=/);
+});
+
+test('shared head pages render a single html and head root', async () => {
+  const app = loadApp({ DEBUG_MOD: 'false' });
+  const articleId = encodeURIComponent('關於心種子教育違法辦學的控告');
+  const routes = ['/aboutus', '/blog', '/map', `/port/${articleId}`];
+
+  for (const route of routes) {
+    const response = await requestPath(app, route);
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(countMatches(response.body, /<html\b/gi), 1, `${route} should render one <html>`);
+    assert.equal(countMatches(response.body, /<head\b/gi), 1, `${route} should render one <head>`);
+    assert.equal(countMatches(response.body, /<body\b/gi), 1, `${route} should render one <body>`);
+  }
 });
 
 test('map page ignores ASSET_VERSION=0 and falls back to a real cache-busting version', async () => {
@@ -1193,6 +1212,15 @@ test('blog article shows bilingual content when english language is selected', a
     restoreFetch();
     clearProjectModules();
   }
+});
+
+test('blog article page no longer hardcodes a 70 percent card width', async () => {
+  const app = loadApp({ DEBUG_MOD: 'false' });
+  const articleId = encodeURIComponent('關於心種子教育違法辦學的控告');
+  const response = await requestPath(app, `/port/${articleId}`);
+
+  assert.equal(response.statusCode, 200);
+  assert.doesNotMatch(response.body, /style="width:\s*70%;?"/);
 });
 
 test('map data service preserves valid upstream sync timestamps', () => {

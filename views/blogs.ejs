@@ -1,13 +1,12 @@
 <%- include('partials/head') %>
-<html>
 <body>
     <div>
         <a href="/blog" class="page-back-link">← <%= t('navigation.allArticles') %></a>
     </div>
 
-    <div class="div blog-article-card" style="width: 70%;">
+    <div class="div blog-article-card">
         <% reports.forEach(report => { %>
-        <main class="main blog-article">
+        <main class="blog-article">
                 <div class="port" id="markdown">
                     <%- report.html %>
                 </div>

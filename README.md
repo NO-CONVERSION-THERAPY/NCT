@@ -27,6 +27,7 @@
 - [仓库结构](#仓库结构)
 - [快速开始](#快速开始)
 - [常用命令](#常用命令)
+- [Playwright 页面冒烟截图巡检](#playwright-页面冒烟截图巡检)
 - [关键配置](#关键配置)
 - [保护敏感配置](#保护敏感配置)
 - [表单隐私说明](#表单隐私说明)
@@ -192,10 +193,33 @@ npm run dev:workers
 | `npm start` | 以 Node.js 启动应用 |
 | `npm run dev:workers` | 使用 Wrangler 本地调试 Workers 版本 |
 | `npm test` | 运行测试 |
+| `npm run playwright:install` | 安装 Playwright 所需的 Chromium 浏览器 |
+| `npm run test:smoke` | 运行 Playwright 页面冒烟截图巡检，输出到 `test-results/playwright-smoke/` |
 | `npm run build` | 做一次启动级别的构建检查 |
 | `npm run secure-config -- bootstrap-env --env-file ".env"` | 从现有环境文件读取明文值，回写密文，并删除对应的明文变量 |
 | `npm run secure-config -- bootstrap --form-id "..." --google-script-url "..."` | 一次性生成 `FORM_PROTECTION_SECRET` 与对应密文 |
 | `npm run secure-config -- generate-secret` | 生成高强度 `FORM_PROTECTION_SECRET` |
+
+## Playwright 页面冒烟截图巡检
+
+这套巡检会启动本地应用并用 Playwright 打开关键页面，检查页面级 `console.error`、未捕获异常、同源请求失败，并为每个目标页输出整页截图。
+
+- 覆盖首页、表单页、地图页、关于页、隐私页、博客列表、博客详情、调试页、提交错误页、维护页，以及表单预览、确认、成功流程。
+- 截图与清单文件会输出到 `test-results/playwright-smoke/`，其中 `manifest.json` 会记录页面路径、HTTP 状态码和对应截图文件。
+- 巡检会对地图接口注入稳定的测试数据，避免公开数据波动导致截图不稳定。
+- 这套用例默认不包含在 `npm test` 里，因为它依赖浏览器二进制和系统运行库，更适合作为单独的冒烟巡检步骤。
+
+首次运行：
+
+```bash
+npm run playwright:install
+npm run test:smoke
+```
+
+环境说明：
+
+- 如果 Linux 环境缺少 Playwright 运行 Chromium 的系统库，浏览器可能无法启动，例如报错缺少 `libglib-2.0.so.0`。
+- 遇到这类问题时，请先补齐系统依赖，或改在带有 Playwright 运行库的容器、CI 镜像中执行。
 
 ## 关键配置
 

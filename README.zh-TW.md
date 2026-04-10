@@ -27,6 +27,7 @@
 - [倉庫結構](#倉庫結構)
 - [快速開始](#快速開始)
 - [常用命令](#常用命令)
+- [Playwright 頁面冒煙截圖巡檢](#playwright-頁面冒煙截圖巡檢)
 - [關鍵配置](#關鍵配置)
 - [保護敏感配置](#保護敏感配置)
 - [表單隱私說明](#表單隱私說明)
@@ -192,10 +193,33 @@ npm run dev:workers
 | `npm start` | 以 Node.js 啟動應用 |
 | `npm run dev:workers` | 使用 Wrangler 本地調試 Workers 版本 |
 | `npm test` | 執行測試 |
+| `npm run playwright:install` | 安裝 Playwright 所需的 Chromium 瀏覽器 |
+| `npm run test:smoke` | 執行 Playwright 頁面冒煙截圖巡檢，輸出到 `test-results/playwright-smoke/` |
 | `npm run build` | 做一次啟動級別的構建檢查 |
 | `npm run secure-config -- bootstrap-env --env-file ".env"` | 從現有環境檔讀取明文值，回寫密文，並刪除對應的明文變數 |
 | `npm run secure-config -- bootstrap --form-id "..." --google-script-url "..."` | 一次性生成 `FORM_PROTECTION_SECRET` 與對應密文 |
 | `npm run secure-config -- generate-secret` | 生成高強度 `FORM_PROTECTION_SECRET` |
+
+## Playwright 頁面冒煙截圖巡檢
+
+這套巡檢會啟動本地應用並用 Playwright 打開關鍵頁面，檢查頁面級 `console.error`、未捕捉例外、同源請求失敗，並為每個目標頁輸出整頁截圖。
+
+- 覆蓋首頁、表單頁、地圖頁、關於頁、隱私頁、部落格列表、部落格詳情、調試頁、提交錯誤頁、維護頁，以及表單預覽、確認、成功流程。
+- 截圖與清單檔會輸出到 `test-results/playwright-smoke/`，其中 `manifest.json` 會記錄頁面路徑、HTTP 狀態碼與對應截圖檔。
+- 巡檢會對地圖介面注入穩定的測試資料，避免公開資料波動導致截圖不穩定。
+- 這套用例預設不包含在 `npm test` 中，因為它依賴瀏覽器二進位與系統執行庫，更適合作為單獨的冒煙巡檢步驟。
+
+首次執行：
+
+```bash
+npm run playwright:install
+npm run test:smoke
+```
+
+環境說明：
+
+- 如果 Linux 環境缺少 Playwright 執行 Chromium 所需的系統函式庫，瀏覽器可能無法啟動，例如報錯缺少 `libglib-2.0.so.0`。
+- 遇到這類問題時，請先補齊系統依賴，或改在帶有 Playwright 執行庫的容器、CI 映像中執行。
 
 ## 關鍵配置
 

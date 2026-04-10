@@ -536,7 +536,6 @@ function createPageRoutes({
 
     res.render('blog', {
       SavedTags: localizedEntriesWithMeta,//數據（已篩選）
-      QTag,//現在的query
       AllTags: localizedTags,//所有tag的數據
       apiUrl,
       title: req.t('pageTitles.blog', { title })
@@ -553,24 +552,15 @@ function createPageRoutes({
     }
     
     const content = fs.readFileSync(mdPath, 'utf-8');
-    const [language, time, ...titleArr] = mdName.split('.');
-    const title_B = mdName;
     const rawHtml = await renderBlogArticleHtml(content, {
       targetLanguage: req.lang
     });
     
-    const report = {
-      language, 
-      time, 
-      title,
-      html: rawHtml
-    };
-    
     res.render('blogs', {
       apiUrl,
-      reports: [report],
+      reports: [{ html: rawHtml }],
       title: req.t('pageTitles.article', {
-        articleTitle: title_B,
+        articleTitle: mdName,
         title
       })
     });

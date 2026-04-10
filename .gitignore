@@ -5,3 +5,4 @@ node_modules/
 .env*
 .dev.vars*
 !.dev.vars.example
+test-results/

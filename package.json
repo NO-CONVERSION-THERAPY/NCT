@@ -7,6 +7,8 @@
     "build": "node -e \"require('./server'); console.log('Build sanity check passed.')\"",
     "start": "node app/server.js",
     "test": "node --test",
+    "test:smoke": "node --test tests/playwright.smoke.js",
+    "playwright:install": "npx playwright install chromium",
     "secure-config": "node scripts/secure-config.js",
     "dev:workers": "npx wrangler dev",
     "deploy:workers": "npx wrangler deploy --keep-vars"
@@ -33,5 +35,8 @@
     "proxy-agent": "^8.0.1",
     "rate-limit-redis": "^4.3.1",
     "redis": "^5.11.0"
+  },
+  "devDependencies": {
+    "playwright": "^1.59.1"
   }
 }

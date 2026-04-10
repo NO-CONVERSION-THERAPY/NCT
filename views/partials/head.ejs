@@ -28,4 +28,7 @@
         window.ASSET_VERSION = "<%= assetVersion || '' %>";
         window.I18N = <%- JSON.stringify(clientMessages) %>;
     </script>
+    <% if (typeof extraHeadPartial !== 'undefined' && extraHeadPartial) { %>
+    <%- include(extraHeadPartial) %>
+    <% } %>
 </head>

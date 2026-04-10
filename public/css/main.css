@@ -1803,7 +1803,9 @@ body.map-record-detail-open {
 }
 
 .blog-article-card {
+    width: min(1120px, calc(100vw - 2.5rem));
     max-width: 1400px;
+    box-sizing: border-box;
 }
 
 .blog-article {
@@ -2531,6 +2533,10 @@ hr {
 @media (max-width: 980px) {
     .blog-filter-bar,
     .blog-list {
+        width: min(100%, calc(100vw - 1.5rem));
+    }
+
+    .blog-article-card {
         width: min(100%, calc(100vw - 1.5rem));
     }
 

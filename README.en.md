@@ -27,6 +27,7 @@
 - [Repository Layout](#repository-layout)
 - [Quick Start](#quick-start)
 - [Common Commands](#common-commands)
+- [Playwright Page Smoke Screenshots](#playwright-page-smoke-screenshots)
 - [Key Configuration](#key-configuration)
 - [Protecting Sensitive Configuration](#protecting-sensitive-configuration)
 - [Form Privacy Notice](#form-privacy-notice)
@@ -192,10 +193,33 @@ Recommendations:
 | `npm start` | Start the app in Node.js mode |
 | `npm run dev:workers` | Run the Workers version locally with Wrangler |
 | `npm test` | Run the test suite |
+| `npm run playwright:install` | Install the Chromium browser required by Playwright |
+| `npm run test:smoke` | Run the Playwright smoke screenshot suite and write artifacts to `test-results/playwright-smoke/` |
 | `npm run build` | Run a startup-level build sanity check |
 | `npm run secure-config -- bootstrap-env --env-file ".env"` | Read plain-text values from an env file, write encrypted replacements back, and remove the plain-text keys |
 | `npm run secure-config -- bootstrap --form-id "..." --google-script-url "..."` | Generate `FORM_PROTECTION_SECRET` and encrypted values in one step |
 | `npm run secure-config -- generate-secret` | Generate a strong `FORM_PROTECTION_SECRET` |
+
+## Playwright Page Smoke Screenshots
+
+This suite starts a local app instance and uses Playwright to open critical routes, assert against page-level `console.error`, uncaught exceptions, and failed same-origin requests, then saves a full-page screenshot for each target page.
+
+- Coverage includes the home page, form page, map page, about page, privacy page, blog list, blog article, debug page, standalone submit error page, maintenance page, plus the form preview, confirmation, and success flows.
+- Screenshots and a manifest are written to `test-results/playwright-smoke/`. The `manifest.json` file records the route, HTTP status, and screenshot path for each capture.
+- The suite injects stable mock data for the map API so screenshots do not drift with live public data changes.
+- This suite is intentionally excluded from `npm test` because it depends on browser binaries and host runtime libraries, so it is better run as a dedicated smoke-check step.
+
+First run:
+
+```bash
+npm run playwright:install
+npm run test:smoke
+```
+
+Environment notes:
+
+- If your Linux environment is missing system libraries required to launch Playwright Chromium, the browser may fail to start, for example with a missing `libglib-2.0.so.0` error.
+- When that happens, install the required system packages first, or run the suite inside a container or CI image that already includes Playwright runtime dependencies.
 
 ## Key Configuration
 
