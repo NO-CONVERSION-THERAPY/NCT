@@ -8,7 +8,7 @@
         <meta name="robots" content="<%= pageRobots %>">
         <% } %>
         <title><%= t('common.siteName') %></title>
-        <link rel="stylesheet" href="/css/index.css">
+        <link rel="stylesheet" href="/css/index.css?v=<%= assetVersion %>">
         <script>
             window.APP_LANG = "<%= lang %>";
             window.I18N = <%- JSON.stringify(clientMessages) %>;
