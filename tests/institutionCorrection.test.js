@@ -79,13 +79,14 @@ async function postUrlEncodedForm(app, requestPathname, fields) {
   }
 }
 
-test('map page includes institution correction CTA in the API card', async () => {
+test('map page includes institution correction CTA in map record cards', async () => {
   const app = loadApp({ DEBUG_MOD: 'false' });
   const response = await requestPath(app, '/map');
 
   assert.equal(response.statusCode, 200);
   assert.match(response.body, /机构信息补充\/修正/);
-  assert.match(response.body, /href="\/map\/correction\?lang=zh-CN"/);
+  assert.match(response.body, /data-record-summary-correction-link="true"/);
+  assert.match(response.body, /correctionSearchParams\.set\('school_name', schoolName\)/);
 
   clearProjectModules();
 });
@@ -106,6 +107,16 @@ test('institution correction page renders a dedicated form and keeps only school
   assert.doesNotMatch(response.body, /<input[^>]+name="contact_information"[^>]*required/);
   assert.equal(response.headers['x-robots-tag'], 'noindex, nofollow, noarchive, nosnippet');
   assert.match(response.headers['cache-control'], /no-store/);
+
+  clearProjectModules();
+});
+
+test('institution correction page pre-fills school name from the map record card link', async () => {
+  const app = loadApp({ DEBUG_MOD: 'false' });
+  const response = await requestPath(app, '/map/correction?lang=zh-CN&school_name=%E6%99%A8%E6%98%9F%E6%88%90%E9%95%BF%E4%B8%AD%E5%BF%83');
+
+  assert.equal(response.statusCode, 200);
+  assert.match(response.body, /<input[^>]+name="school_name"[^>]+value="晨星成长中心"[^>]*required/);
 
   clearProjectModules();
 });

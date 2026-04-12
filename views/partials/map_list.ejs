@@ -339,6 +339,19 @@
         });
     }
 
+    function buildInstitutionCorrectionUrl(record) {
+        const correctionSearchParams = new URLSearchParams();
+        const schoolName = String(record && record.name || '').trim();
+
+        correctionSearchParams.set('lang', window.APP_LANG || 'zh-CN');
+
+        if (schoolName) {
+            correctionSearchParams.set('school_name', schoolName);
+        }
+
+        return `/map/correction?${correctionSearchParams.toString()}`;
+    }
+
     function buildRecordBodyHtml(item, currentPage, totalPages, groupIndex, { showPagination = totalPages > 1 } = {}) {
         const regionText = [String(item.city || item.prov || '').trim(), String(item.county || '').trim()]
             .filter(Boolean)
@@ -393,6 +406,7 @@
                     <h3 class="map-record-summary__title">${escapeHtml(summaryRecord.name)}</h3>
                 </div>
                 <div class="map-record-summary__actions">
+                    <a href="#" class="map-record-summary__detail-button" data-record-summary-correction-link="true">${escapeHtml(i18n.map.api.correctionButton)}</a>
                     <a href="#" class="map-record-summary__detail-button" data-record-summary-detail-link="true">${escapeHtml(i18n.map.list.formDetail.button)}</a>
                     <small class="map-record-summary__tag">
                         <span class="map-record-summary__count">${escapeHtml(i18n.map.list.reportCounts.self)} ${schoolReportStats.selfCount}</span>
@@ -404,6 +418,7 @@
         `;
 
         const bodyContainer = card.querySelector('.map-record-body');
+        const summaryCorrectionLink = card.querySelector('[data-record-summary-correction-link]');
         const summaryDetailLink = card.querySelector('[data-record-summary-detail-link]');
 
         function stopRecordPaginationPropagation(event) {
@@ -438,7 +453,7 @@
             });
         }
 
-        function bindSummaryDetailLink(link) {
+        function bindSummaryActionLink(link) {
             if (!link) {
                 return;
             }
@@ -463,6 +478,10 @@
 
             if (summaryDetailLink) {
                 summaryDetailLink.href = buildRecordDetailPageUrl(currentRecord, index);
+            }
+
+            if (summaryCorrectionLink) {
+                summaryCorrectionLink.href = buildInstitutionCorrectionUrl(currentRecord);
             }
 
             const prevButton = bodyContainer.querySelector('[data-page-action="prev"]');
@@ -491,7 +510,8 @@
             }
         }
 
-        bindSummaryDetailLink(summaryDetailLink);
+        bindSummaryActionLink(summaryCorrectionLink);
+        bindSummaryActionLink(summaryDetailLink);
         renderRecordPage();
 
         if (shouldTranslateDetails) {

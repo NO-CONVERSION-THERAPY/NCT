@@ -430,6 +430,10 @@ function createPageRoutes({
   router.get('/map/correction', pageReadLimiter, (req, res) => {
     const t = req.t;
     const { provinces } = getAreaOptions(req.lang);
+    const institutionCorrectionRules = getLocalizedInstitutionCorrectionRules(t);
+    const initialSchoolName = typeof req.query.school_name === 'string'
+      ? req.query.school_name.trim().slice(0, institutionCorrectionRules.schoolName.maxLength)
+      : '';
 
     applySensitivePageHeaders(res);
     res.render('institution_correction', {
@@ -437,7 +441,8 @@ function createPageRoutes({
       apiUrl,
       areaOptions: { provinces },
       formProtectionToken: issueFormProtectionToken({ secret: formProtectionSecret }),
-      institutionCorrectionRules: getLocalizedInstitutionCorrectionRules(t),
+      initialSchoolName,
+      institutionCorrectionRules,
       pageRobots: sensitiveRobotsPolicy
     });
   });

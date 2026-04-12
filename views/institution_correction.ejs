@@ -27,6 +27,7 @@
                     placeholder="<%= t('institutionCorrection.placeholders.schoolName') %>"
                     maxlength="<%= institutionCorrectionRules.schoolName.maxLength %>"
                     autocomplete="off"
+                    value="<%= initialSchoolName || '' %>"
                     required
                 >
                 <div id="school_results_list" class="autocomplete-results" hidden></div>
