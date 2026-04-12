@@ -367,13 +367,50 @@ npm test
 | `D1_BINDING_NAME` | Text | 僅當 D1 綁定名不是 `DB` / `NCT_DB` 時填寫 |
 | `RATE_LIMIT_REDIS_URL` | Secret | 多實例部署建議配置 |
 
-### 5. D1 表名與常用查詢
+### 5. 在 Cloudflare 網頁手動綁定 D1
+
+在 Cloudflare 網頁上為專案綁定 D1 資料庫，可以依照以下步驟操作：
+
+1. 登入 Cloudflare Dashboard，進入 `Workers & Pages`
+2. 選擇目前專案
+3. 打開 `Settings -> Bindings`
+4. 點擊 `Add binding`
+5. 選擇 `D1 database`
+6. 在 `Variable name` 中填入綁定名，建議直接使用 `DB`
+7. 在資料庫下拉選單中選擇你建立好的 D1 資料庫
+8. 點擊 `Add binding`
+9. 重新部署專案，讓新綁定真正生效
+
+補充：
+
+- 如果你沒有使用預設綁定名 `DB` 或 `NCT_DB`，記得同時設定環境變數 `D1_BINDING_NAME`
+- 如果專案區分 Preview / Production 環境，也要分別檢查對應環境的 D1 綁定是否完整
+
+重要：
+
+- Cloudflare 官方文件支援透過 Dashboard 手動新增 D1 綁定，也支援把綁定寫進 Wrangler 設定檔
+- 這個專案更建議把 `d1_databases` 寫進 [`wrangler.jsonc`](./wrangler.jsonc)，把設定檔視為部署時的單一來源
+- 如果你只在 Cloudflare 網頁上手動綁定，而不把相同的 D1 綁定設定寫回 `wrangler.jsonc`，那麼後續專案重新部署、重建 Worker / Pages 專案、切換環境時，都應該把「重新回到 Dashboard 手動檢查並補綁 D1」當成預設步驟
+- 換句話說：為了避免每次重新部署 Workers 後都還要手動補綁 D1，建議最終還是把下面這段設定寫回 `wrangler.jsonc`
+
+```jsonc
+"d1_databases": [
+  {
+    "binding": "DB",
+    "database_name": "nct",
+    "database_id": "<your-d1-database-id>",
+    "migrations_dir": "migrations"
+  }
+]
+```
+
+### 6. D1 表名與常用查詢
 
 目前專案寫入 D1 時主要會使用這兩張表：
 
 | 路徑 / 功能 | D1 表名 | 說明 |
 | --- | --- | --- |
-| `/form` | `form_submissions` | 匿名表單主提交通道寫入的記錄 |
+| `/form` | `form_submissions` | 匿名表單主提交流程寫入的記錄 |
 | `/map/correction` | `institution_correction_submissions` | 機構資訊補充 / 修正表單寫入的記錄 |
 
 先查看目前帳號下有哪些 D1 資料庫：
@@ -382,7 +419,7 @@ npm test
 npx wrangler d1 list
 ```
 
-查詢遠端正式資料庫時，建議先把資料庫名稱代入下面命令中的 `<your-database-name>`，並保留 `--remote`：
+查詢遠端正式資料庫時，建議先將資料庫名稱代入下面命令中的 `<your-database-name>`，並保留 `--remote`：
 
 ```bash
 npx wrangler d1 execute <your-database-name> --remote --command="SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;"
@@ -438,14 +475,14 @@ ORDER BY created_at DESC;
 - 想看某張表的欄位結構，可執行 `PRAGMA table_info(form_submissions);` 或 `PRAGMA table_info(institution_correction_submissions);`
 - `--remote` 查的是 Cloudflare 上的真實資料庫，`--local` 查的是本地 Wrangler 開發資料庫
 
-### 6. 綁定正式網域
+### 7. 綁定正式網域
 
 如果你不想使用 `*.workers.dev`，可以在 `Settings -> Domains & Routes` 中新增自訂網域。綁定完成後，記得同步更新：
 
 - `SITE_URL`
 - `PUBLIC_MAP_DATA_URL`
 
-### 7. 上線後檢查清單
+### 8. 上線後檢查清單
 
 正式部署完成後，建議至少手動驗證以下路徑：
 
@@ -459,14 +496,14 @@ ORDER BY created_at DESC;
 
 如果 `FORM_DRY_RUN="false"`，也要實測表單是否能成功送到目前配置的提交目標（Google Form、D1，或兩者）。
 
-### 8. Workers 上的已知差異
+### 9. Workers 上的已知差異
 
 - 模板、部落格 Markdown 與 JSON 檔案會從 Workers 的 `/bundle` 讀取。
 - 翻譯服務已移除 `curl` 子程序兜底，現在固定使用 Google Cloud Translation API。
 - `sitemap.xml` 在 Workers 上會優先使用文章中繼資料的 `CreationDate` 作為 `lastmod`。
 - 若未配置共享 Redis，限流會退回單實例記憶體模式，跨實例一致性較弱。
 
-### 9. 常見問題
+### 10. 常見問題
 
 **Q: 本地 `npm start` 和 Workers 版本會衝突嗎？**<br>
 A: 不會。兩者只是不同的本地運行入口。

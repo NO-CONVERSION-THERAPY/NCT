@@ -367,14 +367,51 @@ Deployment recommendations:
 | `D1_BINDING_NAME` | Text | Only set this when the D1 binding name is not `DB` / `NCT_DB` |
 | `RATE_LIMIT_REDIS_URL` | Secret | Recommended for multi-instance deployments |
 
-### 5. D1 Tables and Common Queries
+### 5. Bind D1 in the Cloudflare Dashboard
+
+If you want to bind a D1 database directly in the Cloudflare web UI, follow these steps:
+
+1. Log in to the Cloudflare Dashboard and open `Workers & Pages`
+2. Select this project
+3. Open `Settings -> Bindings`
+4. Click `Add binding`
+5. Choose `D1 database`
+6. Enter the binding name in `Variable name`; using `DB` is recommended
+7. Select your D1 database from the dropdown
+8. Click `Add binding`
+9. Redeploy the project so the new binding takes effect
+
+Additional notes:
+
+- If you do not use the default binding name `DB` or `NCT_DB`, also set the `D1_BINDING_NAME` environment variable
+- If your project uses separate Preview / Production environments, check the D1 binding for each environment
+
+Important:
+
+- Cloudflare's official docs support both adding a D1 binding in the Dashboard and defining it in the Wrangler configuration file
+- This project recommends writing `d1_databases` into [`wrangler.jsonc`](./wrangler.jsonc) and treating the config file as the deployment source of truth
+- If you only bind D1 manually in the Cloudflare Dashboard and do not write the same binding back to `wrangler.jsonc`, then after future redeploys, project rebuilds, Worker / Pages recreation, or environment changes, you should treat “go back to the Dashboard and manually verify / re-bind D1” as a default step
+- In other words: to avoid having to manually re-bind D1 after each Workers redeploy, it is best to eventually write the configuration back into `wrangler.jsonc`
+
+```jsonc
+"d1_databases": [
+  {
+    "binding": "DB",
+    "database_name": "nct",
+    "database_id": "<your-d1-database-id>",
+    "migrations_dir": "migrations"
+  }
+]
+```
+
+### 6. D1 Tables and Common Queries
 
 This project mainly writes to these two D1 tables:
 
 | Route / feature | D1 table name | Description |
 | --- | --- | --- |
-| `/form` | `form_submissions` | Records written by the main anonymous submission form |
-| `/map/correction` | `institution_correction_submissions` | Records written by the institution correction form |
+| `/form` | `form_submissions` | Records written by the main anonymous form submission flow |
+| `/map/correction` | `institution_correction_submissions` | Records written by the institution information supplement / correction form |
 
 First, list the D1 databases available in your account:
 
@@ -382,7 +419,7 @@ First, list the D1 databases available in your account:
 npx wrangler d1 list
 ```
 
-To query the remote production database, replace `<your-database-name>` below and keep `--remote`:
+To query the remote production database, replace `<your-database-name>` in the command below and keep `--remote`:
 
 ```bash
 npx wrangler d1 execute <your-database-name> --remote --command="SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;"
@@ -438,14 +475,14 @@ Notes:
 - To inspect table columns, run `PRAGMA table_info(form_submissions);` or `PRAGMA table_info(institution_correction_submissions);`
 - `--remote` queries the real Cloudflare database, while `--local` queries the local Wrangler development database
 
-### 6. Bind the production domain
+### 7. Bind the production domain
 
 If you do not want to use `*.workers.dev`, add a custom domain in `Settings -> Domains & Routes`. After binding the domain, remember to update:
 
 - `SITE_URL`
 - `PUBLIC_MAP_DATA_URL`
 
-### 7. Post-launch checklist
+### 8. Post-launch checklist
 
 After production deployment, it is a good idea to manually verify at least these paths:
 
@@ -459,14 +496,14 @@ After production deployment, it is a good idea to manually verify at least these
 
 If `FORM_DRY_RUN="false"`, also perform a real submission test to confirm that data reaches the currently configured target backend(s) successfully.
 
-### 8. Known differences on Workers
+### 9. Known differences on Workers
 
 - Templates, blog Markdown, and JSON files are read from the Workers `/bundle`.
 - The translation service no longer uses a `curl` subprocess fallback and now always uses Google Cloud Translation API directly.
 - On Workers, `sitemap.xml` prefers each article's `CreationDate` metadata as `lastmod`.
 - If shared Redis is not configured, rate limiting falls back to single-instance memory mode, so cross-instance consistency is weaker.
 
-### 9. FAQ
+### 10. FAQ
 
 **Q: Will local `npm start` conflict with the Workers version?**<br>
 A: No. They are simply two different local entry points.

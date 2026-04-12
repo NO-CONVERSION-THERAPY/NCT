@@ -367,7 +367,44 @@ npm test
 | `D1_BINDING_NAME` | Text | 仅当 D1 绑定名不是 `DB` / `NCT_DB` 时填写 |
 | `RATE_LIMIT_REDIS_URL` | Secret | 多实例部署建议配置 |
 
-### 5. D1 表名与常用查询
+### 5. 在 Cloudflare 网页手动绑定 D1
+
+在 Cloudflare 网页上为项目绑定 D1 数据库需要按下面步骤操作：
+
+1. 登录 Cloudflare Dashboard，进入 `Workers & Pages`
+2. 选择当前项目
+3. 打开 `Settings -> Bindings`
+4. 点击 `Add binding`
+5. 选择 `D1 database`
+6. 在 `Variable name` 中填写绑定名，推荐直接使用 `DB`
+7. 在数据库下拉框中选择你创建好的 D1 数据库
+8. 点击 `Add binding`
+9. 重新部署项目，让新绑定真正生效
+
+补充：
+
+- 如果你没有使用默认绑定名 `DB` 或 `NCT_DB`，记得同时配置环境变量 `D1_BINDING_NAME`
+- 如果项目区分 Preview / Production 环境，也要分别检查对应环境的 D1 绑定是否齐全
+
+重要：
+
+- Cloudflare 官方文档支持通过 Dashboard 手动添加 D1 绑定，也支持把绑定写进 Wrangler 配置文件
+- 这个项目更推荐把 `d1_databases` 写进 [`wrangler.jsonc`](./wrangler.jsonc)，把配置文件当作部署时的单一来源
+- 如果你只在 Cloudflare 网页上手动绑定，而不把同样的 D1 绑定配置写回 `wrangler.jsonc`，那么后续项目重新部署、重建 Worker / Pages 项目、切换环境时，都应该把“重新到 Dashboard 手动检查并补绑 D1”当作默认步骤
+- 换句话说：为了避免每次重新部署 Workers 后都还要手动补绑 D1，推荐最终还是把下面这段配置写回 `wrangler.jsonc`
+
+```jsonc
+"d1_databases": [
+  {
+    "binding": "DB",
+    "database_name": "nct",
+    "database_id": "<your-d1-database-id>",
+    "migrations_dir": "migrations"
+  }
+]
+```
+
+### 6. D1 表名与常用查询
 
 当前项目写入 D1 时主要会使用这两张表：
 
@@ -376,35 +413,7 @@ npm test
 | `/form` | `form_submissions` | 匿名表单主提交通道写入的记录 |
 | `/map/correction` | `institution_correction_submissions` | 机构信息补充 / 修正表单写入的记录 |
 
-先查当前账号下有哪些 D1 数据库：
-
-```bash
-npx wrangler d1 list
-```
-
-查询远程生产库时，推荐先把数据库名代入下面命令里的 `<your-database-name>`，并保留 `--remote`：
-
-```bash
-npx wrangler d1 execute <your-database-name> --remote --command="SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;"
-```
-
-常用查询示例：
-
-```bash
-# 查看 /form 最新 20 条
-npx wrangler d1 execute <your-database-name> --remote --command="SELECT id, school_name, contact_information, created_at FROM form_submissions ORDER BY created_at DESC LIMIT 20;"
-
-# 查看 /map/correction 最新 20 条
-npx wrangler d1 execute <your-database-name> --remote --command="SELECT id, school_name, correction_content, status, created_at FROM institution_correction_submissions ORDER BY created_at DESC LIMIT 20;"
-
-# 按机构名称搜索 /form
-npx wrangler d1 execute <your-database-name> --remote --command="SELECT id, school_name, province_name, city_name, created_at FROM form_submissions WHERE school_name LIKE '%机构名%' ORDER BY created_at DESC;"
-
-# 按机构名称搜索 /map/correction
-npx wrangler d1 execute <your-database-name> --remote --command="SELECT id, school_name, correction_content, status, created_at FROM institution_correction_submissions WHERE school_name LIKE '%机构名%' ORDER BY created_at DESC;"
-```
-
-如果只想记 SQL，也可以直接使用下面这些语句：
+常用 SQL 查询语句：
 
 ```sql
 SELECT name
@@ -433,19 +442,14 @@ WHERE school_name LIKE '%机构名%'
 ORDER BY created_at DESC;
 ```
 
-补充：
-
-- 想看某张表的字段结构，可执行 `PRAGMA table_info(form_submissions);` 或 `PRAGMA table_info(institution_correction_submissions);`
-- `--remote` 查的是 Cloudflare 上的真实数据库，`--local` 查的是本地 Wrangler 开发数据库
-
-### 6. 绑定正式域名
+### 7. 绑定正式域名
 
 如果你不想使用 `*.workers.dev`，可以在 `Settings -> Domains & Routes` 中新增自定义域名。绑定完成后，记得同步更新：
 
 - `SITE_URL`
 - `PUBLIC_MAP_DATA_URL`
 
-### 7. 上线后检查清单
+### 8. 上线后检查清单
 
 正式部署完成后，建议至少手动验证以下路径：
 
@@ -459,14 +463,14 @@ ORDER BY created_at DESC;
 
 如果 `FORM_DRY_RUN="false"`，也要实测表单是否能成功送到当前配置的提交目标（Google Form、D1，或两者）。
 
-### 8. Workers 上的已知差异
+### 9. Workers 上的已知差异
 
 - 模板、博客 Markdown 与 JSON 文件会从 Workers 的 `/bundle` 读取。
 - 翻译服务已移除 `curl` 子进程兜底，现在固定使用 Google Cloud Translation API。
 - `sitemap.xml` 在 Workers 上会优先使用文章元数据中的 `CreationDate` 作为 `lastmod`。
 - 若未配置共享 Redis，限流会退回单实例内存模式，跨实例一致性较弱。
 
-### 9. 常见问题
+### 10. 常见问题
 
 **Q: 本地 `npm start` 和 Workers 版本会冲突吗？**<br>
 A: 不会。两者只是不同的本地运行入口。
