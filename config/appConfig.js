@@ -73,7 +73,7 @@ function resolveFormSubmitTarget(value) {
     return normalizedValue;
   }
 
-  return 'google';
+  return 'both';
 }
 
 function resolveFormProtectionSecret({ explicitSecret, formId, siteUrl, title }) {
@@ -162,10 +162,7 @@ const formProtectionSecret = resolveFormProtectionSecret({
   title
 });
 const rateLimitRedisUrl = String(process.env.RATE_LIMIT_REDIS_URL || process.env.REDIS_URL || '').trim();
-const googleCloudTranslationApiKey = readTrimmedEnvValue(
-  process.env.GOOGLE_CLOUD_TRANSLATION_API_KEY,
-  process.env.GOOGLE_TRANSLATE_API_KEY
-);
+const googleCloudTranslationApiKey = readTrimmedEnvValue(process.env.GOOGLE_CLOUD_TRANSLATION_API_KEY);
 const translationProviderTimeoutMs = parsePositiveInteger(process.env.TRANSLATION_PROVIDER_TIMEOUT_MS, 10000);
 const translationProviderConfigured = Boolean(googleCloudTranslationApiKey);
 

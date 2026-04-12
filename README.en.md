@@ -231,8 +231,8 @@ This README only lists the most important variables. For the full set, see [`.en
 | --- | --- |
 | `SITE_URL` | Canonical site URL for sitemap, robots, and canonical outputs |
 | `FORM_DRY_RUN` | When `true`, submissions are previewed but not sent to the configured live target |
-| `FORM_SUBMIT_TARGET` | `/form` submission target: `google`, `d1`, or `both`; defaults to `google` |
-| `FORM_PROTECTION_SECRET` | Core secret for form protection and encrypted config decryption |
+| `FORM_SUBMIT_TARGET` | `/form` submission target: `google`, `d1`, or `both`; defaults to `both` |
+| `FORM_PROTECTION_SECRET` | Core secret for form protection and encrypted config decryption; when empty, the app derives one automatically |
 | `FORM_ID` / `FORM_ID_ENCRYPTED` | Google Form ID, choose one |
 | `GOOGLE_SCRIPT_URL` / `GOOGLE_SCRIPT_URL_ENCRYPTED` | Private Apps Script data source, choose one |
 | `PUBLIC_MAP_DATA_URL` | Public fallback source when the private source is slow or unavailable |
@@ -240,18 +240,18 @@ This README only lists the most important variables. For the full set, see [`.en
 | `MAINTENANCE_MODE` | Global maintenance switch |
 | `MAINTENANCE_NOTICE` | Maintenance page notice text |
 | `D1_BINDING_NAME` | Only needed when the D1 binding name is not the default `NCT_DB` / `DB` |
-| `RATE_LIMIT_REDIS_URL` | Shared rate-limit storage recommended for multi-instance deployments |
+| `RATE_LIMIT_REDIS_URL` | Shared rate-limit storage recommended for multi-instance deployments; defaults to empty |
 
 Configuration rules:
 
 - Choose only one of `FORM_ID` and `FORM_ID_ENCRYPTED`.
 - Choose only one of `GOOGLE_SCRIPT_URL` and `GOOGLE_SCRIPT_URL_ENCRYPTED`.
-- `FORM_SUBMIT_TARGET` accepts `google`, `d1`, and `both`, with `google` as the default.
+- `FORM_SUBMIT_TARGET` accepts `google`, `d1`, and `both`, with `both` as the default.
 - If `FORM_SUBMIT_TARGET` includes `google`, you still need `FORM_ID` or `FORM_ID_ENCRYPTED`.
 - If `FORM_SUBMIT_TARGET` includes `d1`, make sure your Worker has a D1 binding; if the binding name is not `NCT_DB` or `DB`, also set `D1_BINDING_NAME`.
-- If you use encrypted values, `FORM_PROTECTION_SECRET` must be explicitly configured.
+- If you use `FORM_ID_ENCRYPTED` or `GOOGLE_SCRIPT_URL_ENCRYPTED`, `FORM_PROTECTION_SECRET` must still be explicitly configured.
 - In production Workers deployments, keep sensitive values in Cloudflare Variables and Secrets instead of committing them or placing them in `wrangler.jsonc`.
-- If you do not use encrypted config yet, at minimum store `FORM_ID`, `GOOGLE_SCRIPT_URL`, and `FORM_PROTECTION_SECRET` as Secrets.
+- If you do not use encrypted config yet, at minimum store `FORM_ID` and `GOOGLE_SCRIPT_URL` as Secrets; `FORM_PROTECTION_SECRET` can be set explicitly or left empty so the app derives one automatically.
 - If you do use encrypted config, keep `FORM_PROTECTION_SECRET` as a Secret, while `FORM_ID_ENCRYPTED` and `GOOGLE_SCRIPT_URL_ENCRYPTED` can be Text or Secret.
 
 ## Protecting Sensitive Configuration
@@ -348,15 +348,15 @@ Additional notes:
 
 Deployment recommendations:
 
-- The simplest correct setup is to store `FORM_ID`, `GOOGLE_SCRIPT_URL`, and `FORM_PROTECTION_SECRET` as Secrets.
+- The simplest correct setup is to store `FORM_ID` and `GOOGLE_SCRIPT_URL` as Secrets; `FORM_PROTECTION_SECRET` can be stored as a Secret explicitly or left empty so the app derives one automatically.
 - If you want to further reduce the risk of accidental plain-text exposure, switch to `FORM_ID_ENCRYPTED` and `GOOGLE_SCRIPT_URL_ENCRYPTED`, while keeping `FORM_PROTECTION_SECRET` as a Secret.
 
 | Name | Type | Description |
 | --- | --- | --- |
 | `SITE_URL` | Text | Production site URL |
 | `FORM_DRY_RUN` | Text | Usually `false` in production |
-| `FORM_SUBMIT_TARGET` | Text | `/form` submission target: `google`, `d1`, or `both` |
-| `FORM_PROTECTION_SECRET` | Secret | Required for form protection and encrypted config decryption |
+| `FORM_SUBMIT_TARGET` | Text | `/form` submission target: `google`, `d1`, or `both`; defaults to `both` |
+| `FORM_PROTECTION_SECRET` | Secret | Used for form protection and encrypted config decryption; when empty, the app derives one automatically |
 | `FORM_ID` | Secret | Plain Google Form ID for the simple setup |
 | `FORM_ID_ENCRYPTED` | Text or Secret | Encrypted Google Form ID, leave `FORM_ID` empty when using this |
 | `GOOGLE_SCRIPT_URL` | Secret | Plain private data source URL for the simple setup |
@@ -366,7 +366,7 @@ Deployment recommendations:
 | `MAINTENANCE_MODE` | Text | Set to `true` when you need full-site maintenance mode |
 | `MAINTENANCE_NOTICE` | Text | Maintenance announcement text |
 | `D1_BINDING_NAME` | Text | Only set this when the D1 binding name is not `NCT_DB` / `DB` |
-| `RATE_LIMIT_REDIS_URL` | Secret | Recommended for multi-instance deployments |
+| `RATE_LIMIT_REDIS_URL` | Secret | Recommended for multi-instance deployments; defaults to empty |
 
 ### 5. Deploy D1
 

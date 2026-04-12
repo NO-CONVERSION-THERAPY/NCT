@@ -126,3 +126,30 @@ test('app config no longer ships with a built-in default FORM_ID', () => {
   assert.equal(config.formId, '');
   assert.equal(config.googleFormUrl, '');
 });
+
+test('app config defaults FORM_SUBMIT_TARGET to both and derives a form protection secret when omitted', () => {
+  const config = loadAppConfig({
+    FORM_SUBMIT_TARGET: '',
+    FORM_PROTECTION_SECRET: '',
+    FORM_ID: '',
+    FORM_ID_ENCRYPTED: '',
+    GOOGLE_SCRIPT_URL: '',
+    GOOGLE_SCRIPT_URL_ENCRYPTED: '',
+    RATE_LIMIT_REDIS_URL: ''
+  });
+
+  assert.equal(config.formSubmitTarget, 'both');
+  assert.equal(config.formProtectionSecretConfigured, false);
+  assert.match(config.formProtectionSecret, /^[0-9a-f]{64}$/);
+  assert.equal(config.rateLimitRedisUrl, '');
+});
+
+test('app config only reads GOOGLE_CLOUD_TRANSLATION_API_KEY for translation provider config', () => {
+  const config = loadAppConfig({
+    GOOGLE_CLOUD_TRANSLATION_API_KEY: '',
+    GOOGLE_TRANSLATE_API_KEY: 'legacy-translation-key'
+  });
+
+  assert.equal(config.googleCloudTranslationApiKey, '');
+  assert.equal(config.translationProviderConfigured, false);
+});
