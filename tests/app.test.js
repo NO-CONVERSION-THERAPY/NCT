@@ -67,9 +67,30 @@ function loadAppWithPatchedFormService(envOverrides = {}, patchFormService) {
 
   clearProjectModules();
   const formService = require(path.join(projectRoot, 'app/services/formService'));
-  const restorePatch = typeof patchFormService === 'function'
-    ? patchFormService(formService)
-    : null;
+  const restoreCallbacks = [];
+
+  if (typeof patchFormService === 'function') {
+    const restorePatch = patchFormService(formService);
+    if (typeof restorePatch === 'function') {
+      restoreCallbacks.push(restorePatch);
+    }
+  } else if (patchFormService && typeof patchFormService === 'object') {
+    if (typeof patchFormService.formService === 'function') {
+      const restoreFormServicePatch = patchFormService.formService(formService);
+      if (typeof restoreFormServicePatch === 'function') {
+        restoreCallbacks.push(restoreFormServicePatch);
+      }
+    }
+
+    if (typeof patchFormService.formSubmissionStorageService === 'function') {
+      const formSubmissionStorageService = require(path.join(projectRoot, 'app/services/formSubmissionStorageService'));
+      const restoreStoragePatch = patchFormService.formSubmissionStorageService(formSubmissionStorageService);
+      if (typeof restoreStoragePatch === 'function') {
+        restoreCallbacks.push(restoreStoragePatch);
+      }
+    }
+  }
+
   const app = require(path.join(projectRoot, 'app/server'));
 
   Object.entries(originalValues).forEach(([key, value]) => {
@@ -84,9 +105,7 @@ function loadAppWithPatchedFormService(envOverrides = {}, patchFormService) {
   return {
     app,
     restore() {
-      if (typeof restorePatch === 'function') {
-        restorePatch();
-      }
+      restoreCallbacks.reverse().forEach((restorePatch) => restorePatch());
     }
   };
 }
@@ -2010,6 +2029,160 @@ test('submit confirm route sends the reviewed payload to Google Form in normal m
   }
 });
 
+test('submit confirm route saves to D1 only when FORM_SUBMIT_TARGET=d1', { concurrency: false }, async () => {
+  clearProjectModules();
+  const capturedD1Values = [];
+  let googleSubmitCallCount = 0;
+
+  try {
+    const { issueFormProtectionToken } = require(path.join(projectRoot, 'app/services/formProtectionService'));
+    const { app, restore } = loadAppWithPatchedFormService({
+      DEBUG_MOD: 'false',
+      FORM_DRY_RUN: 'false',
+      FORM_PROTECTION_SECRET: 'test-form-protection-secret',
+      FORM_PROTECTION_MIN_FILL_MS: '3000',
+      FORM_SUBMIT_TARGET: 'd1'
+    }, {
+      formService(formService) {
+        const originalSubmitToGoogleForm = formService.submitToGoogleForm;
+        formService.submitToGoogleForm = async () => {
+          googleSubmitCallCount += 1;
+        };
+
+        return () => {
+          formService.submitToGoogleForm = originalSubmitToGoogleForm;
+        };
+      },
+      formSubmissionStorageService(storageService) {
+        const originalSaveFormSubmission = storageService.saveFormSubmission;
+        storageService.saveFormSubmission = async ({ values }) => {
+          capturedD1Values.push(values);
+          return {
+            bindingName: 'DB',
+            submissionId: 'test-d1-submission-id'
+          };
+        };
+
+        return () => {
+          storageService.saveFormSubmission = originalSaveFormSubmission;
+        };
+      }
+    });
+
+    const reviewResponse = await requestApp(app, {
+      path: '/submit',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: buildValidSubmissionBody({
+        form_token: issueFormProtectionToken({
+          secret: 'test-form-protection-secret',
+          issuedAt: Date.now() - 5000
+        })
+      })
+    });
+
+    const confirmationTokenMatch = responseBodyMatch(reviewResponse.body, /name="confirmation_token" value="([^"]+)"/);
+    const confirmationPayloadMatch = responseBodyMatch(reviewResponse.body, /<textarea name="confirmation_payload" hidden>([^<]*)<\/textarea>/);
+    const confirmResponse = await requestApp(app, {
+      path: '/submit/confirm',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: new URLSearchParams({
+        confirmation_token: confirmationTokenMatch[1],
+        confirmation_payload: confirmationPayloadMatch[1]
+      }).toString()
+    });
+
+    assert.equal(confirmResponse.statusCode, 200);
+    assert.equal(googleSubmitCallCount, 0);
+    assert.equal(capturedD1Values.length, 1);
+    assert.equal(capturedD1Values[0].schoolName, '测试机构');
+    assert.equal(capturedD1Values[0].provinceCode, '110000');
+    assert.equal(capturedD1Values[0].cityCode, '110101');
+    restore();
+  } finally {
+    clearProjectModules();
+  }
+});
+
+test('submit confirm route returns success when D1 succeeds but Google Form fails in both mode', { concurrency: false }, async () => {
+  clearProjectModules();
+
+  try {
+    const { issueFormProtectionToken } = require(path.join(projectRoot, 'app/services/formProtectionService'));
+    const { app, restore } = loadAppWithPatchedFormService({
+      DEBUG_MOD: 'true',
+      FORM_DRY_RUN: 'false',
+      FORM_PROTECTION_SECRET: 'test-form-protection-secret',
+      FORM_PROTECTION_MIN_FILL_MS: '3000',
+      FORM_SUBMIT_TARGET: 'both'
+    }, {
+      formService(formService) {
+        const originalSubmitToGoogleForm = formService.submitToGoogleForm;
+        formService.submitToGoogleForm = async () => {
+          throw new Error('google form unavailable');
+        };
+
+        return () => {
+          formService.submitToGoogleForm = originalSubmitToGoogleForm;
+        };
+      },
+      formSubmissionStorageService(storageService) {
+        const originalSaveFormSubmission = storageService.saveFormSubmission;
+        storageService.saveFormSubmission = async () => ({
+          bindingName: 'DB',
+          submissionId: 'test-d1-submission-id'
+        });
+
+        return () => {
+          storageService.saveFormSubmission = originalSaveFormSubmission;
+        };
+      }
+    });
+
+    const reviewResponse = await requestApp(app, {
+      path: '/submit',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: buildValidSubmissionBody({
+        form_token: issueFormProtectionToken({
+          secret: 'test-form-protection-secret',
+          issuedAt: Date.now() - 5000
+        })
+      })
+    });
+
+    const confirmationTokenMatch = responseBodyMatch(reviewResponse.body, /name="confirmation_token" value="([^"]+)"/);
+    const confirmationPayloadMatch = responseBodyMatch(reviewResponse.body, /<textarea name="confirmation_payload" hidden>([^<]*)<\/textarea>/);
+    const confirmResponse = await requestApp(app, {
+      path: '/submit/confirm',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: new URLSearchParams({
+        confirmation_token: confirmationTokenMatch[1],
+        confirmation_payload: confirmationPayloadMatch[1]
+      }).toString()
+    });
+
+    assert.equal(confirmResponse.statusCode, 200);
+    assert.match(confirmResponse.body, /调试提交结果/);
+    assert.match(confirmResponse.body, /D1 数据库/);
+    assert.match(confirmResponse.body, /Google Form/);
+    assert.match(confirmResponse.body, /google form unavailable/);
+    restore();
+  } finally {
+    clearProjectModules();
+  }
+});
+
 test('submit confirm route renders a prefilled Google Form fallback link when upstream submission fails', { concurrency: false }, async () => {
   clearProjectModules();
 
@@ -2064,6 +2237,80 @@ test('submit confirm route renders a prefilled Google Form fallback link when up
     assert.match(confirmResponse.body, /viewform\?usp=pp_url&amp;entry\.842223433=/);
     assert.match(confirmResponse.body, /entry\.5034928=%E6%B5%8B%E8%AF%95%E6%9C%BA%E6%9E%84/);
     assert.match(confirmResponse.body, /entry\.500021634=%E5%8F%97%E5%AE%B3%E8%80%85%E6%9C%AC%E4%BA%BA/);
+    restore();
+  } finally {
+    clearProjectModules();
+  }
+});
+
+test('submit confirm route renders failure page when Google Form and D1 both fail in both mode', { concurrency: false }, async () => {
+  clearProjectModules();
+
+  try {
+    const { issueFormProtectionToken } = require(path.join(projectRoot, 'app/services/formProtectionService'));
+    const { app, restore } = loadAppWithPatchedFormService({
+      DEBUG_MOD: 'true',
+      FORM_DRY_RUN: 'false',
+      FORM_PROTECTION_SECRET: 'test-form-protection-secret',
+      FORM_PROTECTION_MIN_FILL_MS: '3000',
+      FORM_SUBMIT_TARGET: 'both'
+    }, {
+      formService(formService) {
+        const originalSubmitToGoogleForm = formService.submitToGoogleForm;
+        formService.submitToGoogleForm = async () => {
+          throw new Error('google form unavailable');
+        };
+
+        return () => {
+          formService.submitToGoogleForm = originalSubmitToGoogleForm;
+        };
+      },
+      formSubmissionStorageService(storageService) {
+        const originalSaveFormSubmission = storageService.saveFormSubmission;
+        storageService.saveFormSubmission = async () => {
+          throw new Error('d1 unavailable');
+        };
+
+        return () => {
+          storageService.saveFormSubmission = originalSaveFormSubmission;
+        };
+      }
+    });
+    const reviewResponse = await requestApp(app, {
+      path: '/submit',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: buildValidSubmissionBody({
+        form_token: issueFormProtectionToken({
+          secret: 'test-form-protection-secret',
+          issuedAt: Date.now() - 5000
+        })
+      })
+    });
+
+    const confirmationTokenMatch = responseBodyMatch(reviewResponse.body, /name="confirmation_token" value="([^"]+)"/);
+    const confirmationPayloadMatch = responseBodyMatch(reviewResponse.body, /<textarea name="confirmation_payload" hidden>([^<]*)<\/textarea>/);
+    const confirmResponse = await requestApp(app, {
+      path: '/submit/confirm',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: new URLSearchParams({
+        confirmation_token: confirmationTokenMatch[1],
+        confirmation_payload: confirmationPayloadMatch[1]
+      }).toString()
+    });
+
+    assert.equal(confirmResponse.statusCode, 500);
+    assert.match(confirmResponse.body, /调试提交结果/);
+    assert.match(confirmResponse.body, /Google Form/);
+    assert.match(confirmResponse.body, /D1 数据库/);
+    assert.match(confirmResponse.body, /google form unavailable/);
+    assert.match(confirmResponse.body, /d1 unavailable/);
+    assert.match(confirmResponse.body, /viewform\?usp=pp_url&amp;entry\.842223433=/);
     restore();
   } finally {
     clearProjectModules();
@@ -2168,6 +2415,226 @@ test('submit route rejects invalid victim birth year values for agent submission
 
   assert.equal(response.statusCode, 400);
   assert.match(response.body, /有效的受害者出生年份/);
+  clearProjectModules();
+});
+
+test('form submission storage initializes schema and writes to a D1 binding', async () => {
+  clearProjectModules();
+
+  const runtimeContext = require(path.join(projectRoot, 'app/services/runtimeContext'));
+  const { saveFormSubmission } = require(path.join(projectRoot, 'app/services/formSubmissionStorageService'));
+  const { validateSubmission } = require(path.join(projectRoot, 'app/services/formService'));
+  const { translate } = require(path.join(projectRoot, 'config/i18n'));
+
+  const calls = [];
+  const fakeDb = {
+    async exec(sql) {
+      calls.push({ type: 'exec', sql });
+      return { count: 0 };
+    },
+    prepare(sql) {
+      calls.push({ type: 'prepare', sql });
+
+      if (/PRAGMA table_info/i.test(sql)) {
+        return {
+          async all() {
+            return {
+              results: [
+                'id',
+                'identity',
+                'birth_year',
+                'approximate_age',
+                'sex',
+                'province_code',
+                'province_name',
+                'city_code',
+                'city_name',
+                'county_code',
+                'county_name',
+                'school_name',
+                'school_address',
+                'date_start',
+                'date_end',
+                'experience',
+                'headmaster_name',
+                'contact_information',
+                'scandal',
+                'other_notes',
+                'lang',
+                'source_path',
+                'client_ip_hash',
+                'user_agent',
+                'created_at'
+              ].map((name) => ({ name }))
+            };
+          }
+        };
+      }
+
+      return {
+        bind(...params) {
+          calls.push({ type: 'bind', params });
+
+          return {
+            async run() {
+              calls.push({ type: 'run' });
+              return { success: true };
+            }
+          };
+        }
+      };
+    }
+  };
+
+  const { errors, values } = validateSubmission({
+    identity: '受害者本人',
+    birth_year: '2008',
+    sex: '男性',
+    sex_other_type: '',
+    sex_other: '',
+    provinceCode: '110000',
+    cityCode: '110101',
+    countyCode: '',
+    school_name: '测试机构',
+    school_address: '北京市东城区测试路 1 号',
+    date_start: '2024-01-01',
+    date_end: '',
+    experience: '经历',
+    headmaster_name: '王老师',
+    contact_information: 'test@example.com',
+    scandal: '丑闻',
+    other: '其他'
+  }, (key, variables) => translate('zh-CN', key, variables));
+
+  assert.deepEqual(errors, []);
+
+  await runtimeContext.runWithRuntimeContext({ env: { DB: fakeDb } }, async () => {
+    const result = await saveFormSubmission({
+      req: {
+        lang: 'zh-CN',
+        originalUrl: '/submit/confirm',
+        path: '/submit/confirm',
+        headers: {
+          'user-agent': 'node-test'
+        },
+        get(name) {
+          return this.headers[String(name || '').toLowerCase()] || '';
+        },
+        ip: '203.0.113.10'
+      },
+      values
+    });
+
+    assert.equal(result.bindingName, 'DB');
+    assert.match(result.submissionId, /^[0-9a-f-]{36}$/i);
+  });
+
+  assert.match(calls[0].sql, /CREATE TABLE IF NOT EXISTS form_submissions/);
+  const bindCall = calls.find((entry) => entry.type === 'bind');
+  assert.ok(bindCall);
+  assert.equal(bindCall.params[1], '受害者本人');
+  assert.equal(bindCall.params[2], '2008');
+  assert.equal(bindCall.params[5], '110000');
+  assert.equal(bindCall.params[11], '测试机构');
+  assert.equal(bindCall.params[17], 'test@example.com');
+  assert.equal(bindCall.params[19], '其他');
+  assert.equal(bindCall.params[20], 'zh-CN');
+  assert.equal(bindCall.params[21], '/submit/confirm');
+  assert.match(bindCall.params[22], /^[0-9a-f]{64}$/i);
+  assert.equal(bindCall.params[23], 'node-test');
+
+  clearProjectModules();
+});
+
+test('form submission storage backfills missing D1 columns before insert', async () => {
+  clearProjectModules();
+
+  const runtimeContext = require(path.join(projectRoot, 'app/services/runtimeContext'));
+  const { saveFormSubmission } = require(path.join(projectRoot, 'app/services/formSubmissionStorageService'));
+  const { validateSubmission } = require(path.join(projectRoot, 'app/services/formService'));
+  const { translate } = require(path.join(projectRoot, 'config/i18n'));
+
+  const columns = new Set([
+    'id',
+    'identity',
+    'birth_year',
+    'sex',
+    'school_name'
+  ]);
+  const calls = [];
+  const fakeDb = {
+    async exec(sql) {
+      calls.push({ type: 'exec', sql });
+      const alterMatch = String(sql).match(/ADD COLUMN\s+([a-z_]+)/i);
+      if (alterMatch) {
+        columns.add(alterMatch[1]);
+      }
+      return { count: 0 };
+    },
+    prepare(sql) {
+      calls.push({ type: 'prepare', sql });
+
+      if (/PRAGMA table_info/i.test(sql)) {
+        return {
+          async all() {
+            return {
+              results: Array.from(columns).map((name) => ({ name }))
+            };
+          }
+        };
+      }
+
+      return {
+        bind(...params) {
+          calls.push({ type: 'bind', params });
+
+          return {
+            async run() {
+              calls.push({ type: 'run' });
+              return { success: true };
+            }
+          };
+        }
+      };
+    }
+  };
+
+  const { errors, values } = validateSubmission({
+    identity: '受害者本人',
+    birth_year: '2008',
+    sex: '男性',
+    provinceCode: '110000',
+    cityCode: '110101',
+    school_name: '旧表机构',
+    date_start: '2024-01-01',
+    contact_information: 'test@example.com'
+  }, (key, variables) => translate('zh-CN', key, variables));
+
+  assert.deepEqual(errors, []);
+
+  await runtimeContext.runWithRuntimeContext({ env: { DB: fakeDb } }, async () => {
+    await saveFormSubmission({
+      req: {
+        lang: 'zh-CN',
+        originalUrl: '/submit/confirm',
+        path: '/submit/confirm',
+        headers: {
+          'user-agent': 'node-test'
+        },
+        get(name) {
+          return this.headers[String(name || '').toLowerCase()] || '';
+        },
+        ip: '203.0.113.11'
+      },
+      values
+    });
+  });
+
+  assert.ok(calls.some((entry) => entry.type === 'prepare' && /PRAGMA table_info/i.test(entry.sql)));
+  assert.ok(calls.some((entry) => entry.type === 'exec' && /ADD COLUMN province_code/i.test(entry.sql)));
+  assert.ok(calls.some((entry) => entry.type === 'exec' && /ADD COLUMN created_at/i.test(entry.sql)));
+  assert.ok(calls.some((entry) => entry.type === 'run'));
+
   clearProjectModules();
 });
 

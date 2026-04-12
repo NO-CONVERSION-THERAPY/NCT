@@ -32,6 +32,20 @@
                 margin-top: 1rem;
                 color: var(--text-muted);
             }
+            .submit-error-debug {
+                margin-top: 1rem;
+                padding: 1rem;
+                border: 1px solid var(--panel-border);
+                border-radius: 14px;
+                background: var(--surface-soft);
+            }
+            .submit-error-debug h2 {
+                margin-top: 0;
+            }
+            .submit-error-debug__errors {
+                margin-top: 0.75rem;
+                color: var(--text-muted);
+            }
             .submit-error-actions {
                 display: flex;
                 flex-wrap: wrap;
@@ -86,6 +100,22 @@
             <div class="submit-error-card">
                 <h1><%= t('submitError.title') %></h1>
                 <p><%= t('submitError.intro') %></p>
+
+                <% if (showSubmissionDiagnostics && submissionDiagnostics) { %>
+                    <div class="submit-error-debug">
+                        <h2><%= t('submitStatus.title') %></h2>
+                        <p><strong><%= t('submitStatus.mode') %></strong> <%= submissionDiagnostics.attemptedTargets.map((target) => target.label).join(' / ') %></p>
+                        <p><strong><%= t('submitStatus.successfulTargets') %></strong> <%= submissionDiagnostics.successfulTargets.length > 0 ? submissionDiagnostics.successfulTargets.map((target) => target.label).join(' / ') : t('submitStatus.none') %></p>
+                        <p><strong><%= t('submitStatus.failedTargets') %></strong> <%= submissionDiagnostics.failedTargets.length > 0 ? submissionDiagnostics.failedTargets.map((target) => target.label).join(' / ') : t('submitStatus.none') %></p>
+                        <% if (submissionDiagnostics.failedTargets.length > 0) { %>
+                            <div class="submit-error-debug__errors">
+                                <% submissionDiagnostics.failedTargets.forEach((target) => { %>
+                                    <p><strong><%= target.label %></strong> <%= t('submitStatus.error') %><%= target.error %></p>
+                                <% }) %>
+                            </div>
+                        <% } %>
+                    </div>
+                <% } %>
 
                 <% if (fallbackUrl) { %>
                     <div class="submit-error-actions">

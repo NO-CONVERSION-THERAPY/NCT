@@ -13,6 +13,7 @@ const {
   submitToGoogleForm,
   validateSubmission
 } = require('../services/formService');
+const { saveFormSubmission } = require('../services/formSubmissionStorageService');
 const {
   issueFormConfirmationToken,
   validateFormConfirmation
@@ -20,13 +21,128 @@ const {
 const { validateFormProtection } = require('../services/formProtectionService');
 const { logAuditEvent } = require('../services/auditLogService');
 
-function encodeConfirmationPayload(encodedPayload) {
-  // 确认页用 base64url 包一层，避免 form-urlencoded 里再次出现特殊字符歧义。
-  return Buffer.from(String(encodedPayload || ''), 'utf8').toString('base64url');
+function encodeConfirmationPayload(confirmationState) {
+  return Buffer.from(JSON.stringify(confirmationState || {}), 'utf8').toString('base64url');
 }
 
 function decodeConfirmationPayload(payload) {
-  return Buffer.from(String(payload || '').trim(), 'base64url').toString('utf8');
+  const decodedPayload = Buffer.from(String(payload || '').trim(), 'base64url').toString('utf8');
+
+  try {
+    const parsedPayload = JSON.parse(decodedPayload);
+    if (parsedPayload && typeof parsedPayload === 'object' && typeof parsedPayload.encodedPayload === 'string') {
+      return {
+        encodedPayload: parsedPayload.encodedPayload,
+        submissionValues: parsedPayload.submissionValues && typeof parsedPayload.submissionValues === 'object'
+          ? parsedPayload.submissionValues
+          : null
+      };
+    }
+  } catch (_error) {
+    // 兼容旧确认页：旧版本只把 encoded payload 本身做了 base64url 包装。
+  }
+
+  return {
+    encodedPayload: decodedPayload,
+    submissionValues: null
+  };
+}
+
+function getSubmitTargets(formSubmitTarget) {
+  if (formSubmitTarget === 'both') {
+    return ['google', 'd1'];
+  }
+
+  if (formSubmitTarget === 'd1') {
+    return ['d1'];
+  }
+
+  return ['google'];
+}
+
+function shouldBuildGoogleFallbackUrl({ formSubmitTarget, googleFormUrl, encodedPayload }) {
+  return formSubmitTarget !== 'd1'
+    && Boolean(String(googleFormUrl || '').trim())
+    && Boolean(String(encodedPayload || '').trim());
+}
+
+function buildSubmissionDiagnostics({ req, resultsByTarget, successfulTargets = [] }) {
+  const targetLabels = {
+    d1: req.t('submitStatus.targets.d1'),
+    google: req.t('submitStatus.targets.google')
+  };
+  const attemptedTargetIds = Object.keys(resultsByTarget);
+
+  return {
+    attemptedTargets: attemptedTargetIds.map((target) => ({
+      id: target,
+      label: targetLabels[target] || target
+    })),
+    successfulTargets: successfulTargets.map((target) => ({
+      id: target,
+      label: targetLabels[target] || target
+    })),
+    failedTargets: attemptedTargetIds
+      .filter((target) => !successfulTargets.includes(target))
+      .map((target) => ({
+        id: target,
+        label: targetLabels[target] || target,
+        error: resultsByTarget[target]?.error || ''
+      }))
+  };
+}
+
+async function submitToConfiguredTargets({
+  encodedPayload,
+  formSubmitTarget,
+  googleFormUrl,
+  req,
+  submissionValues
+}) {
+  const targets = getSubmitTargets(formSubmitTarget);
+  const settledResults = await Promise.allSettled(targets.map(async (target) => {
+    if (target === 'google') {
+      await submitToGoogleForm(googleFormUrl, encodedPayload);
+      return {
+        target
+      };
+    }
+
+    if (!submissionValues) {
+      throw new Error('Missing validated submission values for D1 persistence.');
+    }
+
+    const storageResult = await saveFormSubmission({ req, values: submissionValues });
+    return {
+      target,
+      submissionId: storageResult.submissionId
+    };
+  }));
+  const resultsByTarget = Object.create(null);
+  const successfulTargets = [];
+
+  settledResults.forEach((result, index) => {
+    const target = targets[index];
+
+    if (result.status === 'fulfilled') {
+      successfulTargets.push(target);
+      resultsByTarget[target] = {
+        ok: true,
+        submissionId: result.value?.submissionId || ''
+      };
+      return;
+    }
+
+    resultsByTarget[target] = {
+      ok: false,
+      error: result.reason?.message || String(result.reason || 'Unknown submission error.')
+    };
+  });
+
+  return {
+    resultsByTarget,
+    successfulTargets
+  };
 }
 
 function redactGoogleFormUrl(googleFormUrl) {
@@ -45,21 +161,30 @@ function redactGoogleFormUrl(googleFormUrl) {
 
 function renderSubmitFailurePage({
   encodedPayload,
+  formSubmitTarget,
   googleFormUrl,
   req,
   res,
+  showSubmissionDiagnostics,
+  submissionDiagnostics,
   title
 }) {
   return res.status(500).render('submit_error', {
-    fallbackUrl: buildGoogleFormPrefillUrl(googleFormUrl, encodedPayload),
+    fallbackUrl: shouldBuildGoogleFallbackUrl({ formSubmitTarget, googleFormUrl, encodedPayload })
+      ? buildGoogleFormPrefillUrl(googleFormUrl, encodedPayload)
+      : '',
     pageRobots: sensitiveRobotsPolicy,
+    showSubmissionDiagnostics,
+    submissionDiagnostics,
     title: req.t('pageTitles.submitError', { title })
   });
 }
 
 // 表單提交流程：限流 -> 校验 -> 干跑预览或确认页 -> 最终提交 -> 审计日志。
 function createFormRoutes({
+  debugMod,
   formDryRun,
+  formSubmitTarget,
   formProtectionMaxAgeMs,
   formProtectionMinFillMs,
   formProtectionSecret,
@@ -69,6 +194,7 @@ function createFormRoutes({
   title
 }) {
   const router = express.Router();
+  const showSubmissionDiagnostics = debugMod === 'true';
   const submitLimiter = createSubmitRateLimiter({
     max: submitRateLimitMax,
     redisUrl: rateLimitRedisUrl,
@@ -146,7 +272,10 @@ function createFormRoutes({
         });
       }
 
-      const confirmationPayload = encodeConfirmationPayload(encodedPayload);
+      const confirmationPayload = encodeConfirmationPayload({
+        encodedPayload,
+        submissionValues: values
+      });
       // 生产模式下强制多一步确认，给用户最后一次核对机会，也阻止客户端改包直接提交。
       const confirmationToken = issueFormConfirmationToken({
         payload: confirmationPayload,
@@ -172,9 +301,21 @@ function createFormRoutes({
       console.error('Submission Error:', error.response ? error.response.data : error.message);
       return renderSubmitFailurePage({
         encodedPayload,
+        formSubmitTarget,
         googleFormUrl,
         req,
         res,
+        showSubmissionDiagnostics,
+        submissionDiagnostics: buildSubmissionDiagnostics({
+          req,
+          resultsByTarget: Object.fromEntries(
+            getSubmitTargets(formSubmitTarget).map((target) => [target, {
+              ok: false,
+              error: error.message
+            }])
+          ),
+          successfulTargets: []
+        }),
         title
       });
     }
@@ -204,15 +345,52 @@ function createFormRoutes({
     }
 
     let encodedPayload = '';
+    let submissionValues = null;
 
     try {
-      encodedPayload = decodeConfirmationPayload(confirmationPayload);
-      await submitToGoogleForm(googleFormUrl, encodedPayload);
+      const decodedConfirmationPayload = decodeConfirmationPayload(confirmationPayload);
+      encodedPayload = decodedConfirmationPayload.encodedPayload;
+      submissionValues = decodedConfirmationPayload.submissionValues;
+
+      const submissionResult = await submitToConfiguredTargets({
+        encodedPayload,
+        formSubmitTarget,
+        googleFormUrl,
+        req,
+        submissionValues
+      });
+      const submissionDiagnostics = buildSubmissionDiagnostics({
+        req,
+        resultsByTarget: submissionResult.resultsByTarget,
+        successfulTargets: submissionResult.successfulTargets
+      });
+
+      if (submissionResult.successfulTargets.length === 0) {
+        logAuditEvent(req, 'submit_failed', {
+          failedTargets: submissionDiagnostics.failedTargets.map((target) => target.id),
+          status: 500
+        });
+        return renderSubmitFailurePage({
+          encodedPayload,
+          formSubmitTarget,
+          googleFormUrl,
+          req,
+          res,
+          showSubmissionDiagnostics,
+          submissionDiagnostics,
+          title
+        });
+      }
+
       logAuditEvent(req, 'submit_succeeded', {
-        status: 200
+        failedTargets: submissionDiagnostics.failedTargets.map((target) => target.id),
+        status: 200,
+        successfulTargets: submissionDiagnostics.successfulTargets.map((target) => target.id)
       });
       return res.render('submit', {
         pageRobots: sensitiveRobotsPolicy,
+        showSubmissionDiagnostics,
+        submissionDiagnostics,
         title
       });
     } catch (error) {
@@ -223,9 +401,23 @@ function createFormRoutes({
       console.error('Submission Error:', error.response ? error.response.data : error.message);
       return renderSubmitFailurePage({
         encodedPayload,
+        formSubmitTarget,
         googleFormUrl,
         req,
         res,
+        showSubmissionDiagnostics,
+        submissionDiagnostics: buildSubmissionDiagnostics({
+        req,
+        resultsByTarget: {
+          ...Object.fromEntries(
+            getSubmitTargets(formSubmitTarget).map((target) => [target, {
+              ok: false,
+              error: error.message
+            }])
+          )
+        },
+          successfulTargets: []
+        }),
         title
       });
     }

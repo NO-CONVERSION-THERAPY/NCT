@@ -453,6 +453,19 @@ const messages = {
       backHome: '返回首页',
       petition: '抵制扭转机构签名会'
     },
+    submitStatus: {
+      title: '调试提交结果',
+      mode: '提交模式：',
+      successfulTargets: '成功目标：',
+      failedTargets: '失败目标：',
+      error: '错误：',
+      none: '无',
+      targets: {
+        both: 'Google Form + D1',
+        d1: 'D1 数据库',
+        google: 'Google Form'
+      }
+    },
     submitPreview: {
       title: '表单 Dry Run 预览',
       intro: '这次提交没有发送到 Google Form。下面是本次本地组装出的最终字段和值。',
@@ -578,6 +591,7 @@ const messages = {
         apiUrl: 'API 地址',
         debugMode: '调试模式',
         formDryRun: '表单干跑',
+        formSubmitTarget: '表单提交目标',
         maintenanceMode: '维护模式',
         maintenanceRetryAfter: '维护重试时间',
         trustProxy: 'Trust Proxy',
@@ -611,6 +625,11 @@ const messages = {
         limitWindow: '每 {minutes} 分钟 {count} 次',
         milliseconds: '{count} ms',
         seconds: '{count} s'
+      },
+      submitTargets: {
+        both: 'Google Form + D1',
+        d1: 'D1 数据库',
+        google: 'Google Form'
       },
       links: {
         submitErrorPreview: '查看提交失败页预览'
@@ -1058,6 +1077,19 @@ const messages = {
       backHome: '返回首頁',
       petition: '抵制扭轉機構簽名會'
     },
+    submitStatus: {
+      title: '調試提交結果',
+      mode: '提交模式：',
+      successfulTargets: '成功目標：',
+      failedTargets: '失敗目標：',
+      error: '錯誤：',
+      none: '無',
+      targets: {
+        both: 'Google Form + D1',
+        d1: 'D1 資料庫',
+        google: 'Google Form'
+      }
+    },
     submitPreview: {
       title: '表單乾跑預覽',
       intro: '這次提交沒有發送到 Google Form。下面是本次本地組裝出的最終欄位和值。',
@@ -1183,6 +1215,7 @@ const messages = {
         apiUrl: 'API 位址',
         debugMode: '調試模式',
         formDryRun: '表單 Dry Run',
+        formSubmitTarget: '表單提交目標',
         maintenanceMode: '維護模式',
         maintenanceRetryAfter: '維護重試時間',
         trustProxy: 'Trust Proxy',
@@ -1216,6 +1249,11 @@ const messages = {
         limitWindow: '每 {minutes} 分鐘 {count} 次',
         milliseconds: '{count} ms',
         seconds: '{count} s'
+      },
+      submitTargets: {
+        both: 'Google Form + D1',
+        d1: 'D1 資料庫',
+        google: 'Google Form'
       },
       links: {
         submitErrorPreview: '查看提交失敗頁預覽'
@@ -1663,6 +1701,19 @@ const messages = {
       backHome: 'Back to Home',
       petition: 'Anti-Conversion Institution Petition'
     },
+    submitStatus: {
+      title: 'Debug Submission Result',
+      mode: 'Submission Mode:',
+      successfulTargets: 'Successful Targets:',
+      failedTargets: 'Failed Targets:',
+      error: 'Error:',
+      none: 'None',
+      targets: {
+        both: 'Google Form + D1',
+        d1: 'D1 Database',
+        google: 'Google Form'
+      }
+    },
     submitPreview: {
       title: 'Dry Run Preview',
       intro: 'This submission was not sent to Google Form. Below is the final field set and value payload assembled locally.',
@@ -1788,6 +1839,7 @@ const messages = {
         apiUrl: 'API URL',
         debugMode: 'Debug Mode',
         formDryRun: 'Form Dry Run',
+        formSubmitTarget: 'Form Submission Target',
         maintenanceMode: 'Maintenance Mode',
         maintenanceRetryAfter: 'Maintenance Retry-After',
         trustProxy: 'Trust Proxy',
@@ -1821,6 +1873,11 @@ const messages = {
         limitWindow: '{count} per {minutes} min',
         milliseconds: '{count} ms',
         seconds: '{count} s'
+      },
+      submitTargets: {
+        both: 'Google Form + D1',
+        d1: 'D1 Database',
+        google: 'Google Form'
       },
       links: {
         submitErrorPreview: 'Open submission error preview'

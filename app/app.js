@@ -7,6 +7,7 @@ const {
   apiUrl,
   debugMod,
   formDryRun,
+  formSubmitTarget,
   formProtectionMaxAgeMs,
   formProtectionMinFillMs,
   formProtectionSecret,
@@ -123,6 +124,7 @@ app.use(createPageRoutes({
   apiUrl,
   debugMod,
   formDryRun,
+  formSubmitTarget,
   formProtectionMaxAgeMs,
   formProtectionMinFillMs,
   formProtectionSecret,
@@ -146,7 +148,9 @@ app.use(createPageRoutes({
   title
 }));
 app.use(createFormRoutes({
+  debugMod,
   formDryRun,
+  formSubmitTarget,
   formProtectionMaxAgeMs,
   formProtectionMinFillMs,
   formProtectionSecret,

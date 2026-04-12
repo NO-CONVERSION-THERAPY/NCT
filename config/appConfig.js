@@ -66,6 +66,16 @@ function parseBooleanEnv(value, fallback) {
   return fallback;
 }
 
+function resolveFormSubmitTarget(value) {
+  const normalizedValue = readTrimmedEnvValue(value).toLowerCase();
+
+  if (normalizedValue === 'd1' || normalizedValue === 'both' || normalizedValue === 'google') {
+    return normalizedValue;
+  }
+
+  return 'google';
+}
+
 function resolveFormProtectionSecret({ explicitSecret, formId, siteUrl, title }) {
   if (typeof explicitSecret === 'string' && explicitSecret.trim()) {
     return explicitSecret.trim();
@@ -114,6 +124,7 @@ const maintenanceNotice = readTrimmedEnvValue(process.env.MAINTENANCE_NOTICE);
 const maintenanceRetryAfterSeconds = parsePositiveInteger(process.env.MAINTENANCE_RETRY_AFTER_SECONDS, 1800);
 const title = process.env.TITLE || 'N·C·T';
 const formDryRun = parseBooleanEnv(process.env.FORM_DRY_RUN, true);
+const formSubmitTarget = resolveFormSubmitTarget(process.env.FORM_SUBMIT_TARGET || process.env.FORM_SUBMISSION_TARGET);
 const pageReadRateLimitMax = parsePositiveInteger(process.env.PAGE_READ_RATE_LIMIT_MAX, 180);
 const mapReadRateLimitMax = parsePositiveInteger(process.env.MAP_READ_RATE_LIMIT_MAX, 60);
 const submitRateLimitMax = parsePositiveInteger(process.env.SUBMIT_RATE_LIMIT_MAX, 5);
@@ -163,6 +174,7 @@ module.exports = {
   apiUrl,
   debugMod,
   formDryRun,
+  formSubmitTarget,
   formId,
   formProtectionMaxAgeMs,
   formProtectionMinFillMs,

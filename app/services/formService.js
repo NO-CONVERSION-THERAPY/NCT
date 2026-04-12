@@ -301,8 +301,11 @@ function validateSubmission(body, t) {
       birthMonth: birthMonthValue,
       birthDay: birthDayValue,
       // Google Form 当前只有一个地区字段，所以县区存在时与城市拼成一个字符串。
+      provinceCode: validatedLocation ? validatedLocation.provinceCode : '',
       province: validatedLocation ? validatedLocation.legacyProvinceName : '',
+      cityCode: validatedLocation ? validatedLocation.cityCode : '',
       city: validatedLocation ? validatedLocation.cityName : '',
+      countyCode: validatedCounty ? validatedCounty.countyCode : '',
       county: validatedCounty ? validatedCounty.countyName : '',
       schoolName,
       identity,

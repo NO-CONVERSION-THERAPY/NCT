@@ -188,6 +188,7 @@ function buildDebugSections({
   assetVersion,
   debugMod,
   formDryRun,
+  formSubmitTarget,
   formProtectionMaxAgeMs,
   formProtectionMinFillMs,
   formProtectionSecretConfigured,
@@ -250,6 +251,11 @@ function buildDebugSections({
           label: t('debug.labels.formDryRun'),
           value: formDryRun ? statusValue.enabled : statusValue.disabled,
           badgeTone: formDryRun ? 'positive' : 'neutral'
+        },
+        {
+          label: t('debug.labels.formSubmitTarget'),
+          value: t(`debug.submitTargets.${formSubmitTarget}`),
+          badgeTone: 'neutral'
         },
         {
           label: t('debug.labels.maintenanceMode'),
@@ -345,6 +351,7 @@ function createPageRoutes({
   apiUrl,
   debugMod,
   formDryRun,
+  formSubmitTarget,
   formProtectionMaxAgeMs,
   formProtectionMinFillMs,
   formProtectionSecret,
@@ -498,6 +505,7 @@ function createPageRoutes({
         assetVersion: req.app.locals.assetVersion,
         debugMod,
         formDryRun,
+        formSubmitTarget,
         formProtectionMaxAgeMs,
         formProtectionMinFillMs,
         formProtectionSecretConfigured,
@@ -539,6 +547,8 @@ function createPageRoutes({
     res.render('submit_error', {
       fallbackUrl: buildDebugSubmitErrorPreviewUrl(googleFormUrl),
       pageRobots: sensitiveRobotsPolicy,
+      showSubmissionDiagnostics: false,
+      submissionDiagnostics: null,
       title: req.t('pageTitles.submitError', { title })
     });
   });

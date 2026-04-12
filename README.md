@@ -229,6 +229,7 @@ README 只保留最常用配置；完整变量说明请查看 [`.env.example`](.
 | --- | --- |
 | `SITE_URL` | 站点正式网址，用于 sitemap、robots 与 canonical 输出 |
 | `FORM_DRY_RUN` | `true` 时只预览提交，不真正发往 Google Form |
+| `FORM_SUBMIT_TARGET` | `/form` 提交目标，可选 `google`、`d1`、`both`，默认 `google` |
 | `FORM_PROTECTION_SECRET` | 表单保护与密文解密的核心 secret，正式环境务必显式配置 |
 | `FORM_ID` / `FORM_ID_ENCRYPTED` | Google Form ID，二选一 |
 | `GOOGLE_SCRIPT_URL` / `GOOGLE_SCRIPT_URL_ENCRYPTED` | 私有 Apps Script 数据源，二选一 |
@@ -236,12 +237,16 @@ README 只保留最常用配置；完整变量说明请查看 [`.env.example`](.
 | `GOOGLE_CLOUD_TRANSLATION_API_KEY` | 启用翻译能力时必填 |
 | `MAINTENANCE_MODE` | 全站维护开关 |
 | `MAINTENANCE_NOTICE` | 维护页公告文字 |
+| `D1_BINDING_NAME` | 仅当 D1 绑定名不是默认的 `DB` / `NCT_DB` 时需要配置 |
 | `RATE_LIMIT_REDIS_URL` | 多实例部署时建议配置的共享限流存储 |
 
 配置原则：
 
 - `FORM_ID` 与 `FORM_ID_ENCRYPTED` 只选一个。
 - `GOOGLE_SCRIPT_URL` 与 `GOOGLE_SCRIPT_URL_ENCRYPTED` 只选一个。
+- `FORM_SUBMIT_TARGET` 支持 `google`、`d1`、`both`，默认值为 `google`。
+- 如果 `FORM_SUBMIT_TARGET` 包含 `google`，仍需配置 `FORM_ID` 或 `FORM_ID_ENCRYPTED`。
+- 如果 `FORM_SUBMIT_TARGET` 包含 `d1`，请确保 Workers 已连接 D1；若绑定名不是 `DB` 或 `NCT_DB`，再额外设置 `D1_BINDING_NAME`。
 - 使用密文配置时，必须显式配置 `FORM_PROTECTION_SECRET`。
 - Workers 正式部署时，敏感值请放到 Cloudflare `Variables and Secrets`，不要写进仓库或 `wrangler.jsonc`。
 - 如果暂时不使用密文配置，至少请把 `FORM_ID`、`GOOGLE_SCRIPT_URL` 与 `FORM_PROTECTION_SECRET` 都设为 Secret。
@@ -347,6 +352,7 @@ npm test
 | --- | --- | --- |
 | `SITE_URL` | Text | 正式站点网址 |
 | `FORM_DRY_RUN` | Text | 正式环境建议为 `false` |
+| `FORM_SUBMIT_TARGET` | Text | `/form` 提交目标：`google`、`d1` 或 `both` |
 | `FORM_PROTECTION_SECRET` | Secret | 表单保护与密文解密所需 |
 | `FORM_ID` | Secret | 明文 Google Form ID，简单方案推荐这样配置 |
 | `FORM_ID_ENCRYPTED` | Text 或 Secret | 加密后的 Google Form ID，使用时留空 `FORM_ID` |
@@ -356,6 +362,7 @@ npm test
 | `GOOGLE_CLOUD_TRANSLATION_API_KEY` | Secret | 只有启用翻译时才需要 |
 | `MAINTENANCE_MODE` | Text | 需要全站维护时设为 `true` |
 | `MAINTENANCE_NOTICE` | Text | 维护公告文字 |
+| `D1_BINDING_NAME` | Text | 仅当 D1 绑定名不是 `DB` / `NCT_DB` 时填写 |
 | `RATE_LIMIT_REDIS_URL` | Secret | 多实例部署建议配置 |
 
 ### 5. 绑定正式域名

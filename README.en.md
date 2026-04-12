@@ -229,6 +229,7 @@ This README only lists the most important variables. For the full set, see [`.en
 | --- | --- |
 | `SITE_URL` | Canonical site URL for sitemap, robots, and canonical outputs |
 | `FORM_DRY_RUN` | When `true`, submissions are previewed but not sent to Google Form |
+| `FORM_SUBMIT_TARGET` | `/form` submission target: `google`, `d1`, or `both`; defaults to `google` |
 | `FORM_PROTECTION_SECRET` | Core secret for form protection and encrypted config decryption |
 | `FORM_ID` / `FORM_ID_ENCRYPTED` | Google Form ID, choose one |
 | `GOOGLE_SCRIPT_URL` / `GOOGLE_SCRIPT_URL_ENCRYPTED` | Private Apps Script data source, choose one |
@@ -236,12 +237,16 @@ This README only lists the most important variables. For the full set, see [`.en
 | `GOOGLE_CLOUD_TRANSLATION_API_KEY` | Required when translation features are enabled |
 | `MAINTENANCE_MODE` | Global maintenance switch |
 | `MAINTENANCE_NOTICE` | Maintenance page notice text |
+| `D1_BINDING_NAME` | Only needed when the D1 binding name is not the default `DB` / `NCT_DB` |
 | `RATE_LIMIT_REDIS_URL` | Shared rate-limit storage recommended for multi-instance deployments |
 
 Configuration rules:
 
 - Choose only one of `FORM_ID` and `FORM_ID_ENCRYPTED`.
 - Choose only one of `GOOGLE_SCRIPT_URL` and `GOOGLE_SCRIPT_URL_ENCRYPTED`.
+- `FORM_SUBMIT_TARGET` accepts `google`, `d1`, and `both`, with `google` as the default.
+- If `FORM_SUBMIT_TARGET` includes `google`, you still need `FORM_ID` or `FORM_ID_ENCRYPTED`.
+- If `FORM_SUBMIT_TARGET` includes `d1`, make sure your Worker has a D1 binding; if the binding name is not `DB` or `NCT_DB`, also set `D1_BINDING_NAME`.
 - If you use encrypted values, `FORM_PROTECTION_SECRET` must be explicitly configured.
 - In production Workers deployments, keep sensitive values in Cloudflare Variables and Secrets instead of committing them or placing them in `wrangler.jsonc`.
 - If you do not use encrypted config yet, at minimum store `FORM_ID`, `GOOGLE_SCRIPT_URL`, and `FORM_PROTECTION_SECRET` as Secrets.
@@ -347,6 +352,7 @@ Deployment recommendations:
 | --- | --- | --- |
 | `SITE_URL` | Text | Production site URL |
 | `FORM_DRY_RUN` | Text | Usually `false` in production |
+| `FORM_SUBMIT_TARGET` | Text | `/form` submission target: `google`, `d1`, or `both` |
 | `FORM_PROTECTION_SECRET` | Secret | Required for form protection and encrypted config decryption |
 | `FORM_ID` | Secret | Plain Google Form ID for the simple setup |
 | `FORM_ID_ENCRYPTED` | Text or Secret | Encrypted Google Form ID, leave `FORM_ID` empty when using this |
@@ -356,6 +362,7 @@ Deployment recommendations:
 | `GOOGLE_CLOUD_TRANSLATION_API_KEY` | Secret | Only needed when translation is enabled |
 | `MAINTENANCE_MODE` | Text | Set to `true` when you need full-site maintenance mode |
 | `MAINTENANCE_NOTICE` | Text | Maintenance announcement text |
+| `D1_BINDING_NAME` | Text | Only set this when the D1 binding name is not `DB` / `NCT_DB` |
 | `RATE_LIMIT_REDIS_URL` | Secret | Recommended for multi-instance deployments |
 
 ### 5. Bind the production domain

@@ -32,6 +32,26 @@ CREATE TABLE IF NOT EXISTS ${TABLE_NAME} (
   created_at TEXT NOT NULL
 );
 `;
+const TABLE_COLUMN_DEFINITIONS = [
+  { name: 'id', alterSql: `ALTER TABLE ${TABLE_NAME} ADD COLUMN id TEXT` },
+  { name: 'school_name', alterSql: `ALTER TABLE ${TABLE_NAME} ADD COLUMN school_name TEXT NOT NULL DEFAULT ''` },
+  { name: 'province_code', alterSql: `ALTER TABLE ${TABLE_NAME} ADD COLUMN province_code TEXT` },
+  { name: 'province_name', alterSql: `ALTER TABLE ${TABLE_NAME} ADD COLUMN province_name TEXT` },
+  { name: 'city_code', alterSql: `ALTER TABLE ${TABLE_NAME} ADD COLUMN city_code TEXT` },
+  { name: 'city_name', alterSql: `ALTER TABLE ${TABLE_NAME} ADD COLUMN city_name TEXT` },
+  { name: 'county_code', alterSql: `ALTER TABLE ${TABLE_NAME} ADD COLUMN county_code TEXT` },
+  { name: 'county_name', alterSql: `ALTER TABLE ${TABLE_NAME} ADD COLUMN county_name TEXT` },
+  { name: 'school_address', alterSql: `ALTER TABLE ${TABLE_NAME} ADD COLUMN school_address TEXT` },
+  { name: 'contact_information', alterSql: `ALTER TABLE ${TABLE_NAME} ADD COLUMN contact_information TEXT` },
+  { name: 'headmaster_name', alterSql: `ALTER TABLE ${TABLE_NAME} ADD COLUMN headmaster_name TEXT` },
+  { name: 'correction_content', alterSql: `ALTER TABLE ${TABLE_NAME} ADD COLUMN correction_content TEXT` },
+  { name: 'status', alterSql: `ALTER TABLE ${TABLE_NAME} ADD COLUMN status TEXT NOT NULL DEFAULT 'pending'` },
+  { name: 'lang', alterSql: `ALTER TABLE ${TABLE_NAME} ADD COLUMN lang TEXT NOT NULL DEFAULT 'zh-CN'` },
+  { name: 'source_path', alterSql: `ALTER TABLE ${TABLE_NAME} ADD COLUMN source_path TEXT NOT NULL DEFAULT ''` },
+  { name: 'client_ip_hash', alterSql: `ALTER TABLE ${TABLE_NAME} ADD COLUMN client_ip_hash TEXT` },
+  { name: 'user_agent', alterSql: `ALTER TABLE ${TABLE_NAME} ADD COLUMN user_agent TEXT` },
+  { name: 'created_at', alterSql: `ALTER TABLE ${TABLE_NAME} ADD COLUMN created_at TEXT NOT NULL DEFAULT ''` }
+];
 
 class InstitutionCorrectionStorageUnavailableError extends Error {
   constructor(message = 'Institution correction storage is unavailable.') {
@@ -92,6 +112,30 @@ function getInstitutionCorrectionDatabaseBinding() {
   };
 }
 
+async function getInstitutionCorrectionTableColumns(binding) {
+  const result = await binding.prepare(`PRAGMA table_info(${TABLE_NAME})`).all();
+  const rows = Array.isArray(result?.results) ? result.results : [];
+
+  return new Set(
+    rows
+      .map((row) => getTrimmedString(row && row.name))
+      .filter(Boolean)
+  );
+}
+
+async function reconcileInstitutionCorrectionSchema(binding) {
+  const existingColumns = await getInstitutionCorrectionTableColumns(binding);
+
+  for (const definition of TABLE_COLUMN_DEFINITIONS) {
+    if (existingColumns.has(definition.name)) {
+      continue;
+    }
+
+    await binding.exec(definition.alterSql);
+    existingColumns.add(definition.name);
+  }
+}
+
 async function ensureInstitutionCorrectionSchema(binding) {
   if (!binding) {
     throw new InstitutionCorrectionStorageUnavailableError();
@@ -107,7 +151,10 @@ async function ensureInstitutionCorrectionSchema(binding) {
   }
 
   const readyPromise = Promise.resolve()
-    .then(() => binding.exec(CREATE_TABLE_STATEMENT))
+    .then(async () => {
+      await binding.exec(CREATE_TABLE_STATEMENT);
+      await reconcileInstitutionCorrectionSchema(binding);
+    })
     .catch((error) => {
       schemaReadyByBinding.delete(binding);
       throw error;

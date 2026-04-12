@@ -217,6 +217,35 @@ test('institution correction storage initializes schema and writes to a D1 bindi
     prepare(sql) {
       calls.push({ type: 'prepare', sql });
 
+      if (/PRAGMA table_info/i.test(sql)) {
+        return {
+          async all() {
+            return {
+              results: [
+                'id',
+                'school_name',
+                'province_code',
+                'province_name',
+                'city_code',
+                'city_name',
+                'county_code',
+                'county_name',
+                'school_address',
+                'contact_information',
+                'headmaster_name',
+                'correction_content',
+                'status',
+                'lang',
+                'source_path',
+                'client_ip_hash',
+                'user_agent',
+                'created_at'
+              ].map((name) => ({ name }))
+            };
+          }
+        };
+      }
+
       return {
         bind(...params) {
           calls.push({ type: 'bind', params });
@@ -280,6 +309,94 @@ test('institution correction storage initializes schema and writes to a D1 bindi
   assert.equal(bindCall.params[14], '/map/correction/submit');
   assert.match(bindCall.params[15], /^[0-9a-f]{64}$/i);
   assert.equal(bindCall.params[16], 'node-test');
+
+  clearProjectModules();
+});
+
+test('institution correction storage backfills missing D1 columns before insert', async () => {
+  clearProjectModules();
+
+  const runtimeContext = require(path.join(projectRoot, 'app/services/runtimeContext'));
+  const {
+    saveInstitutionCorrectionSubmission,
+    validateInstitutionCorrectionSubmission
+  } = require(path.join(projectRoot, 'app/services/institutionCorrectionService'));
+  const { translate } = require(path.join(projectRoot, 'config/i18n'));
+
+  const columns = new Set([
+    'id',
+    'school_name',
+    'province_code',
+    'province_name'
+  ]);
+  const calls = [];
+  const fakeDb = {
+    async exec(sql) {
+      calls.push({ type: 'exec', sql });
+
+      const alterMatch = String(sql).match(/ADD COLUMN\s+([a-z_]+)/i);
+      if (alterMatch) {
+        columns.add(alterMatch[1]);
+      }
+
+      return { count: 0 };
+    },
+    prepare(sql) {
+      calls.push({ type: 'prepare', sql });
+
+      if (/PRAGMA table_info/i.test(sql)) {
+        return {
+          async all() {
+            return {
+              results: Array.from(columns).map((name) => ({ name }))
+            };
+          }
+        };
+      }
+
+      return {
+        bind(...params) {
+          calls.push({ type: 'bind', params });
+
+          return {
+            async run() {
+              calls.push({ type: 'run' });
+              return { success: true };
+            }
+          };
+        }
+      };
+    }
+  };
+
+  const { errors, values } = validateInstitutionCorrectionSubmission({
+    school_name: '晨光学校'
+  }, (key, variables) => translate('zh-CN', key, variables));
+
+  assert.deepEqual(errors, []);
+
+  await runtimeContext.runWithRuntimeContext({ env: { DB: fakeDb } }, async () => {
+    await saveInstitutionCorrectionSubmission({
+      req: {
+        lang: 'zh-CN',
+        originalUrl: '/map/correction/submit',
+        path: '/map/correction/submit',
+        headers: {
+          'user-agent': 'node-test'
+        },
+        get(name) {
+          return this.headers[String(name || '').toLowerCase()] || '';
+        },
+        ip: '203.0.113.9'
+      },
+      values
+    });
+  });
+
+  assert.ok(calls.some((entry) => entry.type === 'prepare' && /PRAGMA table_info/i.test(entry.sql)));
+  assert.ok(calls.some((entry) => entry.type === 'exec' && /ADD COLUMN city_code/i.test(entry.sql)));
+  assert.ok(calls.some((entry) => entry.type === 'exec' && /ADD COLUMN created_at/i.test(entry.sql)));
+  assert.ok(calls.some((entry) => entry.type === 'run'));
 
   clearProjectModules();
 });
