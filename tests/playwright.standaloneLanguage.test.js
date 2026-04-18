@@ -18,7 +18,7 @@ test('standalone language picker switches the page language through a GET naviga
       waitUntil: 'networkidle'
     });
 
-    await page.selectOption('[data-standalone-language-select]', 'en');
+    await page.click('[data-standalone-language-link="en"]');
     await page.waitForURL(/lang=en/, { timeout: 10000 });
     await page.waitForLoadState('networkidle');
 

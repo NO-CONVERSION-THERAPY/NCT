@@ -93,7 +93,7 @@ const messages = {
     form: {
       title: 'NO CONVERSION THERAPY FORM',
       subtitle: '记录黑暗，是为了迎接光明',
-      privacyNotice: '隐私说明：本问卷中填写的出生年份、性别等个人基本信息将被严格保密，相关经历、机构曝光信息可能在本站公开页面展示。提交内容会根据站点配置写入 Google Form、D1 数据库，或同时写入两者进行保存和整理；请勿在可能公开的字段中填写身份证号、私人电话、家庭住址等您的个人敏感信息。',
+      privacyNotice: '隐私说明：本问卷中填写的出生年份、性别等个人基本信息将被严格保密，相关经历、机构曝光信息未来可能公开展示，请勿在可能公开的字段中填写身份证号、私人电话、家庭住址等您的个人敏感信息。',
       sections: {
         basic: '个人基本信息',
         experience: '相关经历',
@@ -771,7 +771,7 @@ const messages = {
     form: {
       title: 'NO CONVERSION THERAPY FORM',
       subtitle: '記錄黑暗，是為了迎接光明',
-      privacyNotice: '隱私說明：本問卷中填寫的出生年份、性別等個人基本資訊將被嚴格保密，相關經歷、機構曝光資訊可能在本站公開頁面展示。提交內容會依站點配置寫入 Google Form、D1 資料庫，或同時寫入兩者進行保存和整理；請勿在可能公開的欄位中填寫身分證號、私人電話、家庭住址等您的個人敏感資訊。',
+      privacyNotice: '隱私說明：本問卷中填寫的出生年份、性別等個人基本資訊將被嚴格保密，相關經歷、機構曝光資訊未來可能公開展示；請勿在可能公開的欄位中填寫身分證號、私人電話、家庭住址等您的個人敏感資訊。',
       sections: {
         basic: '個人基本資訊',
         experience: '相關經歷',
@@ -1449,7 +1449,7 @@ const messages = {
     form: {
       title: 'NO CONVERSION THERAPY FORM',
       subtitle: 'We document the darkness in order to welcome the light.',
-      privacyNotice: 'Privacy notice: personal details such as birth year and sex provided in this questionnaire will be kept strictly confidential, while related experiences and institution exposure information may be shown on public pages of this site. Submitted content may be written to Google Form, the D1 database, or both, depending on the site configuration. Please do not include ID numbers, private phone numbers, home addresses, or other sensitive personal information in fields that may be made public.',
+      privacyNotice: 'Privacy notice: personal details such as birth year and sex provided in this questionnaire will be kept strictly confidential, while related experiences and institution exposure information may be made public in the future. Please do not include ID numbers, private phone numbers, home addresses, or other sensitive personal information in fields that may be made public.',
       sections: {
         basic: 'Personal Information',
         experience: 'Related Experience',

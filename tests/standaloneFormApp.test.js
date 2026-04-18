@@ -138,7 +138,7 @@ test('standalone pages respect explicit language selection for standalone-specif
   assert.equal(englishFormResponse.statusCode, 200);
   assert.match(englishFormResponse.body, /Survey on Harm Experienced in Conversion Institutions/);
   assert.match(englishFormResponse.body, /<label for="website">Website<\/label>/);
-  assert.match(englishFormResponse.body, /data-standalone-language-select/);
+  assert.match(englishFormResponse.body, /data-standalone-language-link="en"/);
   assert.doesNotMatch(englishFormResponse.body, /class="standalone-back-link">← Back to Home<\/a>/);
 
   assert.equal(traditionalChineseFormResponse.statusCode, 200);

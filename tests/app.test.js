@@ -757,23 +757,54 @@ test('form page keeps caching disabled without adding crawl restrictions', async
   assert.doesNotMatch(response.body, /<meta name="robots"/i);
 });
 
-test('area options API localizes city options for the current language', async () => {
-  const restoreFetch = installTranslationFetchStub();
+test('area options API localizes city options for zh-TW', async () => {
+  const restoreFetch = installTranslationFetchStub('TW:');
 
   try {
     const app = loadApp({
       DEBUG_MOD: 'false',
       ...getGoogleTranslationTestEnv()
     });
-    const response = await requestPath(app, '/api/area-options?provinceCode=110000&lang=en');
+    const response = await requestPath(app, '/api/area-options?provinceCode=110000&lang=zh-TW');
     const payload = JSON.parse(response.body);
 
     assert.equal(response.statusCode, 200);
     assert.ok(Array.isArray(payload.options));
     assert.equal(payload.options[0].code, '110101');
-    assert.match(payload.options[0].name, /^EN:/);
+    assert.match(payload.options[0].name, /^TW:/);
   } finally {
     restoreFetch();
+    clearProjectModules();
+  }
+});
+
+test('area options API keeps english city and county options in Chinese source names', async () => {
+  const originalFetch = global.fetch;
+  let fetchCalled = false;
+  global.fetch = async () => {
+    fetchCalled = true;
+    throw new Error('English area options should not trigger translation fetch');
+  };
+
+  try {
+    const app = loadApp({ DEBUG_MOD: 'false' });
+    const cityResponse = await requestPath(app, '/api/area-options?provinceCode=110000&lang=en');
+    const cityPayload = JSON.parse(cityResponse.body);
+    const countyResponse = await requestPath(app, '/api/area-options?cityCode=350500&lang=en');
+    const countyPayload = JSON.parse(countyResponse.body);
+
+    assert.equal(cityResponse.statusCode, 200);
+    assert.ok(Array.isArray(cityPayload.options));
+    assert.equal(cityPayload.options[0].code, '110101');
+    assert.equal(cityPayload.options[0].name, '东城区');
+
+    assert.equal(countyResponse.statusCode, 200);
+    assert.ok(Array.isArray(countyPayload.options));
+    assert.equal(countyPayload.options[0].code, '350502');
+    assert.equal(countyPayload.options[0].name, '鲤城区');
+    assert.equal(fetchCalled, false);
+  } finally {
+    global.fetch = originalFetch;
     clearProjectModules();
   }
 });

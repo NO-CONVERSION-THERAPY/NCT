@@ -12,7 +12,7 @@ function getCacheKey(language, text) {
 }
 
 function shouldTranslateAreaNames(language) {
-  return language === 'en' || language === 'zh-TW';
+  return language === 'zh-TW';
 }
 
 function normalizeOptions(options) {
@@ -65,7 +65,7 @@ async function localizeOptions(options, language) {
 async function getLocalizedCityOptionsForProvince(provinceCode, language) {
   const cityOptions = cityOptionsByProvinceCode[provinceCode] || [];
 
-  if (language === 'zh-CN') {
+  if (language === 'zh-CN' || language === 'en') {
     return normalizeOptions(cityOptions);
   }
 
@@ -75,7 +75,7 @@ async function getLocalizedCityOptionsForProvince(provinceCode, language) {
 async function getLocalizedCountyOptionsForCity(cityCode, language) {
   const countyOptions = countiesByCityCode[cityCode] || [];
 
-  if (language === 'zh-CN') {
+  if (language === 'zh-CN' || language === 'en') {
     return normalizeOptions(countyOptions);
   }
 

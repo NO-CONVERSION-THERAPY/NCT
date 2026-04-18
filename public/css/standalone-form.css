@@ -141,8 +141,8 @@ button {
 .standalone-language-picker {
     display: inline-flex;
     align-items: center;
-    gap: 0.9rem;
-    padding: 0.72rem 1rem 0.72rem 1.12rem;
+    gap: 6px;
+    padding: 6px;
     border-radius: 999px;
     border: 1px solid var(--glass-border);
     background: rgba(255, 255, 255, 0.26);
@@ -157,42 +157,35 @@ button {
     white-space: nowrap;
 }
 
-.standalone-language-picker__submit {
+.standalone-language-picker__option {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 3rem;
-    padding: 0.72rem 1.1rem;
+    min-height: 2.9rem;
+    min-width: 4.5rem;
+    padding: 0.72rem 1rem;
     border-radius: 999px;
-    border: 1px solid var(--glass-border);
-    background:
-        linear-gradient(135deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.16)),
-        var(--accent-soft);
-    color: var(--text);
-    box-shadow: var(--glass-shadow-soft);
-    transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+    color: var(--text-soft);
+    background: transparent;
+    transition:
+        transform 180ms ease,
+        box-shadow 180ms ease,
+        background 180ms ease,
+        color 180ms ease;
 }
 
-.standalone-language-picker__submit:hover {
+.standalone-language-picker__option:hover {
     transform: translateY(-1px);
-    box-shadow: 0 18px 32px rgba(63, 96, 148, 0.18);
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.22);
 }
 
-.standalone-language-picker select {
-    width: auto;
-    min-width: 7.5rem;
-    padding: 0 1.8rem 0 0;
-    border: 0;
-    border-radius: 0;
-    background-color: transparent;
-    box-shadow: none;
-    cursor: pointer;
-}
-
-.standalone-language-picker select:focus {
-    background-color: transparent;
-    box-shadow: none;
-    transform: none;
+.standalone-language-picker__option.is-active {
+    color: var(--text);
+    background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.12)),
+        var(--accent-soft);
+    box-shadow: var(--glass-shadow-soft);
 }
 
 .standalone-back-link {
@@ -806,15 +799,13 @@ pre.standalone-code-block {
 
     .standalone-language-picker {
         width: 100%;
-        justify-content: space-between;
+        justify-content: stretch;
+        flex-wrap: wrap;
     }
 
-    .standalone-language-picker select {
+    .standalone-language-picker__option {
+        flex: 1 1 0;
         min-width: 0;
-    }
-
-    .standalone-language-picker__submit {
-        width: 100%;
     }
 
     .standalone-hero,

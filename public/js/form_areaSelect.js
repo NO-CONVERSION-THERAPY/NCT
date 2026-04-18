@@ -29,7 +29,7 @@
   async function requestAreaOptions(queryKey, queryValue) {
     const requestUrl = new URL('/api/area-options', window.location.origin);
     requestUrl.searchParams.set(queryKey, queryValue);
-    // 当前界面语言也一并传给后端，城市/县区名称可按访问语言即时本地化。
+    // 当前界面语言也一并传给后端；省份按页面语言展示，英文模式下城市/县区保留中文原名。
     requestUrl.searchParams.set('lang', window.APP_LANG || '');
 
     const response = await window.fetch(requestUrl.toString(), {

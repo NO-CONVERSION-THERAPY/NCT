@@ -1,14 +1,33 @@
-<form class="standalone-toolbar" method="GET" action="<%= currentPathname || '/' %>" data-standalone-language-form>
-    <% currentQueryEntries.forEach((entry) => { %>
-        <input type="hidden" name="<%= entry.key %>" value="<%= entry.value %>">
-    <% }) %>
-    <label class="standalone-language-picker" for="standaloneLanguageSelect">
-        <span class="standalone-language-picker__label"><%= t('common.language') %></span>
-        <select id="standaloneLanguageSelect" name="lang" data-standalone-language-select aria-label="<%= t('common.language') %>">
-            <% languageOptions.forEach((option) => { %>
-                <option value="<%= option.code %>" <%= option.code === lang ? 'selected' : '' %>><%= option.label %></option>
-            <% }) %>
-        </select>
-    </label>
-    <button type="submit" class="standalone-language-picker__submit"><%= t('common.switchLanguage') %></button>
-</form>
+<%
+    const pickerPathname = currentPathname || '/';
+    const pickerEntries = Array.isArray(currentQueryEntries) ? currentQueryEntries : [];
+    const pickerOptions = (Array.isArray(languageOptions) ? languageOptions : []).map((option) => {
+        const searchParams = new URLSearchParams();
+
+        pickerEntries.forEach((entry) => {
+            searchParams.append(entry.key, entry.value);
+        });
+
+        searchParams.set('lang', option.code);
+
+        return {
+            ...option,
+            href: `${pickerPathname}?${searchParams.toString()}`
+        };
+    });
+%>
+<div class="standalone-toolbar" aria-label="<%= t('common.language') %>">
+    <span class="standalone-language-picker__label"><%= t('common.language') %></span>
+    <div class="standalone-language-picker" role="group" aria-label="<%= t('common.language') %>">
+        <% pickerOptions.forEach((option) => { %>
+            <a
+                href="<%= option.href %>"
+                class="standalone-language-picker__option<%= option.code === lang ? ' is-active' : '' %>"
+                data-standalone-language-link="<%= option.code %>"
+                <%- option.code === lang ? 'aria-current="page"' : '' %>
+            >
+                <%= option.label %>
+            </a>
+        <% }) %>
+    </div>
+</div>
