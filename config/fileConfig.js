@@ -5,6 +5,7 @@ const { resolveProjectPath } = require('./runtimeConfig')
 const paths = {
     views: resolveProjectPath('views'),
     public: resolveProjectPath('public'),
+    reactBuild: resolveProjectPath('public/react-app'),
     blogData: resolveProjectPath('data.json'),
     blog: resolveProjectPath('blog'),
     friendsData: resolveProjectPath('friends.json')

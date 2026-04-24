@@ -24,13 +24,14 @@ const messages = {
     common: {
       siteName: 'NO CONVERSION THERAPY',
       language: '语言',
+      switchLanguage: '切换',
       footerNavLabel: '页脚导航',
       languages: {
         'zh-CN': '简中',
         'zh-TW': '繁中',
         en: 'English'
       },
-      footerBy: '© 2026 N·C·T Project. By: ',
+      footerBy: '© 2026 N·C·T Project.',
       loading: '加载中...',
       notFound: '未找到'
     },
@@ -60,8 +61,8 @@ const messages = {
     },
     index: {
       tagline: '凡真心所向，皆成回响；足以在偏见的荒原，震碎扭曲的枷锁',
-      fillForm: '参与填表',
-      viewMap: '查看扭转机构综合地图',
+      fillForm: '填写表单',
+      viewMap: '地图',
       blogLibrary: '文库'
     },
     blog: {
@@ -92,7 +93,7 @@ const messages = {
     form: {
       title: 'NO CONVERSION THERAPY FORM',
       subtitle: '记录黑暗，是为了迎接光明',
-      privacyNotice: '隐私说明：本问卷中填写的出生年份、性别等个人基本信息将被严格保密，相关经历、机构曝光信息可能在本站公开页面展示。提交内容会根据站点配置写入 Google Form、D1 数据库，或同时写入两者进行保存和整理；请勿在可能公开的字段中填写身份证号、私人电话、家庭住址等您的个人敏感信息。',
+      privacyNotice: '隐私说明：本问卷中填写的出生年份、性别等个人基本信息将被严格保密，相关经历、机构曝光信息未来可能公开展示，请勿在可能公开的字段中填写身份证号、私人电话、家庭住址等您的个人敏感信息。',
       sections: {
         basic: '个人基本信息',
         experience: '相关经历',
@@ -101,6 +102,7 @@ const messages = {
       },
       fields: {
         identity: '请问您是作为什么身份来填写本表单？',
+        agentRelationship: '您与受害者的关系？',
         birthDate: '出生年月日',
         birthYear: '出生年份',
         victimBirthYear: '受害者出生年份',
@@ -109,6 +111,8 @@ const messages = {
         age: '年龄',
         sex: '性别',
         victimSex: '受害者性别',
+        preInstitutionProvinceCode: '进入机构前所在省份？',
+        preInstitutionCityCode: '进入机构前所在城市？',
         province: '机构所在省份',
         city: '机构所在城市 / 区县',
         county: '机构所在县区',
@@ -116,15 +120,27 @@ const messages = {
         schoolAddress: '机构地址',
         dateStart: '首次被送入日期',
         dateEnd: '离开日期',
+        parentMotivations: '家长选择矫正机构的原因/动机？',
+        exitMethod: '离开机构的方式',
         experience: '个人在校经历描述',
+        legalAidStatus: '是否曾对此经历进行过举报或寻求法律援助',
         headmasterName: '负责人/校长姓名',
+        abuserInfo: '已知施暴者/教官基本信息与描述',
         contactInformation: '机构联系方式',
+        violenceCategories: '机构丑闻及暴力行为（请选出符合自己经历及目睹他人受暴的所有选项）',
         scandal: '丑闻及暴力行为详细描述',
-        other: '其他补充'
+        other: '其它补充'
       },
       identityOptions: {
         self: '受害者本人',
         agent: '受害者的代理人'
+      },
+      agentRelationshipOptions: {
+        friend: '朋友',
+        partner: '伴侣',
+        family: '亲属',
+        supportWorker: '救助工作者',
+        other: '其它'
       },
       sexOptions: {
         placeholder: '请选择',
@@ -138,13 +154,64 @@ const messages = {
         x: 'X',
         queer: 'Queer'
       },
+      parentMotivationOptions: {
+        internetAddiction: '"网瘾"/游戏沉迷',
+        studyIssues: '"厌学"/学业问题',
+        behaviorControl: '"叛逆"/行为管教',
+        mentalHealth: '精神或心理健康相关问题',
+        genderIdentity: '性别认同相关（如跨性别等）',
+        sexualOrientation: '性取向相关（如同性恋、双性恋等）',
+        familyViolence: '家庭冲突中的恶意施暴或惩罚手段',
+        professionalAdvice: '咨询师/医生/老师等人士建议',
+        relativesAdvice: '亲属或身边人建议',
+        advertising: '网络广告或机构宣传误导',
+        unknown: '不清楚/从未被告知原因',
+        other: '其它原因'
+      },
+      violenceCategoryOptions: {
+        falsePromotion: '虚假/非法宣传',
+        fakePolice: '冒充警察绑架',
+        directPhysical: '直接接触的肢体暴力（如扇耳光等）',
+        toolPhysical: '使用工具的肢体暴力（如棍棒殴打、电击等）',
+        corporalPunishment: '体罚（如长跑等）',
+        restriction: '限制自由（如捆绑等）',
+        humiliation: '辱骂或公开羞辱',
+        verbalSexual: '言语的性暴力（如性羞辱等）',
+        physicalSexual: '肢体的性暴力（如性侵犯等）',
+        solitary: '关禁闭',
+        foodRestriction: '饮食限制或不健康饮食',
+        sleepDeprivation: '睡眠剥夺',
+        forcedMedication: '强迫服用药物',
+        genderConversion: '性别扭转（如强迫改变外表等）',
+        brainwashing: '精神控制或洗脑',
+        other: '其它暴力行为'
+      },
+      exitMethodOptions: {
+        pickedUp: '到期后家长接回',
+        escape: '自行逃离',
+        transfer: '被强制转学',
+        rescued: '被解救',
+        closed: '机构关闭',
+        other: '其它方式'
+      },
+      legalAidOptions: {
+        yes: '是',
+        no: '否',
+        unsureHow: '想但不知道途径',
+        fearRetaliation: '担心报复',
+        other: '其它'
+      },
       placeholders: {
+        agentRelationship: '请选择您与受害者的关系',
+        agentRelationshipOther: '其它：请填写您与受害者的关系',
         birthYear: '选择年份',
         birthMonth: '选择月份',
         birthDay: '选择日期',
         age: '请输入年龄',
         otherSexType: '请选择',
         otherSex: '其它性别认同或补充说明',
+        preInstitutionProvinceCode: '可选：选择进入机构前所在省份',
+        preInstitutionCityCode: '可选：请先选择进入机构前所在省份',
         province: '选择机构所在省份',
         city: '请先选择机构所在省份',
         countyInitial: '可选：请先选择机构所在城市 / 区县',
@@ -152,9 +219,16 @@ const messages = {
         countyUnavailable: '可选：当前机构所在城市无县区可选',
         schoolName: '请填写机构完整名称',
         schoolAddress: '若已知，请详细填写机构地址',
+        parentMotivationOther: '其它原因：请填写具体原因',
+        exitMethod: '可选：请选择离开机构的方式',
+        exitMethodOther: '其它方式：请填写具体情况',
         experience: '请描述个人在校经历、管理方式等...',
+        legalAidStatus: '可选：请选择当前情况',
+        legalAidOther: '其它：请填写补充说明',
         headmasterName: '姓名',
+        abuserInfo: '可填写施暴者姓名、联系方式、施暴内容等信息。',
         contactInformation: '电话、邮箱或其它公开联系方式',
+        violenceCategoryOther: '其它暴力行为：请填写具体情况',
         scandal: '请描述已知的丑闻与暴力行为...',
         other: '任何您想补充的信息'
       },
@@ -168,7 +242,7 @@ const messages = {
       hints: {
         dateStart: '假如有多次被送入经历，可在经历描述中说明情况',
         dateEnd: '若目前仍在校，可不填',
-        experience: '若描述别人经历请在“其他补充”中填写',
+        experience: '若描述别人经历请在“其它补充”中填写',
         otherSex: '请选择 MtF / FtM / X / Queer，或点击输入框填写其它性别认同或补充说明',
         selectedPoint: '选取点: {lat}, {lng}'
       },
@@ -196,7 +270,19 @@ const messages = {
         fillContactInformation: '请填写机构联系方式',
         specifyOtherSex: '请选择 MtF / FtM / X / Queer，或选择输入框填写其它性别认同或补充说明',
         fillOtherSex: '请输入其它性别认同或补充说明',
+        fillAgentRelationshipOther: '请输入您与受害者的关系',
+        fillParentMotivations: '请至少选择一项家长选择矫正机构的原因/动机',
+        fillParentMotivationOther: '请输入其它原因',
+        fillViolenceCategoryOther: '请输入其它暴力行为',
+        fillExitMethodOther: '请输入其它离开机构的方式',
+        fillLegalAidOther: '请输入其它补充说明',
         endDateBeforeStart: '离开日期不能早于首次被送入日期'
+      },
+      standalone: {
+        title: '扭转机构受害者情况问卷调查',
+        footerMeta: '全国统一心理援助：12356；青少年心理咨询和法律援助：12355；希望热线（全国性24小时心理危机干预）：400-161-9995',
+        honeypotLabel: '网站',
+        safetyNotice: '填写过程中如感不适可随时停止'
       }
     },
     institutionCorrection: {
@@ -310,6 +396,7 @@ const messages = {
         loadFailed: '数据加载失败',
         translationLoading: '翻译中...',
         translationUnavailable: '翻译失败',
+        dateUnknown: '日期未标注',
         reportCounts: {
           self: '本人举报',
           agent: '代理举报'
@@ -328,7 +415,7 @@ const messages = {
         fields: {
           scandal: '学校丑闻：',
           experience: '受害者经历：',
-          other: '其他：',
+          other: '其它：',
           headmaster: '负责人：',
           province: '省份：',
           region: '城市 / 区县：',
@@ -350,7 +437,7 @@ const messages = {
       api: {
         summary: '想要调用 API？',
         privacy: '我们明确表示：我们永远不会泄露受访者的任何敏感性资料。',
-        beforeUse: '在调用 API 之前，我们要明白：HosinoNeko 站长只允许公开当前在地图上展示的资料。',
+        beforeUse: '在调用 API 之前，请注意：公开接口仅提供当前在地图页面上展示的资料。',
         implementationTitle: '我们如何实现的？',
         implementationBody: '首先你的表单会透过 Vercel 上传到 Google Forms，在那里生成一个电子表格。站长在其表格的 Apps Script 中部署了应用程序，会将地址一栏转化为经纬度并保存在表格中。然后 Google 侧会生成一个原始 JSON API。因为那个 API 包含全部资讯，所以不会公开。本站再从中取出需要的讯息，生成当前对外开放的 API。',
         opinionTitle: '我们的看法：',
@@ -365,10 +452,9 @@ const messages = {
       title: '关于我们',
       friendLinks: '致谢',
       ownership: '本项目由 TRANS UNION 维护、开发，透过Apachi-2.0 License开源。',
-      origin: '本网站建站于 2026 年 2 月 21 日，由 HosinoNeko 站长在逃到上海后建立。',
+      origin: '本网站建站于 2026 年 2 月 21 日，最初由幸存者社群协作建立。',
       thanks: '在这里衷心感谢以下项目、企业和个人为本项目提供了免费的援助，没有他们就没有这个网站的诞生：',
       friendDescriptions: {
-        hosinoneko: '站长、策划执行与社群建立',
         nanmuxue: '代码重构',
         hermaphroditus: '域名贡献者',
         muyuan: '社群传播、资料提供',
@@ -459,8 +545,10 @@ const messages = {
       contactBody: '如果您对本站隐私说明、表单公开范围或内容处理方式有疑问，可以通过以下方式联系项目维护者：'
     },
     submitSuccess: {
+      badge: '成功',
       title: '提交成功！感谢你的参与。',
       message: '我们已经收到了你的表单，感谢你的参与。你的参与将是我们前进的动力！',
+      backForm: '返回问卷',
       backHome: '返回首页',
       petition: '抵制扭转机构签名会'
     },
@@ -478,6 +566,7 @@ const messages = {
       }
     },
     submitPreview: {
+      badge: '预览',
       title: '表单 Dry Run 预览',
       intro: '这次提交还没有发送到实际提交目标。下面是本次本地组装出的最终字段和值。',
       targetUrl: 'Google Form 目标网址（若已启用）：',
@@ -486,10 +575,12 @@ const messages = {
         field: '字段',
         value: '值'
       },
+      payloadEyebrow: '提交负载',
       payload: 'URL Encoded Payload',
       backForm: '返回表单'
     },
     submitConfirm: {
+      badge: '确认',
       title: '提交确认',
       intro: '这一步还没有发送到实际提交目标。请确认以下内容无误后，再正式提交。',
       targetUrl: '目标网址：',
@@ -503,6 +594,7 @@ const messages = {
       backForm: '返回表单'
     },
     submitError: {
+      badge: '重试',
       title: '提交失败',
       intro: '站内提交没有成功。如果下方提供了已预填内容的 Google Form 链接，你也可以继续在那里提交。',
       privacyNote: '注意：下面这个链接包含你刚刚填写的表单内容，请不要随意分享。',
@@ -528,21 +620,33 @@ const messages = {
       birthDay: '出生日期',
       age: '年龄',
       identity: '填写身份',
+      agentRelationship: '您与受害者的关系？',
       sex: '性别',
       victimSex: '受害者性别',
       sexOther: '其它性别认同或补充说明',
+      preInstitutionProvinceCode: '进入机构前所在省份？',
+      preInstitutionCityCode: '进入机构前所在城市？',
       provinceCode: '机构所在省份',
       cityCode: '机构所在城市 / 区县',
       countyCode: '机构所在县区',
+      parentMotivations: '家长选择矫正机构的原因/动机？',
+      parentMotivationOther: '家长选择矫正机构的原因/动机（其它原因）',
       schoolName: '机构名称',
       schoolAddress: '机构地址',
       dateStart: '首次被送入日期',
       dateEnd: '离开日期',
+      exitMethod: '离开机构的方式',
+      exitMethodOther: '离开机构的方式（其它方式）',
       experience: '个人在校经历描述',
       headmasterName: '负责人/校长姓名',
+      abuserInfo: '已知施暴者/教官基本信息与描述',
       contactInformation: '机构联系方式',
+      violenceCategories: '机构丑闻及暴力行为',
+      violenceCategoryOther: '机构丑闻及暴力行为（其它暴力行为）',
       scandal: '丑闻及暴力行为详细描述',
-      other: '其他补充'
+      legalAidStatus: '举报或寻求法律援助情况',
+      legalAidOther: '举报或寻求法律援助情况（其它）',
+      other: '其它补充'
     },
     previewFields: {
       birthDate: '出生年月日',
@@ -556,7 +660,7 @@ const messages = {
       headmasterName: '负责人/校长姓名',
       contactInformation: '机构联系方式',
       scandal: '丑闻及暴力行为详细描述',
-      other: '其他补充',
+      other: '其它补充',
       dateStart: '首次被送入日期',
       dateEnd: '离开日期'
     },
@@ -566,9 +670,11 @@ const messages = {
       invalidBirthDate: '请填写有效的{label}',
       ageRange: '{label}必须是 {min} 到 {max} 的整数',
       invalidIdentity: '请选择有效的填写身份',
+      invalidChoice: '{label}选项无效',
       invalidSex: '性别不合法，请修改',
       otherSexRequired: '选择其它性别认同时，请选择 MtF / FtM / X / Queer，或选择输入框填写其它性别认同或补充说明',
       provinceCityMismatch: '机构所在省份和机构所在城市 / 区县不匹配',
+      preInstitutionProvinceCityMismatch: '进入机构前所在省份和进入机构前所在城市不匹配',
       cityCountyMismatch: '机构所在城市 / 区县和机构所在县区不匹配',
       invalidFormat: '{label}格式不正确',
       endDateBeforeStart: '{endLabel}不能早于{startLabel}'
@@ -684,13 +790,14 @@ const messages = {
     common: {
       siteName: 'NO CONVERSION THERAPY',
       language: '語言',
+      switchLanguage: '切換',
       footerNavLabel: '頁腳導航',
       languages: {
         'zh-CN': '簡中',
         'zh-TW': '繁中',
         en: 'English'
       },
-      footerBy: '© 2026 N·C·T Project. By: ',
+      footerBy: '© 2026 N·C·T Project.',
       loading: '載入中...',
       notFound: '未找到'
     },
@@ -720,8 +827,8 @@ const messages = {
     },
     index: {
       tagline: '凡真心所向，皆成迴響；足以在偏見的荒原，震碎扭曲的枷鎖',
-      fillForm: '參與填表',
-      viewMap: '查看扭轉機構綜合地圖',
+      fillForm: '填寫表單',
+      viewMap: '地圖',
       blogLibrary: '文庫'
     },
     blog: {
@@ -752,7 +859,7 @@ const messages = {
     form: {
       title: 'NO CONVERSION THERAPY FORM',
       subtitle: '記錄黑暗，是為了迎接光明',
-      privacyNotice: '隱私說明：本問卷中填寫的出生年份、性別等個人基本資訊將被嚴格保密，相關經歷、機構曝光資訊可能在本站公開頁面展示。提交內容會依站點配置寫入 Google Form、D1 資料庫，或同時寫入兩者進行保存和整理；請勿在可能公開的欄位中填寫身分證號、私人電話、家庭住址等您的個人敏感資訊。',
+      privacyNotice: '隱私說明：本問卷中填寫的出生年份、性別等個人基本資訊將被嚴格保密，相關經歷、機構曝光資訊未來可能公開展示；請勿在可能公開的欄位中填寫身分證號、私人電話、家庭住址等您的個人敏感資訊。',
       sections: {
         basic: '個人基本資訊',
         experience: '相關經歷',
@@ -761,6 +868,7 @@ const messages = {
       },
       fields: {
         identity: '請問您是作爲什麽身份來填寫本表單？',
+        agentRelationship: '您與受害者的關係？',
         birthDate: '出生年月日',
         birthYear: '出生年份',
         victimBirthYear: '受害者出生年份',
@@ -769,6 +877,8 @@ const messages = {
         age: '年齡',
         sex: '性別',
         victimSex: '受害者性別',
+        preInstitutionProvinceCode: '進入機構前所在省份？',
+        preInstitutionCityCode: '進入機構前所在城市？',
         province: '機構所在省份',
         city: '機構所在城市 / 區縣',
         county: '機構所在縣區',
@@ -776,15 +886,27 @@ const messages = {
         schoolAddress: '機構地址',
         dateStart: '首次被送入日期',
         dateEnd: '離開日期',
+        parentMotivations: '家長選擇矯正機構的原因 / 動機？',
+        exitMethod: '離開機構的方式',
         experience: '個人在校經歷描述',
+        legalAidStatus: '是否曾對此經歷進行過舉報或尋求法律援助',
         headmasterName: '負責人/校長姓名',
+        abuserInfo: '已知施暴者 / 教官基本資訊與描述',
         contactInformation: '機構聯繫方式',
+        violenceCategories: '機構醜聞及暴力行為（請選出符合自己經歷及目睹他人受暴的所有選項）',
         scandal: '醜聞及暴力行為詳細描述',
         other: '其他補充'
       },
       identityOptions: {
         self: '受害者本人',
         agent: '受害者的代理人'
+      },
+      agentRelationshipOptions: {
+        friend: '朋友',
+        partner: '伴侶',
+        family: '親屬',
+        supportWorker: '救助工作者',
+        other: '其他'
       },
       sexOptions: {
         placeholder: '請選擇',
@@ -798,13 +920,64 @@ const messages = {
         x: 'X',
         queer: 'Queer'
       },
+      parentMotivationOptions: {
+        internetAddiction: '"網癮" / 遊戲沉迷',
+        studyIssues: '"厭學" / 學業問題',
+        behaviorControl: '"叛逆" / 行為管教',
+        mentalHealth: '精神或心理健康相關問題',
+        genderIdentity: '性別認同相關（如跨性別等）',
+        sexualOrientation: '性取向相關（如同性戀、雙性戀等）',
+        familyViolence: '家庭衝突中的惡意施暴或懲罰手段',
+        professionalAdvice: '諮詢師 / 醫生 / 老師等人士建議',
+        relativesAdvice: '親屬或身邊人建議',
+        advertising: '網路廣告或機構宣傳誤導',
+        unknown: '不清楚 / 從未被告知原因',
+        other: '其他原因'
+      },
+      violenceCategoryOptions: {
+        falsePromotion: '虛假 / 非法宣傳',
+        fakePolice: '冒充警察綁架',
+        directPhysical: '直接接觸的肢體暴力（如搧耳光等）',
+        toolPhysical: '使用工具的肢體暴力（如棍棒毆打、電擊等）',
+        corporalPunishment: '體罰（如長跑等）',
+        restriction: '限制自由（如綑綁等）',
+        humiliation: '辱罵或公開羞辱',
+        verbalSexual: '言語的性暴力（如性羞辱等）',
+        physicalSexual: '肢體的性暴力（如性侵犯等）',
+        solitary: '關禁閉',
+        foodRestriction: '飲食限制或不健康飲食',
+        sleepDeprivation: '睡眠剝奪',
+        forcedMedication: '強迫服用藥物',
+        genderConversion: '性別扭轉（如強迫改變外表等）',
+        brainwashing: '精神控制或洗腦',
+        other: '其他暴力行為'
+      },
+      exitMethodOptions: {
+        pickedUp: '到期後家長接回',
+        escape: '自行逃離',
+        transfer: '被強制轉學',
+        rescued: '被解救',
+        closed: '機構關閉',
+        other: '其他方式'
+      },
+      legalAidOptions: {
+        yes: '是',
+        no: '否',
+        unsureHow: '想但不知道途徑',
+        fearRetaliation: '擔心報復',
+        other: '其他'
+      },
       placeholders: {
+        agentRelationship: '請選擇您與受害者的關係',
+        agentRelationshipOther: '其他：請填寫您與受害者的關係',
         birthYear: '選擇年份',
         birthMonth: '選擇月份',
         birthDay: '選擇日期',
         age: '請輸入年齡',
         otherSexType: '請選擇',
         otherSex: '其他性別認同或補充說明',
+        preInstitutionProvinceCode: '可選：選擇進入機構前所在省份',
+        preInstitutionCityCode: '可選：請先選擇進入機構前所在省份',
         province: '選擇機構所在省份',
         city: '請先選擇機構所在省份',
         countyInitial: '可選：請先選擇機構所在城市 / 區縣',
@@ -812,9 +985,16 @@ const messages = {
         countyUnavailable: '可選：當前機構所在城市無縣區可選',
         schoolName: '請填寫機構完整名稱',
         schoolAddress: '若已知，請詳細填寫機構地址',
+        parentMotivationOther: '其他原因：請填寫具體原因',
+        exitMethod: '可選：請選擇離開機構的方式',
+        exitMethodOther: '其他方式：請填寫具體情況',
         experience: '請描述個人在校經歷、管理方式等...',
+        legalAidStatus: '可選：請選擇目前情況',
+        legalAidOther: '其他：請填寫補充說明',
         headmasterName: '姓名',
+        abuserInfo: '可填寫施暴者姓名、聯繫方式、施暴內容等資訊。',
         contactInformation: '電話、郵箱或其他公開聯繫方式',
+        violenceCategoryOther: '其他暴力行為：請填寫具體情況',
         scandal: '請描述已知的醜聞與暴力行為...',
         other: '任何您想補充的信息'
       },
@@ -856,7 +1036,19 @@ const messages = {
         fillContactInformation: '請填寫機構聯繫方式',
         specifyOtherSex: '請選擇 MtF / FtM / X / Queer，或選擇輸入框填寫其他性別認同或補充說明',
         fillOtherSex: '請輸入其他性別認同或補充說明',
+        fillAgentRelationshipOther: '請輸入您與受害者的關係',
+        fillParentMotivations: '請至少選擇一項家長選擇矯正機構的原因 / 動機',
+        fillParentMotivationOther: '請輸入其他原因',
+        fillViolenceCategoryOther: '請輸入其他暴力行為',
+        fillExitMethodOther: '請輸入其他離開機構的方式',
+        fillLegalAidOther: '請輸入其他補充說明',
         endDateBeforeStart: '離開日期不能早於首次被送入日期'
+      },
+      standalone: {
+        title: '扭轉機構受害者情況問卷調查',
+        footerMeta: '全國統一心理援助：12356；青少年心理諮詢和法律援助：12355；希望熱線（全國性 24 小時心理危機干預）：400-161-9995',
+        honeypotLabel: '網站',
+        safetyNotice: '填寫過程中如感不適可隨時停止'
       }
     },
     institutionCorrection: {
@@ -970,6 +1162,7 @@ const messages = {
         loadFailed: '數據加載失敗',
         translationLoading: '翻譯中...',
         translationUnavailable: '翻譯失敗',
+        dateUnknown: '日期未標註',
         reportCounts: {
           self: '本人舉報',
           agent: '代理舉報'
@@ -1010,7 +1203,7 @@ const messages = {
       api: {
         summary: '想要調用 API？',
         privacy: '我們明確表示：我們永遠不會洩露受訪者的任何敏感性資料。',
-        beforeUse: '在調用 API 之前，我們要明白：HosinoNeko 站長只允許公開當前在地圖上展示的資料。',
+        beforeUse: '在調用 API 之前，請注意：公開介面僅提供目前在地圖頁面上展示的資料。',
         implementationTitle: '我們如何實現的？',
         implementationBody: '首先你的表單會透過 Vercel 上傳到 Google Forms，在那裡生成一個電子表格。站長在其表格的 Apps Script 中部署了應用程式，會將地址一欄轉化為經緯度並保存在表格中。然後 Google 側會生成一個原始 JSON API。因為那個 API 包含全部資訊，所以不會公開。本站再從中取出需要的訊息，生成當前對外開放的 API。',
         opinionTitle: '我們的看法：',
@@ -1025,10 +1218,9 @@ const messages = {
       title: '關於我們',
       friendLinks: '致謝',
       ownership: '本項目由 TRANS UNION 維護與開發 ，透過Apachi-2.0 License開源',
-      origin: '本網站建站於 2026 年 2 月 21 日，由 HosinoNeko 站長在逃到上海後建立。',
+      origin: '本網站建站於 2026 年 2 月 21 日，最初由倖存者社群協作建立。',
       thanks: '在這裡衷心感謝以下項目、企業和個人為本項目提供了免費的援助，沒有他們就沒有這個網站的誕生：',
       friendDescriptions: {
-        hosinoneko: '站長、策劃執行與社群建立',
         nanmuxue: '程式碼重構',
         hermaphroditus: '域名貢獻者',
         muyuan: '社群傳播、資料提供',
@@ -1119,8 +1311,10 @@ const messages = {
       contactBody: '如果您對本站隱私說明、表單公開範圍或內容處理方式有疑問，可以透過以下方式聯絡項目維護者：'
     },
     submitSuccess: {
+      badge: '成功',
       title: '提交成功！感謝您的參與。',
       message: '我們已經收到了您的表單，感謝您的參與。您的參與將是我們前進的動力！',
+      backForm: '返回問卷',
       backHome: '返回首頁',
       petition: '抵制扭轉機構簽名會'
     },
@@ -1138,6 +1332,7 @@ const messages = {
       }
     },
     submitPreview: {
+      badge: '預覽',
       title: '表單乾跑預覽',
       intro: '這次提交還沒有發送到實際提交目標。下面是本次本地組裝出的最終欄位和值。',
       targetUrl: 'Google Form 目標網址（若已啟用）：',
@@ -1146,10 +1341,12 @@ const messages = {
         field: '欄位',
         value: '值'
       },
+      payloadEyebrow: '提交負載',
       payload: 'URL Encoded Payload',
       backForm: '返回表單'
     },
     submitConfirm: {
+      badge: '確認',
       title: '提交確認',
       intro: '這一步還沒有發送到實際提交目標。請確認以下內容無誤後，再正式提交。',
       targetUrl: '目標網址：',
@@ -1163,6 +1360,7 @@ const messages = {
       backForm: '返回表單'
     },
     submitError: {
+      badge: '重試',
       title: '提交失敗',
       intro: '站內提交沒有成功。如果下方提供了已預填內容的 Google Form 連結，你也可以繼續在那裡提交。',
       privacyNote: '注意：下面這個連結包含你剛剛填寫的表單內容，請不要隨意分享。',
@@ -1188,20 +1386,32 @@ const messages = {
       birthDay: '出生日期',
       age: '年齡',
       identity: '填寫身份',
+      agentRelationship: '您與受害者的關係？',
       sex: '性別',
       victimSex: '受害者性別',
       sexOther: '其他性別認同或補充說明',
+      preInstitutionProvinceCode: '進入機構前所在省份？',
+      preInstitutionCityCode: '進入機構前所在城市？',
       provinceCode: '機構所在省份',
       cityCode: '機構所在城市 / 區縣',
       countyCode: '機構所在縣區',
+      parentMotivations: '家長選擇矯正機構的原因 / 動機？',
+      parentMotivationOther: '家長選擇矯正機構的原因 / 動機（其他原因）',
       schoolName: '機構名稱',
       schoolAddress: '機構地址',
       dateStart: '首次被送入日期',
       dateEnd: '離開日期',
+      exitMethod: '離開機構的方式',
+      exitMethodOther: '離開機構的方式（其他方式）',
       experience: '個人在校經歷描述',
       headmasterName: '負責人/校長姓名',
+      abuserInfo: '已知施暴者 / 教官基本資訊與描述',
       contactInformation: '機構聯繫方式',
+      violenceCategories: '機構醜聞及暴力行為',
+      violenceCategoryOther: '機構醜聞及暴力行為（其他暴力行為）',
       scandal: '醜聞及暴力行為詳細描述',
+      legalAidStatus: '舉報或尋求法律援助情況',
+      legalAidOther: '舉報或尋求法律援助情況（其他）',
       other: '其他補充'
     },
     previewFields: {
@@ -1226,9 +1436,11 @@ const messages = {
       invalidBirthDate: '請填寫有效的{label}',
       ageRange: '{label}必須是 {min} 到 {max} 的整數',
       invalidIdentity: '請選擇有效的填寫身份',
+      invalidChoice: '{label}選項無效',
       invalidSex: '性別不合法，請修改',
       otherSexRequired: '選擇其他性別認同時，請選擇 MtF / FtM / X / Queer，或選擇輸入框填寫其他性別認同或補充說明',
       provinceCityMismatch: '機構所在省份和機構所在城市 / 區縣不匹配',
+      preInstitutionProvinceCityMismatch: '進入機構前所在省份和進入機構前所在城市不匹配',
       cityCountyMismatch: '機構所在城市 / 區縣和機構所在縣區不匹配',
       invalidFormat: '{label}格式不正確',
       endDateBeforeStart: '{endLabel}不能早於{startLabel}'
@@ -1344,13 +1556,14 @@ const messages = {
     common: {
       siteName: 'NO CONVERSION THERAPY',
       language: 'Language',
+      switchLanguage: 'Apply',
       footerNavLabel: 'Footer',
       languages: {
         'zh-CN': '简中',
         'zh-TW': '繁中',
         en: 'English'
       },
-      footerBy: '© 2026 N·C·T Project. By: ',
+      footerBy: '© 2026 N·C·T Project.',
       loading: 'Loading...',
       notFound: 'Not Found'
     },
@@ -1380,8 +1593,8 @@ const messages = {
     },
     index: {
       tagline: 'Every sincere voice finds its resonance, enough to rend the warped fetters within the wilderness of bigotry.',
-      fillForm: 'Fill Out the Form',
-      viewMap: 'View the Conversion Institution Map',
+      fillForm: 'Form',
+      viewMap: 'Map',
       blogLibrary: 'Library'
     },
     blog: {
@@ -1412,7 +1625,7 @@ const messages = {
     form: {
       title: 'NO CONVERSION THERAPY FORM',
       subtitle: 'We document the darkness in order to welcome the light.',
-      privacyNotice: 'Privacy notice: personal details such as birth year and sex provided in this questionnaire will be kept strictly confidential, while related experiences and institution exposure information may be shown on public pages of this site. Submitted content may be written to Google Form, the D1 database, or both, depending on the site configuration. Please do not include ID numbers, private phone numbers, home addresses, or other sensitive personal information in fields that may be made public.',
+      privacyNotice: 'Privacy notice: personal details such as birth year and sex provided in this questionnaire will be kept strictly confidential, while related experiences and institution exposure information may be made public in the future. Please do not include ID numbers, private phone numbers, home addresses, or other sensitive personal information in fields that may be made public.',
       sections: {
         basic: 'Personal Information',
         experience: 'Related Experience',
@@ -1421,6 +1634,7 @@ const messages = {
       },
       fields: {
         identity: 'What is your relationship to this submission?',
+        agentRelationship: 'What is your relationship to the survivor?',
         birthDate: 'Date of Birth',
         birthYear: 'Birth Year',
         victimBirthYear: 'Survivor Birth Year',
@@ -1429,6 +1643,8 @@ const messages = {
         age: 'Age',
         sex: 'Gender',
         victimSex: 'Survivor Gender',
+        preInstitutionProvinceCode: 'Province Before Entering the Institution',
+        preInstitutionCityCode: 'City Before Entering the Institution',
         province: 'Institution Province',
         city: 'Institution City / District',
         county: 'Institution County / District',
@@ -1436,15 +1652,27 @@ const messages = {
         schoolAddress: 'Institution Address',
         dateStart: 'First Date Sent There',
         dateEnd: 'Departure Date',
+        parentMotivations: 'Why Did the Parent(s) Choose the Institution?',
+        exitMethod: 'How Did the Survivor Leave the Institution?',
         experience: 'Personal Institutional Experience Description',
+        legalAidStatus: 'Was This Experience Reported or Taken to Legal Aid?',
         headmasterName: 'Principal / Person in Charge',
+        abuserInfo: 'Known Information and Description of Abusers / Drill Instructors',
         contactInformation: 'Institution Contact Information',
+        violenceCategories: 'Scandals and Violence at the Institution (select all that match your experience or what you witnessed)',
         scandal: 'Detailed Description of Scandals and Violent Behavior',
-        other: 'Other Notes'
+        other: 'Additional Notes'
       },
       identityOptions: {
         self: 'The survivor themself',
         agent: 'A representative of the survivor'
+      },
+      agentRelationshipOptions: {
+        friend: 'Friend',
+        partner: 'Partner',
+        family: 'Family member',
+        supportWorker: 'Support worker',
+        other: 'Other'
       },
       sexOptions: {
         placeholder: 'Please select',
@@ -1458,13 +1686,64 @@ const messages = {
         x: 'X',
         queer: 'Queer'
       },
+      parentMotivationOptions: {
+        internetAddiction: '"Internet addiction" / gaming',
+        studyIssues: '"School refusal" / academic issues',
+        behaviorControl: '"Rebelliousness" / behavior control',
+        mentalHealth: 'Mental health or psychological concerns',
+        genderIdentity: 'Gender identity related (such as being transgender)',
+        sexualOrientation: 'Sexual orientation related (such as being gay or bisexual)',
+        familyViolence: 'Malicious abuse or punishment amid family conflict',
+        professionalAdvice: 'Suggested by a counselor / doctor / teacher / similar authority',
+        relativesAdvice: 'Suggested by relatives or people nearby',
+        advertising: 'Misled by online ads or institutional promotion',
+        unknown: 'Unknown / never told the reason',
+        other: 'Other reason'
+      },
+      violenceCategoryOptions: {
+        falsePromotion: 'False / illegal promotion',
+        fakePolice: 'Kidnapping while impersonating police',
+        directPhysical: 'Direct physical violence (such as slapping)',
+        toolPhysical: 'Physical violence with tools (such as beatings or electric shocks)',
+        corporalPunishment: 'Corporal punishment (such as forced running)',
+        restriction: 'Restriction of freedom (such as tying someone up)',
+        humiliation: 'Insults or public humiliation',
+        verbalSexual: 'Verbal sexual violence (such as sexual humiliation)',
+        physicalSexual: 'Physical sexual violence (such as assault)',
+        solitary: 'Solitary confinement',
+        foodRestriction: 'Food restriction or unhealthy diet',
+        sleepDeprivation: 'Sleep deprivation',
+        forcedMedication: 'Forced medication',
+        genderConversion: 'Gender conversion practices (such as forced appearance changes)',
+        brainwashing: 'Psychological control or brainwashing',
+        other: 'Other violent behavior'
+      },
+      exitMethodOptions: {
+        pickedUp: 'Picked up by parents after the term ended',
+        escape: 'Escaped independently',
+        transfer: 'Forced transfer',
+        rescued: 'Rescued',
+        closed: 'Institution shut down',
+        other: 'Other method'
+      },
+      legalAidOptions: {
+        yes: 'Yes',
+        no: 'No',
+        unsureHow: 'Wanted to, but did not know how',
+        fearRetaliation: 'Worried about retaliation',
+        other: 'Other'
+      },
       placeholders: {
+        agentRelationship: 'Select the relationship to the survivor',
+        agentRelationshipOther: 'Other: describe the relationship to the survivor',
         birthYear: 'Select year',
         birthMonth: 'Select month',
         birthDay: 'Select day',
         age: 'Enter age',
         otherSexType: 'Please select',
         otherSex: 'Another gender identity or additional notes',
+        preInstitutionProvinceCode: 'Optional: select the province before entering the institution',
+        preInstitutionCityCode: 'Optional: select the province before entering the institution first',
         province: 'Select the institution province',
         city: 'Select the institution province first',
         countyInitial: 'Optional: select the institution city / district first',
@@ -1472,9 +1751,16 @@ const messages = {
         countyUnavailable: 'Optional: no county / district available for the selected institution city',
         schoolName: 'Please enter the full institution name',
         schoolAddress: 'If known, please provide the institution address in as much detail as possible',
+        parentMotivationOther: 'Other reason: describe the reason',
+        exitMethod: 'Optional: select how the survivor left the institution',
+        exitMethodOther: 'Other method: describe how they left',
         experience: 'Describe the personal experience at the institution, management style, and other details...',
+        legalAidStatus: 'Optional: select the current situation',
+        legalAidOther: 'Other: add a short note',
         headmasterName: 'Name',
+        abuserInfo: 'You can add names, contact details, violent acts, and other known information.',
         contactInformation: 'Phone, email, or another public contact method',
+        violenceCategoryOther: 'Other violent behavior: describe it briefly',
         scandal: 'Describe known scandals and violent behavior...',
         other: 'Anything else you would like to add'
       },
@@ -1488,7 +1774,7 @@ const messages = {
       hints: {
         dateStart: 'If the survivor was sent there more than once, please explain that in the experience description.',
         dateEnd: 'Leave blank if the survivor is still there',
-        experience: 'If you are describing someone else’s experience, please add that in "Other Notes".',
+        experience: 'If you are describing someone else’s experience, please add that in "Additional Notes".',
         otherSex: 'Choose MtF / FtM / X / Queer, or use the text field for another gender identity or additional notes.',
         selectedPoint: 'Selected point: {lat}, {lng}'
       },
@@ -1516,7 +1802,19 @@ const messages = {
         fillContactInformation: 'Please enter the institution contact information',
         specifyOtherSex: 'Please choose MtF / FtM / X / Queer, or choose the text field and enter another gender identity or additional notes',
         fillOtherSex: 'Please enter another gender identity or additional notes',
+        fillAgentRelationshipOther: 'Please describe the relationship to the survivor',
+        fillParentMotivations: 'Please choose at least one reason why the parent(s) chose the institution',
+        fillParentMotivationOther: 'Please enter the other reason',
+        fillViolenceCategoryOther: 'Please describe the other violent behavior',
+        fillExitMethodOther: 'Please describe the other departure method',
+        fillLegalAidOther: 'Please enter the additional note',
         endDateBeforeStart: 'Departure date cannot be earlier than the first date sent there'
+      },
+      standalone: {
+        title: 'Survey on Harm Experienced in Conversion Institutions',
+        footerMeta: 'National mental health support: 12356; youth counseling and legal aid: 12355; Hope Hotline (nationwide 24/7 crisis intervention): 400-161-9995',
+        honeypotLabel: 'Website',
+        safetyNotice: 'If you feel uncomfortable at any point while filling this out, you can stop at any time'
       }
     },
     institutionCorrection: {
@@ -1630,6 +1928,7 @@ const messages = {
         loadFailed: 'Failed to load data',
         translationLoading: 'Translating...',
         translationUnavailable: 'Translation unavailable',
+        dateUnknown: 'Date unavailable',
         reportCounts: {
           self: 'Self reports',
           agent: 'Agent reports'
@@ -1648,7 +1947,7 @@ const messages = {
         fields: {
           scandal: 'School scandals:',
           experience: 'Survivor experience:',
-          other: 'Other:',
+          other: 'Additional Notes:',
           headmaster: 'Principal:',
           province: 'Province:',
           region: 'City / District:',
@@ -1670,7 +1969,7 @@ const messages = {
       api: {
         summary: 'Want to use the API?',
         privacy: 'We make this clear: we will never disclose any sensitive information about respondents.',
-        beforeUse: 'Before using the API, please note that HosinoNeko only allows access to the data currently shown on the public map.',
+        beforeUse: 'Before using the API, please note that the public endpoint only includes data currently shown on the map.',
         implementationTitle: 'How does it work?',
         implementationBody: 'First, your submission is sent through Vercel to Google Forms, where it is stored in a spreadsheet. An Apps Script attached to that spreadsheet converts addresses into latitude and longitude and stores the coordinates. Google then exposes a raw JSON API. Because that raw API contains all information, it is kept private. This site extracts only the required fields and exposes the public API you can use.',
         opinionTitle: 'Why we want this used:',
@@ -1685,10 +1984,9 @@ const messages = {
       title: 'About Us',
       friendLinks: 'THANKS',
       ownership: 'This project belongs to the TRANS UNION team, which holds all related intellectual property rights.',
-      origin: 'This website went online on February 21, 2026. HosinoNeko created it shortly after reaching Shanghai.',
+      origin: 'This website went online on February 21, 2026 and was originally built through survivor collaboration.',
       thanks: 'We sincerely thank the following projects, organizations, and individuals for helping make this website possible:',
       friendDescriptions: {
-        hosinoneko: 'Founder, planning/execution, and community building',
         nanmuxue: 'Code refactoring',
         hermaphroditus: 'Domain contributor',
         muyuan: 'Community outreach and source material support',
@@ -1779,8 +2077,10 @@ const messages = {
       contactBody: 'If you have questions about this privacy notice, the public-display scope of form content, or how site content is handled, you can contact the project maintainer here:'
     },
     submitSuccess: {
+      badge: 'Success',
       title: 'Submission received. Thank you.',
       message: 'We have received your form. Thank you for taking part. Your contribution helps move this work forward.',
+      backForm: 'Back to Form',
       backHome: 'Back to Home',
       petition: 'Anti-Conversion Institution Petition'
     },
@@ -1798,6 +2098,7 @@ const messages = {
       }
     },
     submitPreview: {
+      badge: 'Dry Run',
       title: 'Dry Run Preview',
       intro: 'This submission has not been sent to the live submission target yet. Below is the final field set and value payload assembled locally.',
       targetUrl: 'Google Form Target URL (if enabled):',
@@ -1806,10 +2107,12 @@ const messages = {
         field: 'Field',
         value: 'Value'
       },
+      payloadEyebrow: 'Payload',
       payload: 'URL Encoded Payload',
       backForm: 'Back to Form'
     },
     submitConfirm: {
+      badge: 'Review',
       title: 'Confirm Submission',
       intro: 'This step has not sent anything to the live submission target yet. Please review the content below before confirming the final submission.',
       targetUrl: 'Target URL:',
@@ -1823,6 +2126,7 @@ const messages = {
       backForm: 'Back to Form'
     },
     submitError: {
+      badge: 'Retry',
       title: 'Submission Failed',
       intro: 'The in-site submission did not complete successfully. If a prefilled Google Form fallback link is available below, you can continue there.',
       privacyNote: 'Note: the link below contains the form content you just entered, so please do not share it casually.',
@@ -1848,21 +2152,33 @@ const messages = {
       birthDay: 'Birth Day',
       age: 'Age',
       identity: 'Submission Role',
+      agentRelationship: 'Relationship to the Survivor',
       sex: 'Gender',
       victimSex: 'Survivor Gender',
       sexOther: 'Other Gender Identity or Additional Notes',
+      preInstitutionProvinceCode: 'Province Before Entering the Institution',
+      preInstitutionCityCode: 'City Before Entering the Institution',
       provinceCode: 'Institution Province',
       cityCode: 'Institution City / District',
       countyCode: 'Institution County / District',
+      parentMotivations: 'Reasons the Parent(s) Chose the Institution',
+      parentMotivationOther: 'Reasons the Parent(s) Chose the Institution (Other Reason)',
       schoolName: 'Institution Name',
       schoolAddress: 'Institution Address',
       dateStart: 'First Date Sent There',
       dateEnd: 'Departure Date',
+      exitMethod: 'How the Survivor Left the Institution',
+      exitMethodOther: 'How the Survivor Left the Institution (Other Method)',
       experience: 'Personal Institutional Experience Description',
       headmasterName: 'Principal / Person in Charge',
+      abuserInfo: 'Known Information and Description of Abusers / Drill Instructors',
       contactInformation: 'Institution Contact Information',
+      violenceCategories: 'Institution Scandals and Violent Behavior',
+      violenceCategoryOther: 'Institution Scandals and Violent Behavior (Other Violent Behavior)',
       scandal: 'Detailed Description of Scandals and Violent Behavior',
-      other: 'Other Notes'
+      legalAidStatus: 'Reporting or Legal Aid Status',
+      legalAidOther: 'Reporting or Legal Aid Status (Other)',
+      other: 'Additional Notes'
     },
     previewFields: {
       birthDate: 'Date of Birth',
@@ -1876,7 +2192,7 @@ const messages = {
       headmasterName: 'Principal / Person in Charge',
       contactInformation: 'Institution Contact Information',
       scandal: 'Detailed Description of Scandals and Violent Behavior',
-      other: 'Other Notes',
+      other: 'Additional Notes',
       dateStart: 'First Date Sent There',
       dateEnd: 'Departure Date'
     },
@@ -1886,9 +2202,11 @@ const messages = {
       invalidBirthDate: 'Please enter a valid {label}',
       ageRange: '{label} must be an integer between {min} and {max}',
       invalidIdentity: 'Please choose a valid submission role',
+      invalidChoice: 'The selected value for {label} is invalid',
       invalidSex: 'The selected gender value is invalid',
       otherSexRequired: 'When "Other gender identity" is selected, please choose MtF / FtM / X / Queer or enter another gender identity or additional notes',
       provinceCityMismatch: 'The selected institution province and institution city / district do not match',
+      preInstitutionProvinceCityMismatch: 'The selected pre-institution province and city do not match',
       cityCountyMismatch: 'The selected institution city / district and institution county / district do not match',
       invalidFormat: '{label} has an invalid format',
       endDateBeforeStart: '{endLabel} cannot be earlier than {startLabel}'

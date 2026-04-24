@@ -1,17 +1,21 @@
 {
-  "name": "no-torsion",
+  "name": "nct_frontend",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "index.html",
   "scripts": {
-    "build": "node -e \"require('./server'); console.log('Build sanity check passed.')\"",
-    "start": "node app/server.js",
-    "test": "node --test",
-    "test:smoke": "node --test tests/playwright.smoke.js",
+    "build": "npm run frontend:build",
+    "dev": "vite --host",
+    "frontend:build": "npm run frontend:prepare-content && vite build",
+    "frontend:preview": "vite preview --host",
+    "frontend:prepare-content": "node scripts/generate-frontend-content.js",
+    "frontend:dev": "vite --host",
+    "start": "vite preview --host",
+    "test": "npm run test:unit && npm run frontend:build",
+    "test:unit": "node --test tests/*.test.js",
     "playwright:install": "npx playwright install chromium",
-    "secure-config": "node scripts/secure-config.js",
-    "dev:workers": "npx wrangler dev",
-    "deploy:workers": "npx wrangler deploy --keep-vars"
+    "dev:workers": "echo \"NCT_frontend root is now frontend-only. Run nct-api-sql-sub separately for the Hono backend.\"",
+    "deploy:workers": "echo \"NCT_frontend root no longer deploys a Worker backend. Deploy nct-api-sql-sub for Hono mode.\""
   },
   "keywords": [],
   "author": "",
@@ -23,20 +27,24 @@
     "axios": "^1.13.5",
     "china-area-data": "^5.0.1",
     "cors": "^2.8.6",
-    "dotenv": "^17.3.1",
     "ejs": "^4.0.1",
     "express": "^5.2.1",
     "express-rate-limit": "^8.3.1",
     "fs": "^0.0.1-security",
     "helmet": "^8.1.0",
+    "leaflet": "^1.9.4",
     "marked": "^4.3.0",
     "node-fetch": "^3.3.2",
     "path": "^0.12.7",
     "proxy-agent": "^8.0.1",
     "rate-limit-redis": "^4.3.1",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
     "redis": "^5.11.0"
   },
   "devDependencies": {
-    "playwright": "^1.59.1"
+    "@vitejs/plugin-react": "^6.0.1",
+    "playwright": "^1.59.1",
+    "vite": "^8.0.8"
   }
 }

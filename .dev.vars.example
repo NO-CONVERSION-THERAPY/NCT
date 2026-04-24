@@ -1,84 +1,11 @@
-# Cloudflare Workers local development variables
-# Copy this file to .dev.vars before running:
-# cp .dev.vars.example .dev.vars
-
-# Required for Workers runtime detection in local debug
-RUNTIME_TARGET="workers"
-
-# Public site URL used by sitemap/robots and canonical links
-SITE_URL="http://127.0.0.1:8787"
-
-# Default local limits
-PAGE_READ_RATE_LIMIT_MAX="180"
-MAP_READ_RATE_LIMIT_MAX="60"
-SUBMIT_RATE_LIMIT_MAX="5"
-
-# Recommended form protection secret
-# Quick start:
-# npm run secure-config -- bootstrap-env --env-file ".dev.vars"  # rewrites this file and removes plain FORM_ID / GOOGLE_SCRIPT_URL
-# npm run secure-config -- bootstrap --form-id "your-Google-Form-ID" --google-script-url "your-Google-Script-URL"
-FORM_PROTECTION_SECRET="replace-this-with-a-long-random-secret"
-
-# Choose one form config strategy:
-
-# Option A: plain Google Form ID for local debugging
-FORM_ID=""
-
-# Option B: encrypted Google Form ID
-# npm run secure-config -- bootstrap-env --env-file ".dev.vars"
-# npm run secure-config -- bootstrap --form-id "your-Google-Form-ID" --google-script-url "your-Google-Script-URL"
-# npm run secure-config -- encrypt --purpose form-id --secret "your-FORM_PROTECTION_SECRET" --value "your-Google-Form-ID"
-FORM_ID_ENCRYPTED=""
-
-# Choose one Apps Script config strategy:
-
-# Option A: plain private Apps Script URL
-GOOGLE_SCRIPT_URL=""
-
-# Option B: encrypted private Apps Script URL
-# npm run secure-config -- bootstrap-env --env-file ".dev.vars"
-# npm run secure-config -- bootstrap --form-id "your-Google-Form-ID" --google-script-url "your-Google-Script-URL"
-# npm run secure-config -- encrypt --purpose google-script-url --secret "your-FORM_PROTECTION_SECRET" --value "your-Google-Script-URL"
-GOOGLE_SCRIPT_URL_ENCRYPTED=""
-
-# Local form behavior
-FORM_DRY_RUN="true"
-# google = 仅投递 Google Form
-# d1 = 仅写入 D1
-# both = 两边都投，任一成功即视为成功
-FORM_SUBMIT_TARGET="google"
-# correction 提交目标：
-# google = 仅投递 Google Form
-# d1 = 仅写入 D1（默认）
-# both = 两边都投，任一成功即视为成功
-CORRECTION_SUBMIT_TARGET="d1"
-# 机构补充 / 修正 Google Form：
-# - 可以直接填完整 URL，例如 https://docs.google.com/forms/d/e/.../viewform
-# - 也可以只填 Form ID
-# - 如果留空，应用会回退到默认值并自动拼接为：
-#   https://docs.google.com/forms/d/e/1FAIpQLSfiXdpt8CgOGZQhvsJTc1koQbvXFo6eWfnigQ329r1-3DniNA/viewform
-CORRECTION_FORM_ID="1FAIpQLSfiXdpt8CgOGZQhvsJTc1koQbvXFo6eWfnigQ329r1"
-CORRECTION_GOOGLE_FORM_URL=""
-FORM_PROTECTION_MIN_FILL_MS="3000"
-FORM_PROTECTION_MAX_AGE_MS="86400000"
-
-# Public map API fallback
-# Used as the public fallback source when GOOGLE_SCRIPT_URL is slow or temporarily unavailable.
-PUBLIC_MAP_DATA_URL="https://nct.hosinoeiji.workers.dev/api/map-data"
-MAP_DATA_UPSTREAM_TIMEOUT_MS="25000"
-
-# Optional translation support
-GOOGLE_CLOUD_TRANSLATION_API_KEY=""
-TRANSLATION_PROVIDER_TIMEOUT_MS="10000"
-
-# Optional maintenance mode
-MAINTENANCE_MODE="false"
-MAINTENANCE_NOTICE=""
-MAINTENANCE_RETRY_AFTER_SECONDS="1800"
-
-# Optional deployment/runtime tuning
-DEBUG_MOD="true"
-TRUST_PROXY="true"
-RATE_LIMIT_REDIS_URL=""
-# Only needed when your local D1 binding name is not DB / NCT_DB.
-D1_BINDING_NAME=""
+# No-Torsion root no longer deploys its own Worker backend, so the current frontend-only project does not read `.dev.vars`.
+#
+# Use `.env` for frontend and build-time variables instead:
+# - `VITE_NCT_API_SQL_PUBLIC_DATA_URL`
+# - `VITE_NCT_SUB_FORM_URL`
+#
+# Put Worker runtime variables in the sibling backend projects:
+# - `../nct-api-sql/.dev.vars`
+# - `../nct-api-sql-sub/.dev.vars`
+#
+# If you need the old Express / Workers stack, use `../NCT_old` rather than this root project.

@@ -1,0 +1,54 @@
+{
+  "avg_age": 18,
+  "last_synced": 3,
+  "statistics": [
+    {
+      "province": "湖北",
+      "count": 2
+    }
+  ],
+  "data": [
+    {
+      "name": "Sub School",
+      "addr": "",
+      "province": "湖北",
+      "prov": "",
+      "else": "",
+      "lat": null,
+      "lng": null,
+      "experience": "",
+      "HMaster": "",
+      "scandal": "",
+      "contact": "12345",
+      "inputType": ""
+    },
+    {
+      "name": "学校名称",
+      "addr": "学校地址",
+      "province": "湖北",
+      "prov": "洪山区",
+      "else": "其他补充内容",
+      "lat": 30.5,
+      "lng": 114.3,
+      "experience": "经历描述",
+      "HMaster": "负责人",
+      "scandal": "已知丑闻",
+      "contact": "123456",
+      "inputType": "受害者本人"
+    },
+    {
+      "name": "Li Si",
+      "addr": "",
+      "province": "",
+      "prov": "",
+      "else": "",
+      "lat": null,
+      "lng": null,
+      "experience": "",
+      "HMaster": "",
+      "scandal": "",
+      "contact": "",
+      "inputType": ""
+    }
+  ]
+}
