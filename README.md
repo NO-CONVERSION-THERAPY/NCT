@@ -179,7 +179,73 @@ npm run dev
 
 ## 部署
 
-当前项目适合部署到任意静态托管平台，例如 Cloudflare Pages、Netlify、Vercel 静态输出或 Nginx 静态目录。
+当前项目是纯静态 Vite SPA，可以部署到 Cloudflare Workers Static Assets、Cloudflare Pages、Netlify、Vercel 静态输出或 Nginx 静态目录。下面以 Cloudflare Workers 为主。
+
+### Cloudflare Workers Static Assets
+
+示例生产域名：
+
+- 前端：`https://www.example.com`
+- 母库：`https://api.example.com`
+- 子库表单：`https://sub.example.com/form`
+
+登录 Cloudflare：
+
+```bash
+npx wrangler login
+npx wrangler whoami
+```
+
+第一次部署前，在本目录创建或确认 `wrangler.toml`：
+
+```toml
+name = "nct-frontend"
+compatibility_date = "2026-04-20"
+workers_dev = true
+
+[assets]
+directory = "./dist"
+not_found_handling = "single-page-application"
+
+[[routes]]
+pattern = "www.example.com"
+custom_domain = true
+```
+
+说明：
+
+- `directory = "./dist"` 指向 Vite 构建产物。
+- `not_found_handling = "single-page-application"` 用于让 `/map`、`/blog`、`/form` 这类前端路由回退到 `index.html`。
+- 正式环境如果只想暴露自定义域名，可以把 `workers_dev = false`。
+- 也可以不写 `[[routes]]`，改在 Cloudflare Dashboard 的 Worker 设置页添加 Custom Domain。
+
+构建前写入生产环境变量。可以复制 `.env.example` 到 `.env.production`，也可以在 CI/CD 中设置同名变量：
+
+```dotenv
+VITE_NCT_API_SQL_PUBLIC_DATA_URL="https://api.example.com/"
+VITE_NCT_SUB_FORM_URL="https://sub.example.com/form"
+```
+
+安装依赖、构建并部署：
+
+```bash
+npm install
+npm run frontend:build
+npx wrangler deploy
+```
+
+部署后检查：
+
+```text
+https://www.example.com/
+https://www.example.com/map
+https://www.example.com/blog
+https://www.example.com/form
+```
+
+`/form` 应跳转到 `https://sub.example.com/form`。地图页应从 `https://api.example.com/` 读取公开 JSON；如果读不到，会回退到构建产物中的静态快照。
+
+### 其他静态平台
 
 构建命令：
 
@@ -195,8 +261,8 @@ dist/
 
 仓库已包含：
 
-- [`public/_redirects`](./public/_redirects)：把前端路由回退到 `index.html`
-- [`404.html`](./404.html)：静态托管下的兜底页面
+- [`public/_redirects`](./public/_redirects)：给支持 `_redirects` 的静态平台提供前端路由回退
+- [`404.html`](./404.html)：给静态托管提供兜底页面
 
 ## README 核对结果
 
