@@ -10,7 +10,7 @@
     "frontend:preview": "vite preview --host",
     "frontend:prepare-content": "node scripts/generate-frontend-content.js",
     "frontend:dev": "vite --host",
-    "deploy:workers": "npm run frontend:build && npx wrangler deploy",
+    "deploy:workers": "npm run frontend:build && npx wrangler deploy --keep-vars",
     "deploy:workers:preview": "npm run frontend:build && npx wrangler versions upload",
     "start": "vite preview --host",
     "test": "npm run test:unit && npm run frontend:build",

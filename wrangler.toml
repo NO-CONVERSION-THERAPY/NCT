@@ -1,6 +1,9 @@
 name = "nct-frontend"
 compatibility_date = "2026-04-20"
 workers_dev = true
+routes = [
+  { pattern = "testnct.medicago.top", custom_domain = true }
+]
 
 [assets]
 directory = "./dist"

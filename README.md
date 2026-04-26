@@ -182,6 +182,7 @@ npm run dev
 仅推荐使用 Cloudflare Dashboard 的 Workers Builds 网页部署。本项目是 Workers Static Assets 静态前端，项目名使用目录名的 Workers 兼容形式：`nct-frontend`。
 
 网页部署会读取 [`wrangler.toml`](./wrangler.toml)。本项目不需要 D1、R2、Cron 或 Worker Secret；`[assets].directory = "./dist"` 会发布 Vite 构建产物，`not_found_handling = "single-page-application"` 会让 `/map`、`/blog`、`/form` 等前端路由回退到 `index.html`。
+部署脚本使用 `wrangler deploy --keep-vars`，避免 Git 中的 Wrangler 配置清空 Cloudflare Dashboard 中已有的 Worker 变量。
 
 ### Workers Builds 填写
 
