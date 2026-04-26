@@ -59,10 +59,6 @@ jobs:
         if: env.HAS_CLOUDFLARE_SECRETS == 'true'
         run: npm test
 
-      - name: Remove Pages redirects for Worker Assets
-        if: env.HAS_CLOUDFLARE_SECRETS == 'true'
-        run: rm -f dist/_redirects
-
       - name: Deploy test frontend
         if: env.HAS_CLOUDFLARE_SECRETS == 'true'
         run: npx wrangler deploy --config wrangler.test.toml --keep-vars
