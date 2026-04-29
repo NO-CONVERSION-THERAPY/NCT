@@ -30,6 +30,7 @@ import {
   buildNoTorsionBackendConfig,
   hasConfiguredNoTorsionBackend
 } from './noTorsionBackend.mjs';
+import { getFeatureProvinceLabel } from './provinceLabelUtils.mjs';
 
 const REACT_PORTAL_ENHANCED_FORM_VARIANT = 'react_portal_enhanced';
 const BLOG_TRANSLATION_REQUEST_BATCH_SIZE = 6;
@@ -520,17 +521,6 @@ function getProvinceLabelLatLng(feature, layer) {
   }
 
   return layer.getBounds().getCenter();
-}
-
-function getFeatureProvinceLabel(feature, lang) {
-  const properties = feature && feature.properties || {};
-  return (
-    properties[`fullname_${lang}`]
-    || properties[`name_${lang}`]
-    || properties.fullname
-    || properties.name
-    || ''
-  );
 }
 
 function bindProvinceLabel(feature, layer, lang) {
