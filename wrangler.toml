@@ -8,3 +8,7 @@ routes = [
 [assets]
 directory = "./dist"
 not_found_handling = "single-page-application"
+
+[[d1_databases]]
+binding = "NCT_DB"
+database_id = "f8b9618f-7f20-4ae4-88e3-64080a5a0bcb"
